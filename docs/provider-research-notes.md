@@ -13,3 +13,14 @@ These sources are reference material only. They do not authorize adding credenti
 ## Implementation boundary
 
 Synthia currently has a real internal image-generation helper backed by the built-in ImageService and a real authenticated voice-transcription route. The current task composer supports image attachments routed through configured vision-capable LLMs. A video-generation adapter is not yet present; its UI state must therefore remain unavailable until the user selects a provider and the adapter contract is implemented and verified.
+
+
+## Gemini-native media option
+
+The official Gemini API documentation lists **gemini-3.1-flash-image** (Nano Banana 2) and related native image models for image generation/editing through the Interactions API. The official video guidance lists **Gemini Omni Flash** for conversational video generation/editing and **Veo 3.1** for video generation through the generateContent workflow. These are candidate models for Synthia because the project already supports `GEMINI_API_KEY`, but they remain unavailable in the product until provider-specific adapter behavior, asynchronous operation handling where required, artifact storage, rate-limit handling, and production credentials are verified.
+
+References:
+
+- https://ai.google.dev/gemini-api/docs/image-generation
+- https://ai.google.dev/gemini-api/docs/video
+- https://ai.google.dev/gemini-api/docs/models
