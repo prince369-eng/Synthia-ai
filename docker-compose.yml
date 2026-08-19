@@ -1,0 +1,97 @@
+name: synthia-ai
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: synthia
+      POSTGRES_USER: synthia
+      POSTGRES_PASSWORD: ${SYNTHIA_LOCAL_POSTGRES_PASSWORD:?Set SYNTHIA_LOCAL_POSTGRES_PASSWORD in .env}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U synthia -d synthia"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    volumes:
+      - synthia-postgres:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7.4-alpine
+    restart: unless-stopped
+    command:
+      [
+        "redis-server",
+        "--appendonly",
+        "yes",
+        "--requirepass",
+        "${SYNTHIA_LOCAL_REDIS_PASSWORD:?Set SYNTHIA_LOCAL_REDIS_PASSWORD in .env}",
+      ]
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "redis-cli --no-auth-warning -a $$SYNTHIA_LOCAL_REDIS_PASSWORD ping | grep PONG",
+        ]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    environment:
+      SYNTHIA_LOCAL_REDIS_PASSWORD: ${SYNTHIA_LOCAL_REDIS_PASSWORD:?Set SYNTHIA_LOCAL_REDIS_PASSWORD in .env}
+    volumes:
+      - synthia-redis:/data
+
+  migrate:
+    build:
+      context: .
+      dockerfile: infrastructure/Dockerfile.local
+    command: ["pnpm", "db:migrate"]
+    env_file: .env
+    environment:
+      NODE_ENV: production
+      SYNTHIA_POSTGRES_URL: postgresql://synthia:${SYNTHIA_LOCAL_POSTGRES_PASSWORD:?Set SYNTHIA_LOCAL_POSTGRES_PASSWORD in .env}@postgres:5432/synthia
+      REDIS_URL: redis://:${SYNTHIA_LOCAL_REDIS_PASSWORD:?Set SYNTHIA_LOCAL_REDIS_PASSWORD in .env}@redis:6379
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  control-plane:
+    build:
+      context: .
+      dockerfile: infrastructure/Dockerfile.local
+    restart: unless-stopped
+    command: ["pnpm", "start"]
+    env_file: .env
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      SYNTHIA_POSTGRES_URL: postgresql://synthia:${SYNTHIA_LOCAL_POSTGRES_PASSWORD:?Set SYNTHIA_LOCAL_POSTGRES_PASSWORD in .env}@postgres:5432/synthia
+      REDIS_URL: redis://:${SYNTHIA_LOCAL_REDIS_PASSWORD:?Set SYNTHIA_LOCAL_REDIS_PASSWORD in .env}@redis:6379
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+    ports:
+      - "${SYNTHIA_HTTP_PORT:-3000}:3000"
+
+  worker:
+    build:
+      context: .
+      dockerfile: infrastructure/Dockerfile.local
+    restart: unless-stopped
+    command: ["pnpm", "worker"]
+    env_file: .env
+    environment:
+      NODE_ENV: production
+      SYNTHIA_POSTGRES_URL: postgresql://synthia:${SYNTHIA_LOCAL_POSTGRES_PASSWORD:?Set SYNTHIA_LOCAL_POSTGRES_PASSWORD in .env}@postgres:5432/synthia
+      REDIS_URL: redis://:${SYNTHIA_LOCAL_REDIS_PASSWORD:?Set SYNTHIA_LOCAL_REDIS_PASSWORD in .env}@redis:6379
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+
+volumes:
+  synthia-postgres:
+  synthia-redis:

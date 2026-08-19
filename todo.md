@@ -1,0 +1,34 @@
+# Project TODO
+
+- [x] Document the Synthia AI system architecture, scalable deployment boundaries, threat model, and operational assumptions.
+- [ ] Activate external-service environment values for E2B, Docker sandbox, Groq, OpenRouter, Gemini, DeepSeek, Tavily, Serper, S3, Cloudflare R2, Resend, Postmark, Redis, and PostgreSQL after the user supplies the credentials.
+- [x] Convert the Synthia application schema and runtime adapter to the requested PostgreSQL production database contract.
+- [ ] Apply the reviewed initial PostgreSQL migration to the external Synthia database after `SYNTHIA_POSTGRES_URL` is configured.
+- [x] Implement the event-sourced task schema, indexes, migration, and database access layer for tasks, ordered events, sandboxes, deliverables, messages, approvals, integrations, memory, usage, and user preferences.
+- [x] Implement validated, authenticated task and settings APIs with rate limiting, structured logging, error handling, secure secret encryption, and authorization rules.
+- [x] Implement the SandboxProvider abstraction with Docker development fallback and E2B production provider, including checkpoint, restore, filesystem, browser screenshot, and terminal operations.
+- [x] Implement the one-action analyze-plan-execute-observe orchestration loop, model-provider adapter, task lifecycle, context layers, and durable self-correction behavior.
+- [x] Implement Tavily and Serper search tools, secure browser and code tools, file and artifact generation, configured integration discovery, and server-side high-risk approval enforcement.
+- [x] Implement credit estimation, continuous usage ledger, durable Redis queueing, task safety caps, checkpoint support, and retry paths.
+- [x] Implement resilient task-event streaming with authenticated sequence cursors, Redis live-event fan-out, and database-backed recovery; live screen frames are persisted as task artifacts when capture is enabled.
+- [x] Wire encrypted integration-token storage into authenticated connection flows and test the secrets boundary; structured API logging and normalized internal error responses are complete.
+- [x] Implement Resend and Postmark task notification delivery with server-only credentials and provider failover.
+- [x] Complete worker recovery with sandbox checkpoint restore, usage accounting, server-side credit estimates, and runnable worker scripts.
+- [x] Explicitly limit browser and screenshot capabilities to E2B in the Agent's Computer UI, sandbox runtime errors, and deployment documentation; Docker remains a code-only development fallback.
+- [ ] Add general artifact creation and retrieval flows, then cover the event stream, approval enforcement, queue retry, and provider readiness with focused tests. Model output parsing, terminal policy, action policy, and credit estimates are covered.
+- [ ] Validate PostgreSQL event-sequence allocation under concurrent writer conditions after applying the migration to the external database.
+- [x] Add focused worker-recovery tests proving checkpoint restoration, task resumption, usage-ledger preservation, and server-side credit-estimate enforcement during retries.
+- [x] Add queue exhausted-retry regression coverage so unrecoverable worker jobs transition the task into a durable failed state.
+- [x] Implement the radiant-orange Synthia AI design system and responsive desktop application shell.
+- [x] Implement task dashboard, goal-first task composer, status-aware sidebar, narrated task thread, approval prompts, and task controls.
+- [x] Implement Agent's Computer Screen, Code, Terminal, Files, Timeline, Plan, and task replay surfaces with server-enforced terminal controls.
+- [x] Keep the Agent's Computer workspace open by default and make its Code tab visibly expose sandbox files, change context, terminal output, timeline, and artifact previews.
+- [x] Implement Library and complete Settings route structure for profile, integrations, model keys, memory, security, and billing.
+- [x] Add a mobile and tablet navigation pattern so every primary Synthia route remains reachable when the desktop sidebar is hidden.
+- [x] Split route-level workspace code so the dashboard's initial client load does not include the full Code, Library, and Settings feature surface.
+- [x] Refine the default-open Code workspace so its visible layout includes file-tree/editor context and concise terminal, timeline, and artifact context without requiring tab changes.
+- [x] Verify and test the existing server-side terminal policy against allowed commands, blocked commands, path restrictions, and approval enforcement.
+- [ ] Validate Docker Compose service configuration for the control plane, independent worker, PostgreSQL, Redis, migration job, and development-only sandbox image, with external provider configuration documented.
+- [ ] Add integration coverage for ordered replay events, authenticated task APIs, provider adapters, and frontend critical paths; unit coverage is complete for worker recovery, exhausted retries, approval gates, terminal policy, credits, parser validation, encryption, and logout.
+- [ ] Complete environment-dependent migration, container, and authenticated task-flow verification after credentials are supplied; static checks, unit tests, production build, and desktop/mobile sign-in boundaries have passed.
+- [ ] Create a GitHub-ready release checkpoint and push to the synthia-ai repository only after user confirmation.

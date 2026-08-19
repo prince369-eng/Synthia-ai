@@ -27,151 +27,68 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
-  --color-chart-1: var(--chart-1);
-  --color-chart-2: var(--chart-2);
-  --color-chart-3: var(--chart-3);
-  --color-chart-4: var(--chart-4);
-  --color-chart-5: var(--chart-5);
-  --color-sidebar: var(--sidebar);
-  --color-sidebar-foreground: var(--sidebar-foreground);
-  --color-sidebar-primary: var(--sidebar-primary);
-  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-  --color-sidebar-accent: var(--sidebar-accent);
-  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-  --color-sidebar-border: var(--sidebar-border);
-  --color-sidebar-ring: var(--sidebar-ring);
 }
 
 :root {
-  --primary: var(--color-blue-700);
-  --primary-foreground: var(--color-blue-50);
-  --sidebar-primary: var(--color-blue-600);
-  --sidebar-primary-foreground: var(--color-blue-50);
-  --chart-1: var(--color-blue-300);
-  --chart-2: var(--color-blue-500);
-  --chart-3: var(--color-blue-600);
-  --chart-4: var(--color-blue-700);
-  --chart-5: var(--color-blue-800);
-  --radius: 0.65rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.235 0.015 65);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.235 0.015 65);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.235 0.015 65);
-  --secondary: oklch(0.98 0.001 286.375);
-  --secondary-foreground: oklch(0.4 0.015 65);
-  --muted: oklch(0.967 0.001 286.375);
-  --muted-foreground: oklch(0.552 0.016 285.938);
-  --accent: oklch(0.967 0.001 286.375);
-  --accent-foreground: oklch(0.141 0.005 285.823);
-  --destructive: oklch(0.577 0.245 27.325);
-  --destructive-foreground: oklch(0.985 0 0);
-  --border: oklch(0.92 0.004 286.32);
-  --input: oklch(0.92 0.004 286.32);
-  --ring: oklch(0.623 0.214 259.815);
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.235 0.015 65);
-  --sidebar-accent: oklch(0.967 0.001 286.375);
-  --sidebar-accent-foreground: oklch(0.141 0.005 285.823);
-  --sidebar-border: oklch(0.92 0.004 286.32);
-  --sidebar-ring: oklch(0.623 0.214 259.815);
-}
-
-.dark {
-  --primary: var(--color-blue-700);
-  --primary-foreground: var(--color-blue-50);
-  --sidebar-primary: var(--color-blue-500);
-  --sidebar-primary-foreground: var(--color-blue-50);
-  --background: oklch(0.141 0.005 285.823);
-  --foreground: oklch(0.85 0.005 65);
-  --card: oklch(0.21 0.006 285.885);
-  --card-foreground: oklch(0.85 0.005 65);
-  --popover: oklch(0.21 0.006 285.885);
-  --popover-foreground: oklch(0.85 0.005 65);
-  --secondary: oklch(0.24 0.006 286.033);
-  --secondary-foreground: oklch(0.7 0.005 65);
-  --muted: oklch(0.274 0.006 286.033);
-  --muted-foreground: oklch(0.705 0.015 286.067);
-  --accent: oklch(0.274 0.006 286.033);
-  --accent-foreground:  oklch(0.92 0.005 65);
-  --destructive: oklch(0.704 0.191 22.216);
-  --destructive-foreground: oklch(0.985 0 0);
+  --radius: .85rem;
+  --primary: oklch(.72 .19 49);
+  --primary-foreground: oklch(.17 .025 45);
+  --background: oklch(.16 .016 62);
+  --foreground: oklch(.93 .014 82);
+  --card: oklch(.21 .018 59);
+  --card-foreground: oklch(.93 .014 82);
+  --popover: oklch(.22 .018 59);
+  --popover-foreground: oklch(.93 .014 82);
+  --secondary: oklch(.26 .021 58);
+  --secondary-foreground: oklch(.78 .018 76);
+  --muted: oklch(.27 .019 58);
+  --muted-foreground: oklch(.67 .019 74);
+  --accent: oklch(.29 .027 56);
+  --accent-foreground: oklch(.96 .015 80);
+  --destructive: oklch(.68 .2 26);
+  --destructive-foreground: oklch(.985 0 0);
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.488 0.243 264.376);
-  --chart-1: var(--color-blue-300);
-  --chart-2: var(--color-blue-500);
-  --chart-3: var(--color-blue-600);
-  --chart-4: var(--color-blue-700);
-  --chart-5: var(--color-blue-800);
-  --sidebar: oklch(0.21 0.006 285.885);
-  --sidebar-foreground: oklch(0.85 0.005 65);
-  --sidebar-accent: oklch(0.274 0.006 286.033);
-  --sidebar-accent-foreground:  oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.488 0.243 264.376);
+  --ring: oklch(.72 .19 49);
 }
 
-@layer base {
-  * {
-    @apply border-border outline-ring/50;
-  }
-  body {
-    @apply bg-background text-foreground;
-  }
-  button:not(:disabled),
-  [role="button"]:not([aria-disabled="true"]),
-  [type="button"]:not(:disabled),
-  [type="submit"]:not(:disabled),
-  [type="reset"]:not(:disabled),
-  a[href],
-  select:not(:disabled),
-  input[type="checkbox"]:not(:disabled),
-  input[type="radio"]:not(:disabled) {
-    @apply cursor-pointer;
-  }
-}
+* { @apply border-border outline-ring/50; }
+body { @apply bg-background text-foreground; font-family: Inter, ui-sans-serif, system-ui, sans-serif; }
+button:not(:disabled), [role="button"]:not([aria-disabled="true"]), [type="button"]:not(:disabled), [type="submit"]:not(:disabled), a[href] { @apply cursor-pointer; }
+button:not(:disabled):active { transform: scale(.97); }
 
 @layer components {
-  /**
-   * Custom container utility that centers content and adds responsive padding.
-   *
-   * This overrides Tailwind's default container behavior to:
-   * - Auto-center content (mx-auto)
-   * - Add responsive horizontal padding
-   * - Set max-width for large screens
-   *
-   * Usage: <div className="container">...</div>
-   *
-   * For custom widths, use max-w-* utilities directly:
-   * <div className="max-w-6xl mx-auto px-4">...</div>
-   */
-  .container {
-    width: 100%;
-    margin-left: auto;
-    margin-right: auto;
-    padding-left: 1rem; /* 16px - mobile padding */
-    padding-right: 1rem;
-  }
-
-  .flex {
-    min-height: 0;
-    min-width: 0;
-  }
-
-  @media (min-width: 640px) {
-    .container {
-      padding-left: 1.5rem; /* 24px - tablet padding */
-      padding-right: 1.5rem;
-    }
-  }
-
-  @media (min-width: 1024px) {
-    .container {
-      padding-left: 2rem; /* 32px - desktop padding */
-      padding-right: 2rem;
-      max-width: 1280px; /* Standard content width */
-    }
-  }
+  .synthia-shell { @apply min-h-screen bg-[#15110d] text-[#f5eee2]; }
+  .synthia-nav { @apply fixed inset-y-0 left-0 z-30 hidden w-64 flex-col border-r border-white/8 bg-[#1b1510] px-3 py-4 lg:flex; }
+  .synthia-main { @apply min-h-screen lg:pl-64; }
+  .synthia-mobile-nav { @apply sticky top-0 z-40 flex h-14 items-center justify-around border-b border-white/8 bg-[#1b1510]/95 px-2 backdrop-blur lg:hidden; }
+  .synthia-mobile-nav button { @apply flex h-10 min-w-18 flex-col items-center justify-center gap-0.5 rounded-lg px-3 text-[10px] text-[#a8998a]; }
+  .synthia-mobile-nav button.active { @apply bg-orange-400/10 text-orange-200; }
+  .synthia-brand { @apply flex items-center gap-2 px-2 text-base font-semibold tracking-tight text-[#fff7eb]; }
+  .synthia-brand b { @apply text-orange-400; }
+  .synthia-logo-mark { @apply inline-flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-orange-300 via-orange-500 to-rose-500 text-[#25130c] shadow-[0_0_26px_rgba(251,146,60,.22)]; }
+  .synthia-new-task { @apply mt-7 h-10 w-full justify-start gap-2 rounded-xl border border-orange-300/25 bg-gradient-to-r from-orange-300 to-orange-500 px-3 font-semibold text-[#2c160c] shadow-[0_8px_24px_rgba(249,115,22,.18)] hover:from-orange-200 hover:to-orange-400; }
+  .synthia-nav-links { @apply mt-7 space-y-1; }
+  .synthia-nav-item { @apply flex h-10 w-full items-center gap-3 rounded-lg px-3 text-sm text-[#bdb1a3] transition-colors hover:bg-white/5 hover:text-[#fff7eb]; }
+  .synthia-nav-item.active { @apply bg-orange-400/10 text-orange-300; }
+  .synthia-task-rail { @apply mt-7 min-h-0 flex-1 overflow-y-auto; }
+  .synthia-task-rail > p { @apply px-3 text-[10px] font-semibold uppercase tracking-[.16em] text-[#766a5f]; }
+  .synthia-task-rail-item { @apply mt-1 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-xs text-[#bdb1a3] transition-colors hover:bg-white/5 hover:text-white; }
+  .synthia-task-rail-item.active { @apply bg-white/7 text-orange-200; }
+  .synthia-task-rail-item span:last-child { @apply truncate; }
+  .synthia-state-dot { @apply h-1.5 w-1.5 shrink-0 rounded-full; }
+  .synthia-mini-status { @apply mt-3 block px-3 text-xs text-[#766a5f]; }
+  .synthia-mini-status.error { @apply text-rose-300; }
+  .synthia-account { @apply mt-3 flex items-center gap-2 border-t border-white/8 px-2 pt-4; }
+  .synthia-avatar { @apply flex h-8 w-8 items-center justify-center rounded-full bg-orange-400/15 text-xs font-bold text-orange-300; }
+  .synthia-account b { @apply block max-w-40 truncate text-xs font-medium text-[#eee3d5]; }
+  .synthia-account small { @apply block max-w-40 truncate text-[10px] text-[#766a5f]; }
+  .synthia-auth-shell { @apply flex min-h-screen items-center justify-center bg-[#15110d] px-5; background-image: radial-gradient(circle at 50% 0%, rgba(249,115,22,.22), transparent 40%); }
+  .synthia-auth-card { @apply w-full max-w-md rounded-[1.75rem] border border-white/10 bg-[#211913] p-8 shadow-2xl; }
+  .synthia-auth-card h1 { @apply mt-5 text-3xl font-semibold tracking-tight text-[#fff7eb]; }
+  .synthia-auth-card p { @apply mt-3 text-sm leading-6 text-[#ae9f91]; }
+  .synthia-eyebrow { @apply text-xs font-semibold uppercase tracking-[.18em] text-orange-300; }
+  .synthia-primary-button { @apply mt-7 gap-2 rounded-xl bg-gradient-to-r from-orange-300 to-orange-500 font-semibold text-[#2c160c] hover:from-orange-200 hover:to-orange-400; }
 }
+
+@media (prefers-reduced-motion: no-preference) { .synthia-nav-item, .synthia-task-rail-item, button { transition-duration: 160ms; transition-timing-function: cubic-bezier(.23,1,.32,1); } }

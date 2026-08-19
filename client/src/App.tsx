@@ -2,15 +2,34 @@ import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/NotFound";
 import { Route, Switch } from "wouter";
+import { lazy, Suspense } from "react";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
-import Home from "./pages/Home";
+import { SynthiaAppShell } from "./components/SynthiaAppShell";
+
+const TaskDashboard = lazy(() => import("./pages/TaskDashboard"));
+const TaskWorkspace = lazy(() => import("./pages/TaskWorkspace"));
+const Library = lazy(() => import("./pages/Library"));
+const Settings = lazy(() => import("./pages/Settings"));
+
+function RouteFallback() {
+  return <div className="flex min-h-screen items-center justify-center bg-[#100e0c] text-sm text-[#b9aa99]">Loading Synthia workspace…</div>;
+}
+
+function SynthiaRoute({ children }: { children: React.ReactNode }) {
+  return <SynthiaAppShell><Suspense fallback={<RouteFallback />}>{children}</Suspense></SynthiaAppShell>;
+}
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
   return (
     <Switch>
-      <Route path={"/"} component={Home} />
+      <Route path={"/"}><SynthiaRoute><TaskDashboard /></SynthiaRoute></Route>
+      <Route path={"/tasks/:taskId"}><SynthiaRoute><TaskWorkspace /></SynthiaRoute></Route>
+      <Route path={"/tasks/:taskId/replay"}><SynthiaRoute><TaskWorkspace replayMode /></SynthiaRoute></Route>
+      <Route path={"/library"}><SynthiaRoute><Library /></SynthiaRoute></Route>
+      <Route path={"/settings"}><SynthiaRoute><Settings /></SynthiaRoute></Route>
+      <Route path={"/settings/:section"}><SynthiaRoute><Settings /></SynthiaRoute></Route>
       <Route path={"/404"} component={NotFound} />
       {/* Final fallback route */}
       <Route component={NotFound} />
@@ -27,7 +46,7 @@ function App() {
   return (
     <ErrorBoundary>
       <ThemeProvider
-        defaultTheme="light"
+        defaultTheme="dark"
         // switchable
       >
         <TooltipProvider>
