@@ -28,6 +28,7 @@ import {
   listTasksForUser,
   recordUserMessage,
   resolveApprovalForTask,
+  softDeleteTaskForUser,
   updateTaskForUser,
   updateUserPreferences,
   updateMemoryFactStatus,
@@ -49,6 +50,7 @@ import { ENV } from "./_core/env";
 import { transcribeAudio } from "./_core/voiceTranscription";
 
 const taskIdSchema = z.object({ taskId: z.string().uuid() });
+const taskTitleSchema = z.string().trim().min(1).max(180);
 const taskStatusSchema = z.enum([
   "queued",
   "booting",
@@ -142,7 +144,13 @@ function configuredComposerModels() {
     const id = `${parsed.data}:${entry.model}`;
     if (seen.has(id)) return [];
     seen.add(id);
-    return [{ id, provider: parsed.data, model: entry.model, label: entry.label }];
+    return [{
+      id,
+      provider: parsed.data,
+      model: entry.model,
+      label: entry.label,
+      capabilities: ["text", ...(ENV.visionModels.includes(id) ? ["vision"] : [])] as Array<"text" | "vision">,
+    }];
   });
 }
 
@@ -235,7 +243,7 @@ export const appRouter = router({
     list: protectedProcedure.query(({ ctx }) => listLibraryDeliverablesForUser(ctx.user.id)),
   }),
   tasks: router({
-    list: protectedProcedure.query(({ ctx }) => listTasksForUser(ctx.user.id)),
+    list: protectedProcedure.input(z.object({ includeArchived: z.boolean().optional() }).optional()).query(async ({ ctx, input }) => listTasksForUser(ctx.user.id, input?.includeArchived)),
     get: protectedProcedure.input(taskIdSchema).query(async ({ ctx, input }) => {
       const task = await requireOwnedTask(input.taskId, ctx.user.id);
       const [events, messages, approvals, deliverables, attachments, sandboxRows] = await Promise.all([
@@ -260,8 +268,41 @@ export const appRouter = router({
           filename: deliverable.filename,
           fileType: deliverable.fileType,
           url: await getTaskArtifactUrl(deliverable.storageKey),
-        };
-      }),
+      };
+    }),
+    rename: protectedProcedure.input(taskIdSchema.extend({ title: taskTitleSchema })).mutation(async ({ ctx, input }) => {
+      const updated = await updateTaskForUser(input.taskId, ctx.user.id, { title: input.title });
+      if (!updated) toNotFound(input.taskId);
+      await appendTaskEvent(input.taskId, { type: "task_metadata", payload: { action: "renamed", title: input.title } });
+      return updated;
+    }),
+    setPinned: protectedProcedure.input(taskIdSchema.extend({ isPinned: z.boolean() })).mutation(async ({ ctx, input }) => {
+      const updated = await updateTaskForUser(input.taskId, ctx.user.id, { isPinned: input.isPinned });
+      if (!updated) toNotFound(input.taskId);
+      await appendTaskEvent(input.taskId, { type: "task_metadata", payload: { action: input.isPinned ? "pinned" : "unpinned" } });
+      return updated;
+    }),
+    setFavorite: protectedProcedure.input(taskIdSchema.extend({ isFavorite: z.boolean() })).mutation(async ({ ctx, input }) => {
+      const updated = await updateTaskForUser(input.taskId, ctx.user.id, { isFavorite: input.isFavorite });
+      if (!updated) toNotFound(input.taskId);
+      await appendTaskEvent(input.taskId, { type: "task_metadata", payload: { action: input.isFavorite ? "favorited" : "unfavorited" } });
+      return updated;
+    }),
+    setArchived: protectedProcedure.input(taskIdSchema.extend({ isArchived: z.boolean() })).mutation(async ({ ctx, input }) => {
+      const updated = await updateTaskForUser(input.taskId, ctx.user.id, {
+        isArchived: input.isArchived,
+        archivedAt: input.isArchived ? new Date() : null,
+      });
+      if (!updated) toNotFound(input.taskId);
+      await appendTaskEvent(input.taskId, { type: "task_metadata", payload: { action: input.isArchived ? "archived" : "unarchived" } });
+      return updated;
+    }),
+    delete: protectedProcedure.input(taskIdSchema).mutation(async ({ ctx, input }) => {
+      await requireOwnedTask(input.taskId, ctx.user.id);
+      await softDeleteTaskForUser(input.taskId, ctx.user.id);
+      await appendTaskEvent(input.taskId, { type: "task_metadata", payload: { action: "deleted" } });
+      return { ok: true };
+    }),
     uploadAttachment: protectedProcedure
       .input(z.object({
         filename: z.string().trim().min(1).max(255),
@@ -507,7 +548,14 @@ export const appRouter = router({
   catalog: router({
     taskStatuses: publicProcedure.query(() => taskStatusSchema.options),
     executionReadiness: protectedProcedure.query(() => ({ queueConfigured: isQueueConfigured() })),
-    models: protectedProcedure.query(() => ({ models: configuredComposerModels() })),
+    models: protectedProcedure.query(() => ({
+      models: configuredComposerModels(),
+      input: {
+        text: true,
+        voice: Boolean(ENV.forgeApiUrl && ENV.forgeApiKey),
+        vision: configuredComposerModels().some(model => model.capabilities.includes("vision")),
+      },
+    })),
     estimateTask: protectedProcedure
       .input(z.object({ goal: z.string().trim().min(8).max(12_000), planSteps: z.number().int().min(1).max(25), involvesCode: z.boolean() }))
       .query(({ input }) => estimateTaskCredits(input)),

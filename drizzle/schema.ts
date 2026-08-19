@@ -17,7 +17,7 @@ import {
 const userRoleEnum = pgEnum("user_role", ["user", "admin"]);
 const taskStatusEnum = pgEnum("task_status", ["queued", "booting", "planning", "running", "needs_input", "paused", "completed", "failed", "cancelled"]);
 const estimateBandEnum = pgEnum("estimate_band", ["quick", "standard", "extensive"]);
-const eventTypeEnum = pgEnum("event_type", ["user_message", "agent_message", "clarifying_question", "plan_update", "tool_call", "tool_result", "approval_request", "approval_response", "screenshot", "error", "status_change", "context_summary", "user_file_edit", "user_terminal_command"]);
+const eventTypeEnum = pgEnum("event_type", ["user_message", "agent_message", "clarifying_question", "plan_update", "tool_call", "tool_result", "approval_request", "approval_response", "screenshot", "error", "status_change", "context_summary", "user_file_edit", "user_terminal_command", "task_metadata"]);
 const messageRoleEnum = pgEnum("message_role", ["user", "agent"]);
 const sandboxProviderEnum = pgEnum("sandbox_provider", ["docker", "e2b"]);
 const sandboxStatusEnum = pgEnum("sandbox_status", ["booting", "active", "checkpointed", "destroyed"]);
@@ -42,7 +42,7 @@ export const users = pgTable("users", {
 });
 
 export const taskStatuses = ["queued", "booting", "planning", "running", "needs_input", "paused", "completed", "failed", "cancelled"] as const;
-export const eventTypes = ["user_message", "agent_message", "clarifying_question", "plan_update", "tool_call", "tool_result", "approval_request", "approval_response", "screenshot", "error", "status_change", "context_summary", "user_file_edit", "user_terminal_command"] as const;
+export const eventTypes = ["user_message", "agent_message", "clarifying_question", "plan_update", "tool_call", "tool_result", "approval_request", "approval_response", "screenshot", "error", "status_change", "context_summary", "user_file_edit", "user_terminal_command", "task_metadata"] as const;
 
 export const projects = pgTable("projects", {
   id: varchar("id", { length: 36 }).primaryKey(),
@@ -69,6 +69,10 @@ export const tasks = pgTable("tasks", {
   sandboxId: varchar("sandbox_id", { length: 36 }),
   involvesCode: boolean("involves_code").notNull().default(false),
   isPinned: boolean("is_pinned").notNull().default(false),
+  isFavorite: boolean("is_favorite").notNull().default(false),
+  isArchived: boolean("is_archived").notNull().default(false),
+  archivedAt: timestamp("archived_at", { withTimezone: true }),
+  deletedAt: timestamp("deleted_at", { withTimezone: true }),
   estimateBand: estimateBandEnum("estimate_band"),
   estimatedCreditsMin: integer("estimated_credits_min"),
   estimatedCreditsMax: integer("estimated_credits_max"),
@@ -81,6 +85,8 @@ export const tasks = pgTable("tasks", {
 }, table => [
   index("tasks_user_status_created_idx").on(table.userId, table.status, table.createdAt),
   index("tasks_user_pinned_created_idx").on(table.userId, table.isPinned, table.createdAt),
+  index("tasks_user_archive_updated_idx").on(table.userId, table.isArchived, table.updatedAt),
+  index("tasks_user_favorite_updated_idx").on(table.userId, table.isFavorite, table.updatedAt),
   index("tasks_project_updated_idx").on(table.projectId, table.updatedAt),
 ]);
 

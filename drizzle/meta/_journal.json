@@ -29,6 +29,13 @@
       "when": 1787140641288,
       "tag": "0003_new_night_nurse",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1787145270066,
+      "tag": "0004_tidy_manta",
+      "breakpoints": true
     }
   ]
 }

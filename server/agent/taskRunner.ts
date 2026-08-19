@@ -17,7 +17,7 @@ import {
 } from "../db";
 import { ENV } from "../_core/env";
 import { getTaskArtifactUrl, putTaskArtifact } from "./artifactStorage";
-import { generateWithFallback, parseStructuredModelOutput } from "./llm";
+import { generateWithFallback, isConfiguredVisionModel, parseStructuredModelOutput, type LlmContentPart } from "./llm";
 import { evaluateActionPolicy, isAgentAction, type AgentAction } from "./policy";
 import { enqueueTaskCycle } from "./queue";
 import { sandboxProviderFor, createSandboxProvider, type SandboxDescriptor } from "./sandbox";
@@ -97,6 +97,35 @@ async function hydrateTaskAttachments(taskId: string, descriptor: SandboxDescrip
     await provider.writeFile(descriptor, { path, content: bytes });
     return { filename: attachment.filename, fileType: attachment.fileType, path };
   }));
+}
+
+async function taskModelInput(input: {
+  title: string;
+  goal: string;
+  plan: unknown;
+  events: ReturnType<typeof taskContext>;
+  attachments: Awaited<ReturnType<typeof listTaskAttachments>>;
+  selectedModel: AutonomySettings["selectedModel"];
+}) {
+  const text = JSON.stringify({
+    title: input.title,
+    goal: input.goal,
+    plan: input.plan,
+    attachments: input.attachments.map((attachment, index) => ({ filename: attachment.filename, fileType: attachment.fileType, path: safeInputPath(index, attachment.filename) })),
+    events: input.events,
+  });
+  if (!isConfiguredVisionModel(input.selectedModel)) return text;
+  const visualAttachments = input.attachments.filter(attachment => ["image/png", "image/jpeg", "image/webp"].includes(attachment.fileType)).slice(0, 4);
+  if (!visualAttachments.length) return text;
+  const visualParts = await Promise.all(visualAttachments.map(async attachment => {
+    const url = attachment.sourceType === "library" ? await getTaskArtifactUrl(attachment.storageKey) : await storageGetSignedUrl(attachment.storageKey);
+    const response = await fetch(url);
+    if (!response.ok) throw new Error(`The visual attachment ${attachment.filename} could not be retrieved.`);
+    const bytes = new Uint8Array(await response.arrayBuffer());
+    if (bytes.byteLength === 0 || bytes.byteLength > 4 * 1024 * 1024) throw new Error(`The visual attachment ${attachment.filename} exceeds the 4 MB vision input limit.`);
+    return { type: "image" as const, mimeType: attachment.fileType as "image/png" | "image/jpeg" | "image/webp", dataBase64: Buffer.from(bytes).toString("base64") } satisfies LlmContentPart;
+  }));
+  return [{ type: "text" as const, text }, ...visualParts] satisfies LlmContentPart[];
 }
 
 async function executeAction(taskId: string, action: AgentAction) {
@@ -187,7 +216,7 @@ export async function runTaskCycle(taskId: string) {
         role: "system",
         content: "You are Synthia AI's task orchestrator. Choose exactly one next action. Never execute external side effects; use external_effect to request approval. Keep all sandbox files under /workspace. Task input attachments are hydrated as read-only files in /workspace/inputs before a sandbox action; inspect them only through sandbox commands. Use publish_file with a workspace path, a plain filename, and a MIME type to deliver a file. Return only JSON: { narration: string, action: { kind: respond|web_search|run_command|write_file|open_url|capture_screen|publish_file|complete|external_effect, ... }, plan?: [{id,title,state}] }.",
       },
-      { role: "user", content: JSON.stringify({ title: task.title, goal: task.goal, plan: task.plan, attachments: attachments.map((attachment, index) => ({ filename: attachment.filename, fileType: attachment.fileType, path: safeInputPath(index, attachment.filename) })), events: taskContext(events) }) },
+      { role: "user", content: await taskModelInput({ title: task.title, goal: task.goal, plan: task.plan, attachments, selectedModel, events: taskContext(events) }) },
     ],
   });
     const decision = validatedDecision(parseStructuredModelOutput<ModelDecision>(model.content));

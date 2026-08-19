@@ -117,3 +117,19 @@ The observed **Integrations** section uses a concise two-column capability grid.
 The observed **Developers** section contains API-key and webhook tabs, a documentation row, an explicit empty state, and a create-key action. It is a credential-management surface, not a general settings collection.
 
 For Synthia, the integration-card hierarchy applies to the existing provider and account-integration readiness model, but only for configured services. Synthia has no approved Slack, Zapier, Telegram, LINE, user API-key, or webhook product contracts; therefore these actions and claims will not be added. Secrets will remain server-side and environment managed, never visible in the Synthia settings interface.
+
+## Model, Multimodal Composer, and Task Action Update
+
+The live Manus home workspace uses a compact top-left agent selector. The currently observed choices are **Manus 1.6 Max** for complex work, **Manus 1.6** as the general-purpose agent, and **Manus 1.6 Lite** for everyday tasks. Synthia will keep its real multi-provider implementation and expose capability-aware choices only when the corresponding provider/model is configured; it will not copy proprietary names, plan labels, or unavailable capabilities.
+
+The observed composer groups a non-text plus attachment trigger, compact capability/environment controls, microphone entry, and an upward submit affordance into one calm lower rail. Its task overflow menu groups Rename, Schedule a task, Pin, Add to favorites, Archive, and Delete. Synthia maps this only to its existing attachment flows, autonomy/project/model preferences, server-side transcription, task title, scheduled-work readiness, and safe task-management contracts. Destructive, archival, scheduling, or sharing actions remain visibly unavailable until their authorized server contracts exist.
+
+Visual input in Synthia will be a validated image-file attachment available to a configured vision-capable provider. Voice input will use the existing authenticated transcription route. Text interaction remains the primary task composer. This keeps all three modalities real, configuration-aware, and routed through existing ownership, storage, and task-execution boundaries.
+
+### Completed Synthia Mapping
+
+The Settings rail now supports client-side section search while preserving the server-backed routes for identity, usage, integrations, configured providers, skills, data controls, deployment guidance, developer boundaries, personalization, and security. The interface does not render secrets, billing purchase controls, unsupported connectors, persistent-computer provisioning, or developer credentials.
+
+The composer now offers an explicit **Automatic routing** choice alongside configured provider models. Each configured choice exposes its actual text or text-and-vision capability. A fixed text-only model cannot submit a task with image input; the user must select a vision-capable choice or return to automatic routing. Voice recordings continue through the authenticated transcription procedure and are inserted as task text rather than presented as a model choice.
+
+The active-task overflow menu now persists rename, pin, favorite, archive, and soft-delete actions through ownership-scoped task procedures. Delete requires an explicit confirmation. Scheduling remains visibly unavailable because there is no persisted task-to-Heartbeat schedule creation contract yet.

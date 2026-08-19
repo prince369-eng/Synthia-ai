@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, gt, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gt, isNull, sql } from "drizzle-orm";
 import { drizzle, type NodePgDatabase } from "drizzle-orm/node-postgres";
 import { randomUUID } from "node:crypto";
 import * as schema from "../drizzle/schema";
@@ -119,13 +119,17 @@ export async function getUserById(userId: number): Promise<User | undefined> {
   return result[0];
 }
 
-export async function listTasksForUser(userId: number) {
+export async function listTasksForUser(userId: number, includeArchived = false) {
   const database = databaseRequired(await getDb());
   return database
     .select()
     .from(tasks)
-    .where(eq(tasks.userId, userId))
-    .orderBy(desc(tasks.isPinned), desc(tasks.updatedAt));
+    .where(and(
+      eq(tasks.userId, userId),
+      isNull(tasks.deletedAt),
+      ...(includeArchived ? [] : [eq(tasks.isArchived, false)]),
+    ))
+    .orderBy(desc(tasks.isPinned), desc(tasks.isFavorite), desc(tasks.updatedAt));
 }
 
 export async function listProjectsForUser(userId: number): Promise<Project[]> {
@@ -172,7 +176,7 @@ export async function getTaskForUser(taskId: string, userId: number): Promise<Ta
   const result = await database
     .select()
     .from(tasks)
-    .where(and(eq(tasks.id, taskId), eq(tasks.userId, userId)))
+    .where(and(eq(tasks.id, taskId), eq(tasks.userId, userId), isNull(tasks.deletedAt)))
     .limit(1);
   return result[0];
 }
@@ -406,11 +410,21 @@ export async function getRecoverableSandboxForTask(taskId: string) {
 export async function updateTaskForUser(
   taskId: string,
   userId: number,
-  update: Partial<Pick<Task, "status" | "currentStepSummary" | "isPinned" | "plan" | "completedAt" | "failedReason">>,
+  update: Partial<Pick<Task, "title" | "status" | "currentStepSummary" | "isPinned" | "isFavorite" | "isArchived" | "archivedAt" | "plan" | "completedAt" | "failedReason">>,
 ) {
   const database = databaseRequired(await getDb());
-  await database.update(tasks).set(update).where(and(eq(tasks.id, taskId), eq(tasks.userId, userId)));
+  await database.update(tasks).set({ ...update, updatedAt: new Date() }).where(and(eq(tasks.id, taskId), eq(tasks.userId, userId), isNull(tasks.deletedAt)));
   return getTaskForUser(taskId, userId);
+}
+
+export async function softDeleteTaskForUser(taskId: string, userId: number) {
+  const database = databaseRequired(await getDb());
+  await database.update(tasks).set({
+    deletedAt: new Date(),
+    status: "cancelled",
+    currentStepSummary: "Removed by user.",
+    updatedAt: new Date(),
+  }).where(and(eq(tasks.id, taskId), eq(tasks.userId, userId), isNull(tasks.deletedAt)));
 }
 
 export async function updateTaskForWorker(

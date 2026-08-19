@@ -66,7 +66,7 @@ describe("compact workspace layout contract", () => {
     expect(settings).toContain('label: "Account"');
     expect(settings).toContain('label: "Workspace"');
     expect(settings).toContain('label: "Agent capabilities"');
-    expect(settings).toContain('label: "Data & safeguards"');
+    expect(settings).toContain('label: "Data & delivery"');
     expect(workspace).toContain("synthia-workspace-return-nav");
     expect(workspace).toContain("WORKSPACE_RETURN_ROUTES.dashboard");
     expect(workspace).toContain("WORKSPACE_RETURN_ROUTES.library");

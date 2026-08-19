@@ -116,3 +116,13 @@
 - [x] Add interaction and layout regression coverage for the reorganized central workspace, then validate it visually.
 - [x] Keep the composer plus-menu open while the pointer moves from the trigger into its local-upload and Library options, with click support as a persistent fallback.
 - [x] Add a pointer-transition regression for the attachment-menu trigger and option surface, then visually verify the repaired interaction.
+- [x] Audit each referenced Manus Settings tab, model-selector option, central composer control, and task overflow action against the approved Synthia platform scope.
+- [x] Define and expose only production-backed Synthia model capabilities for text, vision, and voice, with configured-provider availability and truthful unavailable states.
+- [x] Refine the central composer with a compact hoverable model picker, visual-input attachment workflow, real voice-transcription route, and task overflow actions mapped to current Synthia functionality.
+- [x] Complete the scope-aligned Synthia Settings pages from the audited reference, preserving secure secret boundaries and clearly disabling unavailable external controls.
+- [x] Add integration, interaction, and visual regression coverage for the audited center workspace and Settings refinements before resuming live end-to-end testing.
+- [x] Use the live Manus application as a reference ledger for scope-aligned Synthia frontend and backend improvements, documenting each adopted behavior and its secure Synthia contract.
+- [x] Add durable, ownership-scoped task actions for rename, pin, favorite, archive, and delete, including explicit destructive confirmation and event logging.
+- [ ] Expose task scheduling through the existing Scheduled area, retaining a truthful unavailable state until the deployed Heartbeat workflow is ready.
+- [x] Add a searchable Settings section rail and retain only secure, production-backed section content.
+- [x] Refine the configured model picker with automatic routing and explicit text, vision, and voice-input capability states.

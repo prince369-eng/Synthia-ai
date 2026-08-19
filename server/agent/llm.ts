@@ -2,9 +2,13 @@ import { ENV } from "../_core/env";
 
 export type LlmProviderName = "groq" | "openrouter" | "gemini" | "deepseek";
 
+export type LlmContentPart =
+  | { type: "text"; text: string }
+  | { type: "image"; mimeType: "image/png" | "image/jpeg" | "image/webp"; dataBase64: string };
+
 export type LlmMessage = {
   role: "system" | "user" | "assistant";
-  content: string;
+  content: string | LlmContentPart[];
 };
 
 export type LlmUsage = {
@@ -71,6 +75,30 @@ function nonEmptyContent(content: unknown) {
   return "";
 }
 
+function textFromContent(content: LlmMessage["content"]) {
+  return typeof content === "string"
+    ? content
+    : content.filter((part): part is Extract<LlmContentPart, { type: "text" }> => part.type === "text").map(part => part.text).join("\n");
+}
+
+function openAiContent(content: LlmMessage["content"]) {
+  if (typeof content === "string") return content;
+  return content.map(part => part.type === "text"
+    ? { type: "text", text: part.text }
+    : { type: "image_url", image_url: { url: `data:${part.mimeType};base64,${part.dataBase64}` } });
+}
+
+function geminiParts(content: LlmMessage["content"]) {
+  const parts = typeof content === "string" ? [{ type: "text" as const, text: content }] : content;
+  return parts.map(part => part.type === "text"
+    ? { text: part.text }
+    : { inlineData: { mimeType: part.mimeType, data: part.dataBase64 } });
+}
+
+export function isConfiguredVisionModel(model: { provider: LlmProviderName; model: string } | undefined) {
+  return Boolean(model && ENV.visionModels.includes(`${model.provider}:${model.model}`));
+}
+
 async function parseJsonResponse(provider: LlmProviderName, response: Response) {
   const body = await response.text();
   if (!response.ok) {
@@ -111,7 +139,7 @@ async function requestOpenAiCompatible(input: {
     headers,
     body: JSON.stringify({
       model: input.model,
-      messages: input.messages,
+      messages: input.messages.map(message => ({ ...message, content: openAiContent(message.content) })),
       temperature: input.temperature,
       max_tokens: input.maxTokens,
       response_format: { type: "json_object" },
@@ -134,10 +162,10 @@ async function requestOpenAiCompatible(input: {
 
 async function requestGemini(input: { model: string; messages: LlmMessage[]; temperature: number; maxTokens: number }) {
   if (!ENV.geminiApiKey) throw new LlmProviderError("gemini is not configured.", "gemini", false);
-  const systemText = input.messages.filter(message => message.role === "system").map(message => message.content).join("\n\n");
+  const systemText = input.messages.filter(message => message.role === "system").map(message => textFromContent(message.content)).join("\n\n");
   const contents = input.messages
     .filter(message => message.role !== "system")
-    .map(message => ({ role: message.role === "assistant" ? "model" : "user", parts: [{ text: message.content }] }));
+    .map(message => ({ role: message.role === "assistant" ? "model" : "user", parts: geminiParts(message.content) }));
   const response = await fetch(
     `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(input.model)}:generateContent?key=${encodeURIComponent(ENV.geminiApiKey)}`,
     {

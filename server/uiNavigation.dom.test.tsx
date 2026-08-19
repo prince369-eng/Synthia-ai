@@ -5,8 +5,21 @@ import { cleanup, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { ProfileMenu } from "../client/src/components/SynthiaAppShell";
 import { AuthEntryActions } from "../client/src/components/SynthiaAppShell";
-import { PreferenceSwitch, ServiceConnectionCard, SettingsAccount, SettingsCloseButton, SettingsGeneral, SettingsSectionNav, SettingsUsage } from "../client/src/pages/Settings";
-import { WorkspaceReturnNavigation } from "../client/src/pages/TaskWorkspace";
+import { modelCapabilityLabel, PreferenceSwitch, ServiceConnectionCard, SettingsAccount, SettingsCloseButton, SettingsGeneral, SettingsSectionNav, SettingsUsage } from "../client/src/pages/Settings";
+import { TaskOverflowMenu, WorkspaceReturnNavigation } from "../client/src/pages/TaskWorkspace";
+
+vi.mock("@/lib/trpc", () => ({
+  trpc: {
+    useUtils: () => ({ tasks: { get: { invalidate: vi.fn() }, list: { invalidate: vi.fn() } } }),
+    tasks: {
+      rename: { useMutation: () => ({ mutate: vi.fn(), isPending: false }) },
+      setPinned: { useMutation: () => ({ mutate: vi.fn(), isPending: false }) },
+      setFavorite: { useMutation: () => ({ mutate: vi.fn(), isPending: false }) },
+      setArchived: { useMutation: () => ({ mutate: vi.fn(), isPending: false }) },
+      delete: { useMutation: () => ({ mutate: vi.fn(), isPending: false }) },
+    },
+  },
+}));
 
 afterEach(cleanup);
 
@@ -56,9 +69,21 @@ describe("Synthia navigation behavior", () => {
     expect(screen.getByText("Account")).toBeTruthy();
     expect(screen.getByText("Workspace")).toBeTruthy();
     expect(screen.getByText("Agent capabilities")).toBeTruthy();
-    expect(screen.getByText("Data & safeguards")).toBeTruthy();
-    await user.click(screen.getByRole("button", { name: "Usage & credits" }));
+    expect(screen.getByText("Data & delivery")).toBeTruthy();
+    await user.click(screen.getByRole("button", { name: "Usage & billing" }));
     expect(onNavigate).toHaveBeenCalledWith("/settings/usage");
+  });
+
+  it("filters the Settings section rail without removing route-backed sections", async () => {
+    const user = userEvent.setup();
+    const onNavigate = vi.fn();
+    render(<SettingsSectionNav section="general" onNavigate={onNavigate} />);
+
+    await user.type(screen.getByRole("textbox", { name: "Search settings" }), "developer");
+    expect(screen.getByRole("button", { name: "Developer" })).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "General" })).toBeNull();
+    await user.click(screen.getByRole("button", { name: "Developer" }));
+    expect(onNavigate).toHaveBeenCalledWith("/settings/developer");
   });
 
   it("provides an explicit accessible Settings close control that returns to tasks", async () => {
@@ -140,5 +165,24 @@ describe("Synthia navigation behavior", () => {
     expect(screen.getByText("Ready to connect")).toBeTruthy();
     expect(screen.getByText("Missing credentials")).toBeTruthy();
     expect(screen.getByText("SLACK_OAUTH_CLIENT_ID · SLACK_OAUTH_CLIENT_SECRET")).toBeTruthy();
+  });
+
+  it("uses capability labels that distinguish real vision-capable configured models", () => {
+    expect(modelCapabilityLabel({ capabilities: ["text"] })).toBe("Text");
+    expect(modelCapabilityLabel({ capabilities: ["text", "vision"] })).toBe("Text + vision");
+  });
+
+  it("exposes scoped task actions and keeps scheduling visibly unavailable while requiring delete confirmation", async () => {
+    const user = userEvent.setup();
+    render(<TaskOverflowMenu task={{ title: "Research rollout", isPinned: false, isFavorite: false, isArchived: false }} taskId="a3f7b5e2-4218-41b1-98d4-dfbdde95c553" onDeleted={vi.fn()} />);
+
+    await user.click(screen.getByRole("button", { name: "Open task actions" }));
+    expect(screen.getByRole("menuitem", { name: "Rename" })).toBeTruthy();
+    expect(screen.getByRole("menuitem", { name: "Pin" })).toBeTruthy();
+    expect(screen.getByRole("menuitem", { name: "Add to favorites" })).toBeTruthy();
+    expect(screen.getByRole("menuitem", { name: /Schedule a task/i }).hasAttribute("data-disabled")).toBe(true);
+    await user.click(screen.getByRole("menuitem", { name: "Delete" }));
+    expect(screen.getByRole("alertdialog", { name: "Delete task" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Delete task" })).toBeTruthy();
   });
 });

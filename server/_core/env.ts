@@ -42,6 +42,7 @@ export const ENV = {
   subtaskProvider: process.env.SYNTHIA_SUBTASK_PROVIDER ?? "",
   subtaskModel: process.env.SYNTHIA_SUBTASK_MODEL ?? "",
   availableModels: modelList(process.env.SYNTHIA_AVAILABLE_MODELS),
+  visionModels: modelList(process.env.SYNTHIA_VISION_MODELS),
   groqApiKey: process.env.GROQ_API_KEY ?? "",
   openRouterApiKey: process.env.OPENROUTER_API_KEY ?? "",
   openRouterHttpReferer: process.env.OPENROUTER_HTTP_REFERER ?? "",

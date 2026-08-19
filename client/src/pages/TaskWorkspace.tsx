@@ -1,9 +1,10 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { trpc } from "@/lib/trpc";
 import { useTaskEventStream } from "@/hooks/useTaskEventStream";
-import { AlertTriangle, BookOpenText, Bot, Check, ChevronLeft, CirclePause, Code2, ExternalLink, FileCode2, FileText, FolderTree, ListTree, Loader2, MonitorDot, Play, Send, Square, TerminalSquare, X } from "lucide-react";
+import { AlertTriangle, Archive, BookOpenText, Bot, CalendarClock, Check, ChevronLeft, CirclePause, Code2, ExternalLink, FileCode2, FileText, FolderTree, ListTree, Loader2, MoreHorizontal, MonitorDot, Pencil, Pin, Play, Send, Square, Star, TerminalSquare, Trash2, X } from "lucide-react";
 import { WORKSPACE_RETURN_ROUTES } from "@/lib/workspaceLayout";
 import React, { FormEvent, useMemo, useState } from "react";
 import { Link, useLocation, useRoute } from "wouter";
@@ -42,7 +43,7 @@ export default function TaskWorkspace({ replayMode = false }: { replayMode?: boo
   const activeApprovals = data.approvals.filter(approval => approval.status === "pending");
 
   return <div className="synthia-workspace">
-    <header className="synthia-workspace-header"><div className="min-w-0"><WorkspaceReturnNavigation onNavigate={setLocation} /><h1 className="mt-1 truncate text-sm font-semibold text-[#f9eddf]">{task.title}</h1></div><div className="flex items-center gap-2"><span className={cn("hidden text-[11px] font-medium sm:inline", statusColor[task.status])}>{task.status.replace(/_/g, " ")}</span><span title={connected ? "Live task stream connected" : "Reconnecting task stream"} className={cn("h-1.5 w-1.5 rounded-full", connected ? "bg-emerald-400" : "bg-amber-400 animate-pulse")} />{task.status === "running" || task.status === "planning" || task.status === "booting" ? <Button size="sm" variant="outline" onClick={() => pause.mutate({ taskId })} disabled={pause.isPending} className="h-7 border-white/12 bg-transparent px-2 text-[11px] text-[#dfd1c1] hover:bg-white/5"><CirclePause size={13} />Pause</Button> : null}{task.status === "paused" || task.status === "needs_input" ? <Button size="sm" onClick={() => resume.mutate({ taskId })} disabled={resume.isPending} className="h-7 bg-orange-400 px-2 text-[11px] text-[#2b170c] hover:bg-orange-300"><Play size={13} />Resume</Button> : null}{!["completed", "failed", "cancelled"].includes(task.status) ? <Button size="sm" variant="ghost" onClick={() => cancel.mutate({ taskId })} disabled={cancel.isPending} className="h-7 px-2 text-[11px] text-[#a89889] hover:text-rose-300"><Square size={12} />Stop</Button> : null}</div></header>
+    <header className="synthia-workspace-header"><div className="min-w-0"><WorkspaceReturnNavigation onNavigate={setLocation} /><h1 className="mt-1 truncate text-sm font-semibold text-[#f9eddf]">{task.title}</h1></div><div className="flex items-center gap-2"><span className={cn("hidden text-[11px] font-medium sm:inline", statusColor[task.status])}>{task.status.replace(/_/g, " ")}</span><span title={connected ? "Live task stream connected" : "Reconnecting task stream"} className={cn("h-1.5 w-1.5 rounded-full", connected ? "bg-emerald-400" : "bg-amber-400 animate-pulse")} />{task.status === "running" || task.status === "planning" || task.status === "booting" ? <Button size="sm" variant="outline" onClick={() => pause.mutate({ taskId })} disabled={pause.isPending} className="h-7 border-white/12 bg-transparent px-2 text-[11px] text-[#dfd1c1] hover:bg-white/5"><CirclePause size={13} />Pause</Button> : null}{task.status === "paused" || task.status === "needs_input" ? <Button size="sm" onClick={() => resume.mutate({ taskId })} disabled={resume.isPending} className="h-7 bg-orange-400 px-2 text-[11px] text-[#2b170c] hover:bg-orange-300"><Play size={13} />Resume</Button> : null}{!["completed", "failed", "cancelled"].includes(task.status) ? <Button size="sm" variant="ghost" onClick={() => cancel.mutate({ taskId })} disabled={cancel.isPending} className="h-7 px-2 text-[11px] text-[#a89889] hover:text-rose-300"><Square size={12} />Stop</Button> : null}<TaskOverflowMenu task={task} taskId={taskId} onDeleted={() => setLocation(WORKSPACE_RETURN_ROUTES.dashboard)} /></div></header>
     <div className="grid min-h-[calc(100vh-3.5rem)] lg:grid-cols-[minmax(320px,.9fr)_minmax(480px,1.2fr)]">
       <section className="flex min-h-0 flex-col border-r border-white/8">
         <div className="border-b border-white/8 px-4 py-4 sm:px-5"><p className="text-[9px] font-semibold uppercase tracking-[.16em] text-orange-300">Task objective</p><p className="mt-1.5 max-w-3xl text-xs leading-5 text-[#d6c8b8]">{task.goal}</p>{replayMode ? <div className="mt-3 rounded-md border border-orange-300/20 bg-orange-300/5 px-2.5 py-1.5 text-[11px] text-orange-100">Replay mode — move through the durable event record without changing task execution.</div> : null}</div>
@@ -71,6 +72,38 @@ export default function TaskWorkspace({ replayMode = false }: { replayMode?: boo
 
 export function WorkspaceReturnNavigation({ onNavigate }: { onNavigate: (path: string) => void }) {
   return <div className="synthia-workspace-return-nav" aria-label="Workspace return navigation"><button type="button" onClick={() => onNavigate(WORKSPACE_RETURN_ROUTES.dashboard)}><ChevronLeft size={13} />Dashboard</button><button type="button" onClick={() => onNavigate(WORKSPACE_RETURN_ROUTES.library)}><BookOpenText size={13} />Library</button></div>;
+}
+
+export function TaskOverflowMenu({ task, taskId, onDeleted }: { task: { title: string; isPinned: boolean; isFavorite: boolean; isArchived: boolean }; taskId: string; onDeleted: () => void }) {
+  const utils = trpc.useUtils();
+  const [renameDraft, setRenameDraft] = useState("");
+  const [showRename, setShowRename] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const refresh = async () => { await utils.tasks.get.invalidate({ taskId }); await utils.tasks.list.invalidate(); };
+  const rename = trpc.tasks.rename.useMutation({ onSuccess: () => { setShowRename(false); void refresh(); } });
+  const setPinned = trpc.tasks.setPinned.useMutation({ onSuccess: () => void refresh() });
+  const setFavorite = trpc.tasks.setFavorite.useMutation({ onSuccess: () => void refresh() });
+  const setArchived = trpc.tasks.setArchived.useMutation({ onSuccess: () => void refresh() });
+  const remove = trpc.tasks.delete.useMutation({ onSuccess: onDeleted });
+  const busy = rename.isPending || setPinned.isPending || setFavorite.isPending || setArchived.isPending || remove.isPending;
+
+  return <>
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild><Button size="icon" variant="ghost" aria-label="Open task actions" title="Task actions" className="h-7 w-7 text-[#a89889] hover:bg-white/5 hover:text-[#f5e9da]"><MoreHorizontal size={16} /></Button></DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-52 border-white/10 bg-[#201913] text-[#eadbca]">
+        <DropdownMenuLabel className="text-[10px] uppercase tracking-[.14em] text-[#9c8c7d]">Task actions</DropdownMenuLabel>
+        <DropdownMenuItem onSelect={() => { setRenameDraft(task.title); setShowRename(true); }} className="gap-2"><Pencil size={14} />Rename</DropdownMenuItem>
+        <DropdownMenuItem onSelect={() => void setPinned.mutate({ taskId, isPinned: !task.isPinned })} disabled={busy} className="gap-2"><Pin size={14} />{task.isPinned ? "Unpin" : "Pin"}</DropdownMenuItem>
+        <DropdownMenuItem onSelect={() => void setFavorite.mutate({ taskId, isFavorite: !task.isFavorite })} disabled={busy} className="gap-2"><Star size={14} />{task.isFavorite ? "Remove from favorites" : "Add to favorites"}</DropdownMenuItem>
+        <DropdownMenuItem disabled className="gap-2 text-[#837466]"><CalendarClock size={14} />Schedule a task <span className="ml-auto text-[9px]">Unavailable</span></DropdownMenuItem>
+        <DropdownMenuSeparator className="bg-white/10" />
+        <DropdownMenuItem onSelect={() => void setArchived.mutate({ taskId, isArchived: !task.isArchived })} disabled={busy} className="gap-2"><Archive size={14} />{task.isArchived ? "Restore from archive" : "Archive"}</DropdownMenuItem>
+        <DropdownMenuItem onSelect={() => setShowDeleteConfirm(true)} disabled={busy} className="gap-2 text-rose-300 focus:text-rose-200"><Trash2 size={14} />Delete</DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+    {showRename ? <div role="dialog" aria-modal="true" aria-label="Rename task" className="fixed inset-0 z-50 grid place-items-center bg-black/55 p-4"><form onSubmit={event => { event.preventDefault(); if (renameDraft.trim()) rename.mutate({ taskId, title: renameDraft.trim() }); }} className="w-full max-w-sm rounded-xl border border-white/10 bg-[#201913] p-4 shadow-2xl"><p className="text-sm font-semibold text-[#f5e9da]">Rename task</p><Input autoFocus value={renameDraft} onChange={event => setRenameDraft(event.target.value)} maxLength={180} className="mt-3 border-white/10 bg-[#17120e] text-[#f5e9da]" /><div className="mt-4 flex justify-end gap-2"><Button type="button" variant="ghost" onClick={() => setShowRename(false)}>Cancel</Button><Button type="submit" disabled={!renameDraft.trim() || rename.isPending} className="bg-orange-400 text-[#2b170c] hover:bg-orange-300">Save</Button></div></form></div> : null}
+    {showDeleteConfirm ? <div role="alertdialog" aria-modal="true" aria-label="Delete task" className="fixed inset-0 z-50 grid place-items-center bg-black/55 p-4"><div className="w-full max-w-sm rounded-xl border border-rose-300/20 bg-[#201913] p-4 shadow-2xl"><p className="text-sm font-semibold text-[#f5e9da]">Delete this task?</p><p className="mt-2 text-xs leading-5 text-[#b9aa9a]">The task is removed from your workspace and cancelled if it is still active. This action cannot be undone from the interface.</p><div className="mt-4 flex justify-end gap-2"><Button type="button" variant="ghost" onClick={() => setShowDeleteConfirm(false)}>Cancel</Button><Button type="button" disabled={remove.isPending} onClick={() => remove.mutate({ taskId })} className="bg-rose-500 text-white hover:bg-rose-400">Delete task</Button></div></div></div> : null}
+  </>;
 }
 
 function CodePanel({ deliverables, events, onOpenTab }: { deliverables: Array<any>; events: Array<any>; onOpenTab: (tab: WorkspaceTab) => void }) {

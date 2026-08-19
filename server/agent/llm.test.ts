@@ -1,12 +1,13 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { ENV } from "../_core/env";
-import { generateWithFallback, parseStructuredModelOutput } from "./llm";
+import { generateWithFallback, isConfiguredVisionModel, parseStructuredModelOutput } from "./llm";
 
 const environmentSnapshot = {
   groqApiKey: ENV.groqApiKey,
   openRouterApiKey: ENV.openRouterApiKey,
   orchestratorProvider: ENV.orchestratorProvider,
   orchestratorModel: ENV.orchestratorModel,
+  visionModels: [...ENV.visionModels],
 };
 
 afterEach(() => {
@@ -14,6 +15,7 @@ afterEach(() => {
   ENV.openRouterApiKey = environmentSnapshot.openRouterApiKey;
   ENV.orchestratorProvider = environmentSnapshot.orchestratorProvider;
   ENV.orchestratorModel = environmentSnapshot.orchestratorModel;
+  ENV.visionModels = [...environmentSnapshot.visionModels];
   vi.unstubAllGlobals();
 });
 
@@ -57,5 +59,36 @@ describe("structured model output parsing", () => {
     expect(JSON.parse(String(fetchMock.mock.calls[0]?.[1]?.body))).toMatchObject({ model: "selected-model" });
     expect(fetchMock.mock.calls[1]?.[0]).toBe("https://openrouter.ai/api/v1/chat/completions");
     expect(JSON.parse(String(fetchMock.mock.calls[1]?.[1]?.body))).toMatchObject({ model: "fallback-model" });
+  });
+
+  it("sends image parts only through a model explicitly configured for vision", async () => {
+    ENV.openRouterApiKey = "openrouter-test-key";
+    ENV.visionModels = ["openrouter:vision-model"];
+    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({
+      id: "vision-response",
+      choices: [{ message: { content: "{\"action\":{\"kind\":\"complete\"}}" } }],
+      usage: { prompt_tokens: 10, completion_tokens: 4, total_tokens: 14 },
+    }), { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    expect(isConfiguredVisionModel({ provider: "openrouter", model: "vision-model" })).toBe(true);
+    expect(isConfiguredVisionModel({ provider: "openrouter", model: "text-model" })).toBe(false);
+
+    await generateWithFallback({
+      purpose: "orchestrator",
+      selectedModel: { provider: "openrouter", model: "vision-model" },
+      messages: [{ role: "user", content: [
+        { type: "text", text: "Inspect this image." },
+        { type: "image", mimeType: "image/png", dataBase64: "aW1hZ2UtYnl0ZXM=" },
+      ] }],
+    });
+
+    expect(JSON.parse(String(fetchMock.mock.calls[0]?.[1]?.body))).toMatchObject({
+      model: "vision-model",
+      messages: [{ role: "user", content: [
+        { type: "text", text: "Inspect this image." },
+        { type: "image_url", image_url: { url: "data:image/png;base64,aW1hZ2UtYnl0ZXM=" } },
+      ] }],
+    });
   });
 });

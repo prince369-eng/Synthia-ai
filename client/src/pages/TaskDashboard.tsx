@@ -1,5 +1,5 @@
 import { trpc } from "@/lib/trpc";
-import { ArrowUp, ArrowUpRight, AudioLines, Bot, Code2, FileText, FolderOpen, Gauge, Loader2, Mic, MoreHorizontal, Play, Plus, Share2, Sparkles, Upload } from "lucide-react";
+import { ArrowUp, ArrowUpRight, Bot, Code2, FileText, FolderOpen, Gauge, Loader2, Mic, MoreHorizontal, Play, Plus, Share2, Sparkles, Upload } from "lucide-react";
 import React, { FormEvent, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
@@ -21,6 +21,10 @@ const modeLabels = {
 } as const;
 
 const MAX_VOICE_BYTES = 16 * 1024 * 1024;
+
+export function composerModelCapabilityLabel(model: { capabilities?: string[] }) {
+  return model.capabilities?.includes("vision") ? "Text + vision" : "Text";
+}
 
 export default function TaskDashboard() {
   const [, setLocation] = useLocation();
@@ -57,6 +61,9 @@ export default function TaskDashboard() {
     { enabled: goal.trim().length >= 8, staleTime: 8_000 },
   );
   const selectedModel = availableModels.data?.models.find(model => model.id === selectedModelId);
+  const includesVisualAttachment = attachments.some(attachment => attachment.fileType.startsWith("image/"));
+  const selectedModelSupportsVision = !selectedModel || selectedModel.capabilities.includes("vision");
+  const visualInputBlocked = includesVisualAttachment && !selectedModelSupportsVision;
 
   useEffect(() => {
     if (preferencesApplied || !settings.data) return;
@@ -88,7 +95,7 @@ export default function TaskDashboard() {
 
   function submit(event: FormEvent) {
     event.preventDefault();
-    if (goal.trim().length < 8 || createTask.isPending) return;
+    if (goal.trim().length < 8 || createTask.isPending || visualInputBlocked) return;
     createTask.mutate({
       goal: goal.trim(),
       projectId: projectId || undefined,
@@ -235,14 +242,15 @@ export default function TaskDashboard() {
             <div className="synthia-composer-control-group synthia-composer-control-group-end">
               <select aria-label="Project for task" value={projectId} onChange={event => setProjectId(event.target.value)} className="synthia-project-select"><option value="">No project</option>{projects.data?.map(project => <option key={project.id} value={project.id}>{project.name}</option>)}</select>
               <div className="relative">
-                <button type="button" className={cn("synthia-composer-toggle synthia-model-trigger", modelMenuOpen && "active")} aria-label="Choose model" aria-expanded={modelMenuOpen} onClick={() => setModelMenuOpen(value => !value)}><AudioLines size={13} /><span>{selectedModel?.model ?? "Automatic"}</span></button>
-                {modelMenuOpen ? <div className="synthia-model-menu">{availableModels.data?.models.length ? availableModels.data.models.map(model => <button key={model.id} type="button" className={cn(model.id === selectedModelId && "active")} onClick={() => { setSelectedModelId(model.id); setModelMenuOpen(false); }}><b>{model.model}</b><small>{model.provider} · {model.label}</small></button>) : <p>Automatic routing is active. Configure an orchestrator model to choose one explicitly.</p>}</div> : null}
+                <button type="button" className={cn("synthia-composer-toggle synthia-model-trigger", modelMenuOpen && "active")} aria-label="Choose model" aria-expanded={modelMenuOpen} onClick={() => setModelMenuOpen(value => !value)}><Bot size={13} /><span>{selectedModel?.model ?? "Automatic"}</span></button>
+                {modelMenuOpen ? <div className="synthia-model-menu"><button type="button" className={cn(!selectedModelId && "active")} onClick={() => { setSelectedModelId(""); setModelMenuOpen(false); }}><b>Automatic routing</b><small>Use the configured runtime default for this task.</small></button>{availableModels.data?.models.map(model => <button key={model.id} type="button" className={cn(model.id === selectedModelId && "active")} onClick={() => { setSelectedModelId(model.id); setModelMenuOpen(false); }}><b>{model.label}</b><small>{model.provider} · {model.model} · {composerModelCapabilityLabel(model)}</small></button>)}{availableModels.data?.models.length ? <p>Voice instructions are transcribed into task text.</p> : <p>Automatic routing is active. Configure an orchestrator model to choose one explicitly.</p>}</div> : null}
               </div>
               <button type="button" className={cn("synthia-composer-toggle synthia-mic-button", voiceState !== "idle" && "active")} aria-label={voiceState === "recording" ? "Stop recording voice instruction" : "Start voice instruction"} title={voiceState === "transcribing" ? "Transcribing voice instruction" : voiceState === "recording" ? "Stop recording" : "Add voice instruction"} onClick={() => void toggleVoiceCapture()} disabled={voiceState === "transcribing"}><Mic size={14} /><span className="sr-only">Voice input</span>{voiceState === "recording" ? <span className="synthia-recording-dot" /> : null}</button>
-              <Button type="submit" size="icon" aria-label="Start task" title="Start task" disabled={goal.trim().length < 8 || createTask.isPending} className="synthia-send-button">{createTask.isPending ? <Loader2 className="animate-spin" size={17} /> : <ArrowUp size={18} />}</Button>
+              <Button type="submit" size="icon" aria-label="Start task" title="Start task" disabled={goal.trim().length < 8 || createTask.isPending || visualInputBlocked} className="synthia-send-button">{createTask.isPending ? <Loader2 className="animate-spin" size={17} /> : <ArrowUp size={18} />}</Button>
             </div>
           </div>
           {estimate.data ? <p className="synthia-estimate">Estimated: <span>{estimate.data.estimatedCreditsMin}–{estimate.data.estimatedCreditsMax} credits</span></p> : null}
+          {visualInputBlocked ? <p role="alert" className="mt-2 px-1 text-xs text-amber-200">This task includes an image. Select a vision-capable model or return to Automatic routing before starting.</p> : null}
           {attachmentError ? <p role="alert" className="mt-2 px-1 text-xs text-rose-300">{attachmentError}</p> : null}
           {createTask.isError ? <p role="alert" className="mt-3 text-xs text-rose-300">{createTask.error.message}</p> : null}
           <input ref={fileInputRef} onChange={event => void chooseLocalFile(event)} className="sr-only" type="file" accept=".pdf,.txt,.md,.csv,.json,.doc,.docx,.xls,.xlsx,.zip,.7z,.tar,.png,.jpg,.jpeg,.webp" />
