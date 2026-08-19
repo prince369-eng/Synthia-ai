@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import * as db from "./db";
 import * as heartbeat from "./_core/heartbeat";
 import * as rateLimit from "./security/rateLimit";
+import * as queue from "./agent/queue";
 import { appRouter } from "./routers";
 import type { TrpcContext } from "./_core/context";
 
@@ -65,6 +66,46 @@ describe("projects and scheduled router procedures", () => {
     })).rejects.toMatchObject({ code: "NOT_FOUND" });
 
     expect(createTask).not.toHaveBeenCalled();
+  });
+
+  it("creates an authenticated task with owned uploaded inputs and queues its first execution cycle", async () => {
+    const taskId = "33333333-3333-4333-8333-333333333333";
+    const createdTask = { id: taskId, userId: 7, status: "queued", title: "Prepare a secured implementation brief" };
+    vi.spyOn(db, "createTaskForUser").mockResolvedValue(createdTask as never);
+    vi.spyOn(queue, "enqueueTaskCycle").mockResolvedValue(true);
+
+    const result = await appRouter.createCaller(createContext()).tasks.create({
+      goal: "Prepare a secured implementation brief using the attached operating notes.",
+      title: "Prepare a secured implementation brief",
+      autonomySettings: {
+        mode: "ask_before_risky",
+        allowWebSearch: true,
+        allowCodeExecution: false,
+        allowFileWrites: false,
+      },
+      involvesCode: false,
+      attachments: [{
+        sourceType: "upload",
+        filename: "operating-notes.txt",
+        fileType: "text/plain",
+        storageKey: "task-inputs/7/operating-notes.txt",
+        storageUrl: "/manus-storage/task-inputs/7/operating-notes.txt",
+      }],
+    });
+
+    expect(db.createTaskForUser).toHaveBeenCalledWith(expect.objectContaining({
+      userId: 7,
+      title: "Prepare a secured implementation brief",
+      attachments: [{
+        sourceType: "upload",
+        filename: "operating-notes.txt",
+        fileType: "text/plain",
+        storageKey: "task-inputs/7/operating-notes.txt",
+        storageUrl: "/manus-storage/task-inputs/7/operating-notes.txt",
+      }],
+    }));
+    expect(queue.enqueueTaskCycle).toHaveBeenCalledWith(taskId);
+    expect(result).toEqual({ task: createdTask, executionQueued: true });
   });
 
   it("forwards only the caller's decoded session to scheduled-job listing", async () => {

@@ -1,5 +1,21 @@
-import { describe, expect, it } from "vitest";
-import { parseStructuredModelOutput } from "./llm";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { ENV } from "../_core/env";
+import { generateWithFallback, parseStructuredModelOutput } from "./llm";
+
+const environmentSnapshot = {
+  groqApiKey: ENV.groqApiKey,
+  openRouterApiKey: ENV.openRouterApiKey,
+  orchestratorProvider: ENV.orchestratorProvider,
+  orchestratorModel: ENV.orchestratorModel,
+};
+
+afterEach(() => {
+  ENV.groqApiKey = environmentSnapshot.groqApiKey;
+  ENV.openRouterApiKey = environmentSnapshot.openRouterApiKey;
+  ENV.orchestratorProvider = environmentSnapshot.orchestratorProvider;
+  ENV.orchestratorModel = environmentSnapshot.orchestratorModel;
+  vi.unstubAllGlobals();
+});
 
 describe("structured model output parsing", () => {
   it("accepts direct JSON agent decisions", () => {
@@ -13,5 +29,33 @@ describe("structured model output parsing", () => {
 
   it("rejects malformed model content before action validation", () => {
     expect(() => parseStructuredModelOutput("this is not JSON")).toThrow("valid JSON");
+  });
+
+  it("honors a selected model then falls back to the next configured provider after a retryable failure", async () => {
+    ENV.groqApiKey = "groq-test-key";
+    ENV.openRouterApiKey = "openrouter-test-key";
+    ENV.orchestratorProvider = "openrouter";
+    ENV.orchestratorModel = "fallback-model";
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify({ error: "rate limited" }), { status: 429 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({
+        id: "fallback-response",
+        choices: [{ message: { content: "{\"action\":{\"kind\":\"complete\"}}" } }],
+        usage: { prompt_tokens: 10, completion_tokens: 4, total_tokens: 14 },
+      }), { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    const response = await generateWithFallback({
+      purpose: "orchestrator",
+      selectedModel: { provider: "groq", model: "selected-model" },
+      messages: [{ role: "user", content: "Return a structured agent action." }],
+    });
+
+    expect(response).toMatchObject({ provider: "openrouter", model: "fallback-model", usage: { totalTokens: 14 } });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(fetchMock.mock.calls[0]?.[0]).toBe("https://api.groq.com/openai/v1/chat/completions");
+    expect(JSON.parse(String(fetchMock.mock.calls[0]?.[1]?.body))).toMatchObject({ model: "selected-model" });
+    expect(fetchMock.mock.calls[1]?.[0]).toBe("https://openrouter.ai/api/v1/chat/completions");
+    expect(JSON.parse(String(fetchMock.mock.calls[1]?.[1]?.body))).toMatchObject({ model: "fallback-model" });
   });
 });

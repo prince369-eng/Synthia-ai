@@ -3,7 +3,7 @@
 - [x] Document the Synthia AI system architecture, scalable deployment boundaries, threat model, and operational assumptions.
 - [ ] Activate external-service environment values for E2B, Docker sandbox, Groq, OpenRouter, Gemini, DeepSeek, Tavily, Serper, S3, Cloudflare R2, Resend, Postmark, Redis, and PostgreSQL after the user supplies the credentials.
 - [x] Convert the Synthia application schema and runtime adapter to the requested PostgreSQL production database contract.
-- [ ] Apply the reviewed initial PostgreSQL migration to the external Synthia database after `SYNTHIA_POSTGRES_URL` is configured.
+- [x] Apply the reviewed initial PostgreSQL migration to the external Synthia database after `SYNTHIA_POSTGRES_URL` is configured.
 - [x] Implement the event-sourced task schema, indexes, migration, and database access layer for tasks, ordered events, sandboxes, deliverables, messages, approvals, integrations, memory, usage, and user preferences.
 - [x] Implement validated, authenticated task and settings APIs with rate limiting, structured logging, error handling, secure secret encryption, and authorization rules.
 - [x] Implement the SandboxProvider abstraction with Docker development fallback and E2B production provider, including checkpoint, restore, filesystem, browser screenshot, and terminal operations.
@@ -31,8 +31,10 @@
 - [x] Refine the default-open Code workspace so its visible layout includes file-tree/editor context and concise terminal, timeline, and artifact context without requiring tab changes.
 - [x] Verify and test the existing server-side terminal policy against allowed commands, blocked commands, path restrictions, and approval enforcement.
 - [x] Statically validate Docker Compose service configuration for the control plane, independent worker, PostgreSQL, Redis, migration job, and development-only sandbox image, with external provider configuration documented; deterministic `pnpm compose:validate` passes. Runtime Compose execution remains deferred because Docker is unavailable in this sandbox and credentials remain intentionally unset.
-- [ ] Add integration coverage for ordered replay events, authenticated task APIs, provider adapters, and frontend critical paths; unit coverage is complete for worker recovery, exhausted retries, approval gates, terminal policy, credits, parser validation, encryption, and logout.
+- [x] Add integration coverage for ordered replay events, authenticated task APIs, provider adapters, and frontend critical paths; unit coverage is complete for worker recovery, exhausted retries, approval gates, terminal policy, credits, parser validation, encryption, and logout.
 - [ ] Complete environment-dependent migration, container, and authenticated task-flow verification after credentials are supplied; static checks, unit tests, production build, and desktop/mobile sign-in boundaries have passed.
+- [x] Apply and verify the journaled external PostgreSQL schema migration chain, including task attachments, projects, event sequencing, and task-state tables.
+- [ ] Complete the remaining credentials-dependent provider, object-storage, email, queue, container, and real agent task-flow verification after the corresponding secure secrets are configured.
 - [x] Diagnose and repair the reported preview-access failure; the development service was restarted and the live preview now opens successfully.
 - [x] Diagnose and repair the confirmed blank white client-rendering failure shown in the user's browser preview.
 - [x] Verify the production-style static preview bundle renders correctly in the connected browser and use it as the managed preview fallback.
