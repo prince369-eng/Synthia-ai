@@ -167,7 +167,7 @@ button:not(:disabled):active { transform: scale(.97); }
   .synthia-composer-plus { @apply grid h-7 w-7 place-items-center rounded-md border border-white/9 bg-white/[.025] text-[#b9a99a] hover:border-orange-300/30 hover:bg-orange-400/10 hover:text-orange-100; }
   .synthia-composer-plus.active { @apply border-orange-300/35 bg-orange-400/12 text-orange-100; }
   .synthia-send-button { @apply h-8 w-8 shrink-0 rounded-full bg-gradient-to-br from-orange-200 to-orange-500 text-[#2b170d] hover:from-orange-100 hover:to-orange-400; }
-  .synthia-attachment-menu { @apply absolute bottom-[calc(100%+.4rem)] left-0 z-20 grid w-45 overflow-hidden rounded-lg border border-white/10 bg-[#28231f] p-1 shadow-xl; }
+  .synthia-attachment-menu { @apply absolute bottom-full left-0 z-20 grid w-45 overflow-hidden rounded-lg border border-white/10 bg-[#28231f] p-1 shadow-xl; }
   .synthia-attachment-menu button { @apply flex h-8 items-center gap-2 rounded-md px-2 text-left text-[11px] text-[#dacdbf] hover:bg-orange-400/10 hover:text-orange-100; }
   .synthia-project-select { @apply h-7 max-w-32 rounded-md border border-white/8 bg-[#1a1714] px-2 text-[10px] text-[#a89788] outline-none hover:border-orange-300/25 focus:border-orange-300/40; }
   .synthia-model-trigger { @apply max-w-40; }

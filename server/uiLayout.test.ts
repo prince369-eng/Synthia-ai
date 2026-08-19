@@ -125,4 +125,11 @@ describe("compact workspace layout contract", () => {
     expect(settings).toContain('className="flex min-w-0 w-full items-start justify-between gap-3"');
     expect(settings).toContain("w-9 shrink-0 rounded-full");
   });
+
+  it("keeps the attachment option surface directly adjacent to the composer plus trigger", () => {
+    const css = readFileSync(new URL("../client/src/index.css", import.meta.url), "utf8");
+
+    expect(css).toContain(".synthia-attachment-menu { @apply absolute bottom-full left-0");
+    expect(css).not.toContain(".synthia-attachment-menu { @apply absolute bottom-[calc(100%+.4rem)]");
+  });
 });

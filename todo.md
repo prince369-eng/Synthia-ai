@@ -112,3 +112,5 @@
 - [x] Organize the composer’s lower control bar with a scope-approved model selector and microphone input control without fabricating provider availability.
 - [x] Add compact scope-aligned upper-right task actions for usage, task files, sharing, and overflow controls with truthful disabled or unavailable states where required.
 - [x] Add interaction and layout regression coverage for the reorganized central workspace, then validate it visually.
+- [x] Keep the composer plus-menu open while the pointer moves from the trigger into its local-upload and Library options, with click support as a persistent fallback.
+- [x] Add a pointer-transition regression for the attachment-menu trigger and option surface, then visually verify the repaired interaction.
