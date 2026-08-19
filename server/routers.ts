@@ -31,9 +31,10 @@ import { systemRouter } from "./_core/systemRouter";
 import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
 import { enqueueTaskCycle, isQueueConfigured } from "./agent/queue";
 import { enforceRateLimit, RateLimitError } from "./security/rateLimit";
-import { systemServiceReadiness } from "./integrations/catalog";
+import { serviceReadinessForUser } from "./integrations/catalog";
 import { estimateTaskCredits } from "./agent/creditEstimate";
 import { encryptSecret } from "./security/encryption";
+import { getTaskArtifactUrl } from "./agent/artifactStorage";
 
 const taskIdSchema = z.object({ taskId: z.string().uuid() });
 const taskStatusSchema = z.enum([
@@ -113,6 +114,20 @@ export const appRouter = router({
       ]);
       return { task, events, messages, approvals, deliverables, sandboxes: sandboxRows };
     }),
+    artifactUrl: protectedProcedure
+      .input(taskIdSchema.extend({ deliverableId: z.string().uuid() }))
+      .query(async ({ ctx, input }) => {
+        const task = await requireOwnedTask(input.taskId, ctx.user.id);
+        const deliverable = (await listTaskDeliverables(task.id)).find(item => item.id === input.deliverableId);
+        if (!deliverable) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "The requested task deliverable was not found." });
+        }
+        return {
+          filename: deliverable.filename,
+          fileType: deliverable.fileType,
+          url: await getTaskArtifactUrl(deliverable.storageKey),
+        };
+      }),
     create: protectedProcedure
       .input(
         z.object({
@@ -231,7 +246,7 @@ export const appRouter = router({
     usage: protectedProcedure.query(({ ctx }) => getUsageSummary(ctx.user.id)),
     memory: protectedProcedure.query(({ ctx }) => listMemoryFacts(ctx.user.id)),
     integrations: protectedProcedure.query(({ ctx }) => listIntegrationsForUser(ctx.user.id)),
-    serviceReadiness: protectedProcedure.query(() => systemServiceReadiness()),
+    serviceReadiness: protectedProcedure.query(async ({ ctx }) => serviceReadinessForUser(await listIntegrationsForUser(ctx.user.id))),
   }),
   settings: router({
     get: protectedProcedure.query(({ ctx }) => getUserPreferences(ctx.user.id)),

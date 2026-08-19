@@ -4,12 +4,28 @@ import React from "react";
 import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { ProfileMenu } from "../client/src/components/SynthiaAppShell";
-import { SettingsSectionNav } from "../client/src/pages/Settings";
+import { AuthEntryActions } from "../client/src/components/SynthiaAppShell";
+import { ServiceConnectionCard, SettingsSectionNav } from "../client/src/pages/Settings";
 import { WorkspaceReturnNavigation } from "../client/src/pages/TaskWorkspace";
 
 afterEach(cleanup);
 
 describe("Synthia navigation behavior", () => {
+  it("exposes distinct sign-in, account-creation, and Google identity entry actions", async () => {
+    const user = userEvent.setup();
+    const onSignIn = vi.fn();
+    const onSignUp = vi.fn();
+    const onGoogle = vi.fn();
+    render(<AuthEntryActions onSignIn={onSignIn} onSignUp={onSignUp} onGoogle={onGoogle} />);
+
+    await user.click(screen.getByRole("button", { name: "Sign in to Synthia AI" }));
+    await user.click(screen.getByRole("button", { name: "Continue with Google" }));
+    await user.click(screen.getByRole("button", { name: "Create an account" }));
+    expect(onSignIn).toHaveBeenCalledTimes(1);
+    expect(onGoogle).toHaveBeenCalledTimes(1);
+    expect(onSignUp).toHaveBeenCalledTimes(1);
+  });
+
   it("opens the profile menu and executes account destinations and sign-out", async () => {
     const user = userEvent.setup();
     const onNavigate = vi.fn();
@@ -47,5 +63,14 @@ describe("Synthia navigation behavior", () => {
     await user.click(screen.getByRole("button", { name: "Library" }));
     expect(onNavigate).toHaveBeenNthCalledWith(1, "/");
     expect(onNavigate).toHaveBeenNthCalledWith(2, "/library");
+  });
+
+  it("renders explicit integration connection labels without exposing secret values", () => {
+    render(<><ServiceConnectionCard item={{ label: "Google", status: "connected" }} /><ServiceConnectionCard item={{ label: "GitHub", status: "ready_to_connect" }} /><ServiceConnectionCard item={{ label: "Slack", status: "missing_credentials", requiredEnvironment: ["SLACK_OAUTH_CLIENT_ID", "SLACK_OAUTH_CLIENT_SECRET"] }} /></>);
+
+    expect(screen.getByText("Connected")).toBeTruthy();
+    expect(screen.getByText("Ready to connect")).toBeTruthy();
+    expect(screen.getByText("Missing credentials")).toBeTruthy();
+    expect(screen.getByText("SLACK_OAUTH_CLIENT_ID · SLACK_OAUTH_CLIENT_SECRET")).toBeTruthy();
   });
 });

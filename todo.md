@@ -16,6 +16,8 @@
 - [x] Complete worker recovery with sandbox checkpoint restore, usage accounting, server-side credit estimates, and runnable worker scripts.
 - [x] Explicitly limit browser and screenshot capabilities to E2B in the Agent's Computer UI, sandbox runtime errors, and deployment documentation; Docker remains a code-only development fallback.
 - [ ] Add general artifact creation and retrieval flows, then cover the event stream, approval enforcement, queue retry, and provider readiness with focused tests. Sandbox file publication, model parsing, terminal policy, action policy, credits, worker recovery, and retries are covered.
+- [x] Add authenticated on-demand artifact URL refresh for task deliverables and cover ownership enforcement.
+- [x] Add authenticated on-demand artifact URL refresh for task deliverables and cover ownership enforcement.
 - [ ] Validate PostgreSQL event-sequence allocation under concurrent writer conditions after applying the migration to the external database.
 - [x] Add focused worker-recovery tests proving checkpoint restoration, task resumption, usage-ledger preservation, and server-side credit-estimate enforcement during retries.
 - [x] Add queue exhausted-retry regression coverage so unrecoverable worker jobs transition the task into a durable failed state.
@@ -28,7 +30,7 @@
 - [x] Split route-level workspace code so the dashboard's initial client load does not include the full Code, Library, and Settings feature surface.
 - [x] Refine the default-open Code workspace so its visible layout includes file-tree/editor context and concise terminal, timeline, and artifact context without requiring tab changes.
 - [x] Verify and test the existing server-side terminal policy against allowed commands, blocked commands, path restrictions, and approval enforcement.
-- [ ] Statically validate Docker Compose service configuration for the control plane, independent worker, PostgreSQL, Redis, migration job, and development-only sandbox image, with external provider configuration documented; runtime Compose execution is deferred because Docker is unavailable in this sandbox and credentials remain intentionally unset.
+- [x] Statically validate Docker Compose service configuration for the control plane, independent worker, PostgreSQL, Redis, migration job, and development-only sandbox image, with external provider configuration documented; deterministic `pnpm compose:validate` passes. Runtime Compose execution remains deferred because Docker is unavailable in this sandbox and credentials remain intentionally unset.
 - [ ] Add integration coverage for ordered replay events, authenticated task APIs, provider adapters, and frontend critical paths; unit coverage is complete for worker recovery, exhausted retries, approval gates, terminal policy, credits, parser validation, encryption, and logout.
 - [ ] Complete environment-dependent migration, container, and authenticated task-flow verification after credentials are supplied; static checks, unit tests, production build, and desktop/mobile sign-in boundaries have passed.
 - [x] Diagnose and repair the reported preview-access failure; the development service was restarted and the live preview now opens successfully.
@@ -55,6 +57,13 @@
 - [x] Remove task-history retry delay so the compact unavailable-data state appears immediately when PostgreSQL is intentionally unconfigured.
 - [x] Add a regression assertion that the collapsed desktop rail retains navigation icons while hiding text labels and task/account detail.
 - [ ] Configure the documented Synthia external-service and local Compose environment keys through secure project secrets management.
+- [x] Present each configured external Synthia provider with clear connected, ready-to-connect, or missing-credential state and setup guidance.
+- [x] Document the complete environment-variable contract in a safe public configuration reference without committing secrets.
+- [x] Encode the verified Manus unified account-portal behavior for account creation; the portal expressly supports sign-in or sign-up through its supported SSO mode.
+- [x] Encode the verified Google identity entry behavior; the trusted portal exposes Google selection while Synthia never handles provider tokens.
+- [x] Add regression tests that assert the generated account-portal URL, callback state, and supported SSO mode for sign-in, account creation, and Google entry intents.
+- [x] Distinguish user-connected integrations from server-configured integrations in the provider readiness contract and Settings UI.
+- [x] Add regression coverage for provider status mapping and Settings service-connection state labels.
 - [x] Add a compact profile control with account details and Synthia session actions to the persistent navigation shell.
 - [x] Reorganize Synthia settings into clear account, provider, integrations, security, and workspace groups with direct section navigation.
 - [x] Add visible, keyboard-accessible return navigation from every Agent’s Computer workspace to the task dashboard and library.

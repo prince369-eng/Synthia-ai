@@ -1,5 +1,5 @@
 import { useAuth } from "@/_core/hooks/useAuth";
-import { startLogin } from "@/const";
+import { startGoogleLogin, startLogin, startSignup } from "@/const";
 import { isSidebarCollapsed, PROFILE_MENU_DESTINATIONS, SIDEBAR_COLLAPSE_STORAGE_KEY } from "@/lib/workspaceLayout";
 import { trpc } from "@/lib/trpc";
 import { cn } from "@/lib/utils";
@@ -59,7 +59,7 @@ export function SynthiaAppShell({ children }: { children: ReactNode }) {
           <p className="synthia-eyebrow">Synthia AI</p>
           <h1>Autonomous work, under your control.</h1>
           <p>Sign in to create tasks, review agent decisions, and inspect every workspace artifact.</p>
-          <Button onClick={() => startLogin()} className="synthia-primary-button w-full">Sign in to Synthia AI <ChevronRight size={16} /></Button>
+          <AuthEntryActions onSignIn={() => startLogin("signIn")} onSignUp={startSignup} onGoogle={startGoogleLogin} />
         </section>
       </main>
     );
@@ -114,6 +114,10 @@ export function SynthiaAppShell({ children }: { children: ReactNode }) {
       <main className="synthia-main">{children}</main>
     </div>
   );
+}
+
+export function AuthEntryActions({ onSignIn, onSignUp, onGoogle }: { onSignIn: () => void; onSignUp: () => void; onGoogle: () => void }) {
+  return <div className="synthia-auth-actions"><Button onClick={onSignIn} className="synthia-primary-button w-full">Sign in to Synthia AI <ChevronRight size={16} /></Button><Button variant="outline" onClick={onGoogle} className="synthia-google-button w-full"><span className="synthia-google-glyph" aria-hidden="true">G</span>Continue with Google</Button><p className="synthia-auth-create">New to Synthia? <button type="button" onClick={onSignUp}>Create an account</button></p><small>The verified Manus account portal supports sign-in, account creation, and Google identity selection. Synthia never receives provider tokens.</small></div>;
 }
 
 export function ProfileMenu({ name, email, onNavigate, onLogout }: { name: string; email: string; onNavigate: (path: string) => void; onLogout: () => void }) {

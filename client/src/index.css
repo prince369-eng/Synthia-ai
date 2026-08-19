@@ -100,6 +100,13 @@ button:not(:disabled):active { transform: scale(.97); }
   .synthia-auth-card p { @apply mt-3 text-sm leading-6 text-[#ae9f91]; }
   .synthia-eyebrow { @apply text-xs font-semibold uppercase tracking-[.18em] text-orange-300; }
   .synthia-primary-button { @apply mt-7 gap-2 rounded-xl bg-gradient-to-r from-orange-300 to-orange-500 font-semibold text-[#2c160c] hover:from-orange-200 hover:to-orange-400; }
+  .synthia-auth-actions { @apply mt-7; }
+  .synthia-auth-actions .synthia-primary-button { @apply mt-0; }
+  .synthia-google-button { @apply mt-2.5 h-10 gap-2 rounded-xl border-white/12 bg-white/[.025] text-xs font-medium text-[#efe5d8] hover:border-white/20 hover:bg-white/[.06]; }
+  .synthia-google-glyph { @apply grid h-5 w-5 place-items-center rounded-full bg-white text-[11px] font-bold text-[#3c4043]; }
+  .synthia-auth-create { @apply mt-5! text-center text-xs!; }
+  .synthia-auth-create button { @apply font-semibold text-orange-300 hover:text-orange-200; }
+  .synthia-auth-actions > small { @apply mt-3 block text-center text-[10px] leading-4 text-[#776a5e]; }
   .synthia-nav.collapsed .synthia-brand-copy, .synthia-nav.collapsed .synthia-new-task span, .synthia-nav.collapsed .synthia-nav-item span, .synthia-nav.collapsed .synthia-task-rail, .synthia-nav.collapsed .synthia-account-copy { @apply sr-only; }
   .synthia-nav.collapsed .synthia-nav-topline { @apply justify-center; }
   .synthia-nav.collapsed .synthia-brand { @apply px-0; }
