@@ -74,5 +74,11 @@ describe("task composer attachments", () => {
     expect(screen.getByRole("button", { name: "Usage summary" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Open task files" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "More workspace actions" })).toBeTruthy();
+    await user.click(screen.getByRole("button", { name: "More task modes" }));
+    expect(screen.getByTestId("center-capability-menu")).toBeTruthy();
+    expect(screen.getByText("Develop apps")).toBeTruthy();
+    expect(screen.getByText("Wide Research")).toBeTruthy();
+    expect(screen.getByText("Scheduled task")).toBeTruthy();
+    expect(screen.getByText("Playbook")).toBeTruthy();
   });
 });

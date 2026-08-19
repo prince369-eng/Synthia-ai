@@ -2833,3 +2833,26 @@
 ## Final line
 
 - [ ] Continue.
+
+
+## Confirmed provider selection
+
+- [ ] Implement the provider-neutral readiness contract for Gemini image generation using `gemini-3.1-flash-image`.
+- [ ] Implement the provider-neutral readiness contract for Gemini Omni Flash video generation.
+- [ ] Keep image and video generation disabled until Gemini credentials, storage, rate limits, and runtime verification are present.
+
+## Continued Manus-style audit scope
+
+- [ ] Audit and refine all current center-workspace components against the user-approved compact Manus-style hierarchy.
+- [ ] Audit and refine the persistent sidebar, profile menu, route navigation, settings rail, task history, library, scheduled, agent, and plugins surfaces within the Synthia scope.
+- [ ] Verify all buttons and menu items have a real route or explicit unavailable explanation.
+- [ ] Continue responsive desktop, tablet, and mobile proportion review without introducing oversized panels.
+- [ ] Preserve Synthia branding and radiant-orange design tokens while matching the approved interaction patterns.
+- [ ] Update browser-audit notes with only publicly observed, scope-aligned behaviors and source URLs.
+
+## Confirmed user gate
+
+- [x] User selected Gemini image generation plus Gemini Omni Flash video generation.
+- [ ] User supplies credentials through secure project configuration when the key collection request is opened.
+- [ ] User publishes the verified application before live scheduler and media end-to-end tests.
+- [ ] GitHub push remains last and requires explicit confirmation.
