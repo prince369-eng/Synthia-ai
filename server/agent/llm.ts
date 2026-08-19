@@ -184,9 +184,10 @@ export async function generateWithFallback(input: {
   purpose: "orchestrator" | "subtask";
   messages: LlmMessage[];
   maxTokens?: number;
+  selectedModel?: { provider: LlmProviderName; model: string };
 }) {
-  const preferred = (input.purpose === "orchestrator" ? ENV.orchestratorProvider : ENV.subtaskProvider) as LlmProviderName;
-  const preferredModel = input.purpose === "orchestrator" ? ENV.orchestratorModel : ENV.subtaskModel;
+  const preferred = (input.selectedModel?.provider ?? (input.purpose === "orchestrator" ? ENV.orchestratorProvider : ENV.subtaskProvider)) as LlmProviderName;
+  const preferredModel = input.selectedModel?.model ?? (input.purpose === "orchestrator" ? ENV.orchestratorModel : ENV.subtaskModel);
   const providerOrder = [preferred, "openrouter", "groq", "gemini", "deepseek"] as LlmProviderName[];
   const attempted = new Set<LlmProviderName>();
   const errors: string[] = [];

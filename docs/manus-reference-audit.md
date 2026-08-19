@@ -2,6 +2,12 @@
 
 This record captures only patterns directly observed in the user-authorized Manus workspace and only those relevant to the approved Synthia scope. It is a product-design reference, not a request to reproduce Manus branding, proprietary assets, or unrelated functionality.
 
+## Central Workspace Composer Follow-up
+
+The live Manus composer uses a compact, non-text attachment **plus** trigger rather than a persistent labeled Attach control. Activating it opens a small menu that includes **From Library** and **Add from local files**, alongside broader product sources outside the Synthia scope. Its controls remain in one calm lower row: attachment entry, plan and capability controls, a device/environment selector, voice entry, and submit. The page also uses small upper-right icon actions rather than a large utility panel.
+
+For Synthia, the approved mapping is intentionally limited to the existing **Library** and authenticated **local-file upload** paths, a truthful model/provider selector, an explicit microphone input entry point, and compact actions for usage, files, sharing, and overflow. These controls must stay inside menus or popovers so the task composer does not grow vertically or become visually noisy.
+
 ## Library
 
 The Library uses a compact route header followed by a single-line file-type filter: **All**, **Slides**, **Websites**, **Documents**, **Spreadsheets**, **Images**, **Audio & Video**, and **Others**. A search field sits on the same control row, with compact view and collection controls adjacent to it. The content is arranged as dense, task-grouped artifact cards: each group exposes the originating task name, recency, a task/project context label, a visual preview where available, and a per-item overflow control.

@@ -140,7 +140,14 @@ button:not(:disabled):active { transform: scale(.97); }
   .synthia-nav.collapsed .synthia-collapse-button { @apply absolute -right-3 top-4 z-40 border border-white/10 bg-[#24201d] shadow-lg; }
   .synthia-nav.collapsed .synthia-new-task, .synthia-nav.collapsed .synthia-nav-item { @apply justify-center px-0; }
   .synthia-dashboard { @apply min-h-screen bg-[#171410]; }
-  .synthia-dashboard-header { @apply flex h-13 items-center justify-between border-b border-white/7 px-5 sm:px-7; }
+  .synthia-dashboard-header { @apply flex h-13 items-center justify-between gap-3 border-b border-white/7 px-5 sm:px-7; }
+  .synthia-dashboard-header-actions { @apply flex items-center gap-1.5 text-xs text-[#a99a8d]; }
+  .synthia-header-action { @apply grid h-7 w-7 place-items-center rounded-md text-[#887a6d] hover:bg-white/5 hover:text-orange-100 disabled:cursor-not-allowed disabled:opacity-40; }
+  .synthia-header-popover { @apply absolute right-0 top-[calc(100%+.45rem)] z-30 grid min-w-40 gap-1 rounded-lg border border-white/10 bg-[#28231f] p-1.5 shadow-xl; }
+  .synthia-header-popover b { @apply px-1.5 pt-0.5 text-[11px] font-medium text-[#ede2d5]; }
+  .synthia-header-popover span { @apply px-1.5 pb-1 text-[10px] text-[#9b8b7d]; }
+  .synthia-header-popover button { @apply rounded-md px-1.5 py-1.5 text-left text-[11px] text-[#dacdbf] hover:bg-orange-400/10 hover:text-orange-100; }
+  .synthia-control-plane { @apply ml-1 hidden items-center gap-2 text-xs text-[#a99a8d] sm:inline-flex; }
   .synthia-chat-stage { @apply mx-auto flex w-full max-w-[780px] flex-col items-center px-5 pb-12 pt-[clamp(3.5rem,10vh,7.5rem)] sm:px-8; }
   .synthia-plan-chip { @apply mb-7 inline-flex items-center gap-2 rounded-full bg-white/[.035] px-3 py-1 text-[11px] text-[#897b6f]; }
   .synthia-chat-stage .synthia-eyebrow { @apply mb-3 mt-0 flex items-center gap-1.5 text-[10px]; }
@@ -152,13 +159,27 @@ button:not(:disabled):active { transform: scale(.97); }
   .synthia-attachment-chip { @apply inline-flex max-w-full items-center gap-1 rounded-md border border-orange-300/18 bg-orange-400/[.07] py-1 pl-1.5 pr-1 text-[10px] text-orange-100; }
   .synthia-attachment-chip > span { @apply max-w-45 truncate; }
   .synthia-attachment-chip button { @apply grid h-4 w-4 place-items-center rounded text-orange-200 hover:bg-orange-300/15 hover:text-orange-50 focus-visible:ring-1 focus-visible:ring-orange-200; }
-  .synthia-composer-actions { @apply flex items-center justify-between gap-3 border-t border-white/7 pt-2; }
+  .synthia-composer-actions { @apply flex flex-wrap items-center justify-between gap-2 border-t border-white/7 pt-2; }
+  .synthia-composer-control-group { @apply flex min-w-0 items-center gap-1; }
+  .synthia-composer-control-group-end { @apply ml-auto; }
   .synthia-composer-toggle { @apply inline-flex h-7 shrink-0 items-center gap-1.5 rounded-md border border-transparent px-2 text-[11px] text-[#8f8173] hover:bg-white/5 hover:text-[#e9ddcf]; }
   .synthia-composer-toggle.active { @apply border-orange-300/25 bg-orange-400/10 text-orange-200; }
+  .synthia-composer-plus { @apply grid h-7 w-7 place-items-center rounded-md border border-white/9 bg-white/[.025] text-[#b9a99a] hover:border-orange-300/30 hover:bg-orange-400/10 hover:text-orange-100; }
+  .synthia-composer-plus.active { @apply border-orange-300/35 bg-orange-400/12 text-orange-100; }
   .synthia-send-button { @apply h-8 w-8 shrink-0 rounded-full bg-gradient-to-br from-orange-200 to-orange-500 text-[#2b170d] hover:from-orange-100 hover:to-orange-400; }
-  .synthia-attachment-menu { @apply absolute bottom-[calc(100%+.4rem)] left-0 z-20 grid w-40 overflow-hidden rounded-lg border border-white/10 bg-[#28231f] p-1 shadow-xl; }
+  .synthia-attachment-menu { @apply absolute bottom-[calc(100%+.4rem)] left-0 z-20 grid w-45 overflow-hidden rounded-lg border border-white/10 bg-[#28231f] p-1 shadow-xl; }
   .synthia-attachment-menu button { @apply flex h-8 items-center gap-2 rounded-md px-2 text-left text-[11px] text-[#dacdbf] hover:bg-orange-400/10 hover:text-orange-100; }
   .synthia-project-select { @apply h-7 max-w-32 rounded-md border border-white/8 bg-[#1a1714] px-2 text-[10px] text-[#a89788] outline-none hover:border-orange-300/25 focus:border-orange-300/40; }
+  .synthia-model-trigger { @apply max-w-40; }
+  .synthia-model-trigger span { @apply max-w-23 truncate; }
+  .synthia-model-menu { @apply absolute bottom-[calc(100%+.4rem)] right-0 z-20 grid w-57 overflow-hidden rounded-lg border border-white/10 bg-[#28231f] p-1 shadow-xl; }
+  .synthia-model-menu button { @apply grid gap-0.5 rounded-md px-2 py-1.5 text-left hover:bg-orange-400/10; }
+  .synthia-model-menu button.active { @apply bg-orange-400/10; }
+  .synthia-model-menu b { @apply truncate text-[11px] font-medium text-[#eee2d3]; }
+  .synthia-model-menu small, .synthia-model-menu p { @apply text-[10px] leading-4 text-[#8e8073]; }
+  .synthia-model-menu p { @apply p-2; }
+  .synthia-mic-button { @apply grid w-7 place-items-center px-0; }
+  .synthia-recording-dot { @apply h-1.5 w-1.5 rounded-full bg-rose-300; }
   .synthia-estimate { @apply mt-2 px-1 text-[11px] text-[#7d6f62]; }
   .synthia-estimate span { @apply text-orange-200; }
   .synthia-prompt-chips { @apply mt-4 flex w-full flex-wrap justify-center gap-1.5; }

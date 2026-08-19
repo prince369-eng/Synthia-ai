@@ -178,8 +178,10 @@ export async function runTaskCycle(taskId: string) {
     }
     await updateTaskForWorker(task.id, { status: "planning", currentStepSummary: "Analyzing task state and selecting one action.", startedAt: task.startedAt ?? new Date() });
     await appendTaskEvent(task.id, { type: "status_change", payload: { status: "planning", summary: "Analyzing task state and selecting one action." } });
+    const selectedModel = (task.autonomySettings as AutonomySettings).selectedModel;
     const model = await generateWithFallback({
     purpose: "orchestrator",
+    selectedModel,
     messages: [
       {
         role: "system",

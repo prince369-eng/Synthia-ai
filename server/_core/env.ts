@@ -1,7 +1,13 @@
-const list = (value: string | undefined) =>
+const list = (value?: string) =>
   (value ?? "")
     .split(",")
     .map(item => item.trim().toLowerCase())
+    .filter(Boolean);
+
+const modelList = (value?: string) =>
+  (value ?? "")
+    .split(",")
+    .map(item => item.trim())
     .filter(Boolean);
 
 export const ENV = {
@@ -35,6 +41,7 @@ export const ENV = {
   orchestratorModel: process.env.SYNTHIA_ORCHESTRATOR_MODEL ?? "",
   subtaskProvider: process.env.SYNTHIA_SUBTASK_PROVIDER ?? "",
   subtaskModel: process.env.SYNTHIA_SUBTASK_MODEL ?? "",
+  availableModels: modelList(process.env.SYNTHIA_AVAILABLE_MODELS),
   groqApiKey: process.env.GROQ_API_KEY ?? "",
   openRouterApiKey: process.env.OPENROUTER_API_KEY ?? "",
   openRouterHttpReferer: process.env.OPENROUTER_HTTP_REFERER ?? "",

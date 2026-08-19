@@ -1,6 +1,6 @@
 import { trpc } from "@/lib/trpc";
-import { ArrowUp, ArrowUpRight, Bot, Code2, FolderOpen, Loader2, Paperclip, Play, Sparkles, Upload } from "lucide-react";
-import { FormEvent, useEffect, useRef, useState } from "react";
+import { ArrowUp, ArrowUpRight, AudioLines, Bot, Code2, FileText, FolderOpen, Gauge, Loader2, Mic, MoreHorizontal, Play, Plus, Share2, Sparkles, Upload } from "lucide-react";
+import React, { FormEvent, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -20,6 +20,8 @@ const modeLabels = {
   supervised: "Supervised execution",
 } as const;
 
+const MAX_VOICE_BYTES = 16 * 1024 * 1024;
+
 export default function TaskDashboard() {
   const [, setLocation] = useLocation();
   const [goal, setGoal] = useState("");
@@ -32,12 +34,21 @@ export default function TaskDashboard() {
   const [libraryOpen, setLibraryOpen] = useState(false);
   const [projectId, setProjectId] = useState("");
   const [attachmentError, setAttachmentError] = useState<string | null>(null);
+  const [headerMenu, setHeaderMenu] = useState<"usage" | "more" | null>(null);
+  const [modelMenuOpen, setModelMenuOpen] = useState(false);
+  const [selectedModelId, setSelectedModelId] = useState("");
+  const [voiceState, setVoiceState] = useState<"idle" | "recording" | "transcribing">("idle");
   const composerRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const recorderRef = useRef<MediaRecorder | null>(null);
+  const voiceStreamRef = useRef<MediaStream | null>(null);
   const tasks = trpc.tasks.list.useQuery(undefined, TASK_HISTORY_QUERY_OPTIONS);
   const projects = trpc.projects.list.useQuery(undefined, { retry: false });
   const settings = trpc.settings.get.useQuery(undefined, { retry: false });
+  const usage = trpc.workspace.usage.useQuery(undefined, { retry: false });
+  const availableModels = trpc.catalog.models.useQuery(undefined, { retry: false });
   const uploadAttachment = trpc.tasks.uploadAttachment.useMutation();
+  const transcribeVoice = trpc.tasks.transcribeVoice.useMutation();
   const createTask = trpc.tasks.create.useMutation({
     onSuccess: ({ task }) => setLocation(`/tasks/${task.id}`),
   });
@@ -45,6 +56,7 @@ export default function TaskDashboard() {
     { goal, planSteps: 3, involvesCode },
     { enabled: goal.trim().length >= 8, staleTime: 8_000 },
   );
+  const selectedModel = availableModels.data?.models.find(model => model.id === selectedModelId);
 
   useEffect(() => {
     if (preferencesApplied || !settings.data) return;
@@ -69,6 +81,11 @@ export default function TaskDashboard() {
     return () => window.removeEventListener("synthia:focus-task-composer", focusComposer);
   }, []);
 
+  useEffect(() => () => {
+    if (recorderRef.current?.state === "recording") recorderRef.current.stop();
+    voiceStreamRef.current?.getTracks().forEach(track => track.stop());
+  }, []);
+
   function submit(event: FormEvent) {
     event.preventDefault();
     if (goal.trim().length < 8 || createTask.isPending) return;
@@ -76,7 +93,11 @@ export default function TaskDashboard() {
       goal: goal.trim(),
       projectId: projectId || undefined,
       involvesCode,
-      autonomySettings: { mode, ...capabilities },
+      autonomySettings: {
+        mode,
+        ...capabilities,
+        selectedModel: selectedModel ? { provider: selectedModel.provider, model: selectedModel.model } : undefined,
+      },
       attachments: buildTaskAttachmentRefs(attachments),
     });
   }
@@ -116,11 +137,81 @@ export default function TaskDashboard() {
     setAttachmentError(null);
   }
 
+  async function toggleVoiceCapture() {
+    if (voiceState === "transcribing") return;
+    if (voiceState === "recording") {
+      recorderRef.current?.stop();
+      return;
+    }
+    if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === "undefined") {
+      setAttachmentError("Voice input is not supported in this browser.");
+      return;
+    }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mimeType = ["audio/webm", "audio/ogg", "audio/mp4"].find(type => MediaRecorder.isTypeSupported(type));
+      const recorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
+      const chunks: BlobPart[] = [];
+      voiceStreamRef.current = stream;
+      recorder.ondataavailable = event => { if (event.data.size > 0) chunks.push(event.data); };
+      recorder.onstop = () => {
+        void (async () => {
+          recorderRef.current = null;
+          voiceStreamRef.current?.getTracks().forEach(track => track.stop());
+          voiceStreamRef.current = null;
+          const blob = new Blob(chunks, { type: recorder.mimeType || "audio/webm" });
+          if (blob.size === 0 || blob.size > MAX_VOICE_BYTES) {
+            setAttachmentError("Keep voice recordings between 1 byte and 16 MB.");
+            setVoiceState("idle");
+            return;
+          }
+          setVoiceState("transcribing");
+          try {
+            const dataBase64 = await new Promise<string>((resolve, reject) => {
+              const reader = new FileReader();
+              reader.onerror = () => reject(new Error("The voice recording could not be read."));
+              reader.onload = () => resolve(String(reader.result).split(",", 2)[1] ?? "");
+              reader.readAsDataURL(blob);
+            });
+            const contentType = (["audio/ogg", "audio/mp4"].includes(blob.type) ? blob.type : "audio/webm") as "audio/ogg" | "audio/mp4" | "audio/webm";
+            const extension = contentType === "audio/ogg" ? "ogg" : contentType === "audio/mp4" ? "m4a" : "webm";
+            const result = await transcribeVoice.mutateAsync({ filename: `synthia-voice-${Date.now()}.${extension}`, contentType, dataBase64 });
+            setGoal(current => current.trim() ? `${current.trim()}\n\n${result.text}` : result.text);
+            setAttachmentError(null);
+            composerRef.current?.focus();
+          } catch (error) {
+            setAttachmentError(error instanceof Error ? error.message : "The voice recording could not be transcribed.");
+          } finally {
+            setVoiceState("idle");
+          }
+        })();
+      };
+      recorderRef.current = recorder;
+      recorder.start();
+      setAttachmentError(null);
+      setVoiceState("recording");
+    } catch {
+      setAttachmentError("Microphone permission is required to add a voice instruction.");
+    }
+  }
+
   return (
     <div className="synthia-dashboard">
       <header className="synthia-dashboard-header">
         <div className="flex items-center gap-2"><span className="text-sm font-semibold text-[#f5eadb]">Synthia AI</span><span className="hidden h-4 w-px bg-white/10 sm:block" /><span className="hidden text-xs text-[#8d7e70] sm:inline">Autonomous workspace</span></div>
-        <div className="flex items-center gap-2 text-xs text-[#a99a8d]"><span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />Control plane online</div>
+        <div className="synthia-dashboard-header-actions">
+          <div className="relative">
+            <button type="button" className="synthia-header-action" aria-label="Usage summary" title="Usage" onClick={() => setHeaderMenu(value => value === "usage" ? null : "usage")}><Gauge size={15} /></button>
+            {headerMenu === "usage" ? <div className="synthia-header-popover"><b>Usage</b><span>{usage.isError ? "Usage unavailable" : `${usage.data?.creditsBalance ?? 0} credits available`}</span><button type="button" onClick={() => setLocation("/settings/billing")}>View usage</button></div> : null}
+          </div>
+          <button type="button" className="synthia-header-action" aria-label="Open task files" title="Files" onClick={() => setLibraryOpen(true)}><FileText size={15} /></button>
+          <button type="button" className="synthia-header-action" aria-label="Sharing unavailable" title="Task sharing is unavailable until a secure sharing contract is configured" disabled><Share2 size={15} /></button>
+          <div className="relative">
+            <button type="button" className="synthia-header-action" aria-label="More workspace actions" title="More" onClick={() => setHeaderMenu(value => value === "more" ? null : "more")}><MoreHorizontal size={16} /></button>
+            {headerMenu === "more" ? <div className="synthia-header-popover"><button type="button" onClick={() => setLocation("/docs")}>Documentation</button><button type="button" onClick={() => setLocation("/settings")}>Workspace settings</button></div> : null}
+          </div>
+          <span className="synthia-control-plane"><span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />Control plane online</span>
+        </div>
       </header>
 
       <section className="synthia-chat-stage" aria-labelledby="task-composer-title">
@@ -129,22 +220,32 @@ export default function TaskDashboard() {
         <h1 id="task-composer-title">What should Synthia accomplish?</h1>
         <p className="synthia-chat-intro">Describe the outcome. Synthia will plan, execute, and show every decision.</p>
         <form onSubmit={submit} className="synthia-chat-composer">
-            <label className="sr-only" htmlFor="task-goal">Task goal</label>
-            <Textarea ref={composerRef} id="task-goal" value={goal} onChange={event => setGoal(event.target.value)} placeholder="Ask Synthia anything — no task runs until you start it" className="synthia-chat-input" />
-            <TaskComposerAttachments attachments={attachments} onRemove={removeAttachment} />
-            <div className="synthia-composer-actions">
-              <div className="flex min-w-0 items-center gap-1.5 overflow-x-auto">
-                <div className="relative"><button type="button" className={cn("synthia-composer-toggle", attachmentMenuOpen && "active")} aria-expanded={attachmentMenuOpen} aria-controls="attachment-menu" onClick={() => setAttachmentMenuOpen(value => !value)}><Paperclip size={14} /><span>Attach</span></button>{attachmentMenuOpen ? <div id="attachment-menu" className="synthia-attachment-menu"><button type="button" onClick={() => fileInputRef.current?.click()}><Upload size={14} /><span>From computer</span></button><button type="button" onClick={() => { setAttachmentMenuOpen(false); setLibraryOpen(true); }}><FolderOpen size={14} /><span>From Library</span></button></div> : null}</div>
-                <button type="button" onClick={() => setInvolvesCode(value => !value)} className={cn("synthia-composer-toggle", involvesCode && "active")}><Code2 size={14} /> <span>Code</span></button>
-                {(Object.keys(modeLabels) as Array<keyof typeof modeLabels>).map(value => <button key={value} type="button" onClick={() => setMode(value)} className={cn("synthia-composer-toggle", mode === value && "active")}><span>{value === "ask_before_risky" ? "Ask first" : "Supervised"}</span></button>)}
+          <label className="sr-only" htmlFor="task-goal">Task goal</label>
+          <Textarea ref={composerRef} id="task-goal" value={goal} onChange={event => setGoal(event.target.value)} placeholder="Ask Synthia anything — no task runs until you start it" className="synthia-chat-input" />
+          <TaskComposerAttachments attachments={attachments} onRemove={removeAttachment} />
+          <div className="synthia-composer-actions">
+            <div className="synthia-composer-control-group">
+              <div className="relative" onPointerEnter={() => setAttachmentMenuOpen(true)} onPointerLeave={() => setAttachmentMenuOpen(false)}>
+                <button type="button" className={cn("synthia-composer-plus", attachmentMenuOpen && "active")} aria-label="Add a task attachment" aria-expanded={attachmentMenuOpen} aria-controls="attachment-menu" onClick={() => setAttachmentMenuOpen(value => !value)}><Plus size={15} /></button>
+                {attachmentMenuOpen ? <div id="attachment-menu" className="synthia-attachment-menu"><button type="button" onClick={() => fileInputRef.current?.click()}><Upload size={14} /><span>Add from local files</span></button><button type="button" onClick={() => { setAttachmentMenuOpen(false); setLibraryOpen(true); }}><FolderOpen size={14} /><span>From Library</span></button></div> : null}
               </div>
+              <button type="button" onClick={() => setInvolvesCode(value => !value)} className={cn("synthia-composer-toggle", involvesCode && "active")}><Code2 size={14} /><span>Code</span></button>
+              {(Object.keys(modeLabels) as Array<keyof typeof modeLabels>).map(value => <button key={value} type="button" onClick={() => setMode(value)} className={cn("synthia-composer-toggle", mode === value && "active")}><span>{value === "ask_before_risky" ? "Ask first" : "Supervised"}</span></button>)}
+            </div>
+            <div className="synthia-composer-control-group synthia-composer-control-group-end">
               <select aria-label="Project for task" value={projectId} onChange={event => setProjectId(event.target.value)} className="synthia-project-select"><option value="">No project</option>{projects.data?.map(project => <option key={project.id} value={project.id}>{project.name}</option>)}</select>
+              <div className="relative">
+                <button type="button" className={cn("synthia-composer-toggle synthia-model-trigger", modelMenuOpen && "active")} aria-label="Choose model" aria-expanded={modelMenuOpen} onClick={() => setModelMenuOpen(value => !value)}><AudioLines size={13} /><span>{selectedModel?.model ?? "Automatic"}</span></button>
+                {modelMenuOpen ? <div className="synthia-model-menu">{availableModels.data?.models.length ? availableModels.data.models.map(model => <button key={model.id} type="button" className={cn(model.id === selectedModelId && "active")} onClick={() => { setSelectedModelId(model.id); setModelMenuOpen(false); }}><b>{model.model}</b><small>{model.provider} · {model.label}</small></button>) : <p>Automatic routing is active. Configure an orchestrator model to choose one explicitly.</p>}</div> : null}
+              </div>
+              <button type="button" className={cn("synthia-composer-toggle synthia-mic-button", voiceState !== "idle" && "active")} aria-label={voiceState === "recording" ? "Stop recording voice instruction" : "Start voice instruction"} title={voiceState === "transcribing" ? "Transcribing voice instruction" : voiceState === "recording" ? "Stop recording" : "Add voice instruction"} onClick={() => void toggleVoiceCapture()} disabled={voiceState === "transcribing"}><Mic size={14} /><span className="sr-only">Voice input</span>{voiceState === "recording" ? <span className="synthia-recording-dot" /> : null}</button>
               <Button type="submit" size="icon" aria-label="Start task" title="Start task" disabled={goal.trim().length < 8 || createTask.isPending} className="synthia-send-button">{createTask.isPending ? <Loader2 className="animate-spin" size={17} /> : <ArrowUp size={18} />}</Button>
             </div>
-            {estimate.data ? <p className="synthia-estimate">Estimated: <span>{estimate.data.estimatedCreditsMin}–{estimate.data.estimatedCreditsMax} credits</span></p> : null}
-            {attachmentError ? <p role="alert" className="mt-2 px-1 text-xs text-rose-300">{attachmentError}</p> : null}
-            {createTask.isError ? <p role="alert" className="mt-3 text-xs text-rose-300">{createTask.error.message}</p> : null}
-            <input ref={fileInputRef} onChange={event => void chooseLocalFile(event)} className="sr-only" type="file" accept=".pdf,.txt,.md,.csv,.json,.doc,.docx,.xls,.xlsx,.zip,.7z,.tar,.png,.jpg,.jpeg,.webp" />
+          </div>
+          {estimate.data ? <p className="synthia-estimate">Estimated: <span>{estimate.data.estimatedCreditsMin}–{estimate.data.estimatedCreditsMax} credits</span></p> : null}
+          {attachmentError ? <p role="alert" className="mt-2 px-1 text-xs text-rose-300">{attachmentError}</p> : null}
+          {createTask.isError ? <p role="alert" className="mt-3 text-xs text-rose-300">{createTask.error.message}</p> : null}
+          <input ref={fileInputRef} onChange={event => void chooseLocalFile(event)} className="sr-only" type="file" accept=".pdf,.txt,.md,.csv,.json,.doc,.docx,.xls,.xlsx,.zip,.7z,.tar,.png,.jpg,.jpeg,.webp" />
         </form>
         <div className="synthia-prompt-chips" aria-label="Suggested task prompts">{TASK_ENTRY_SUGGESTIONS.map(item => <button type="button" key={item} onClick={() => setGoal(item)}>{item}</button>)}</div>
 

@@ -107,3 +107,8 @@
 - [x] Extend task creation to validate, persist, and event-log attachment references before queueing a task.
 - [x] Hydrate persisted task attachments into isolated agent workspaces and structured model context without cross-user storage access.
 - [x] Add focused attachment composer and task-contract regression coverage, then complete full verification and visual review.
+- [x] Audit the referenced Manus center workspace attachment, model, microphone, and upper-right task-action controls against the approved Synthia scope.
+- [x] Replace the direct attachment action with a compact plus-button menu that exposes local upload and Library attachment options on hover or click.
+- [x] Organize the composer’s lower control bar with a scope-approved model selector and microphone input control without fabricating provider availability.
+- [x] Add compact scope-aligned upper-right task actions for usage, task files, sharing, and overflow controls with truthful disabled or unavailable states where required.
+- [x] Add interaction and layout regression coverage for the reorganized central workspace, then validate it visually.

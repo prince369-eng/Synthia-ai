@@ -4,10 +4,23 @@ import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { TaskComposerAttachments } from "../client/src/components/TaskComposerAttachments";
 import { LibraryPicker } from "../client/src/components/LibraryPicker";
-import { buildTaskAttachmentRefs } from "../client/src/pages/TaskDashboard";
+import TaskDashboard, { buildTaskAttachmentRefs } from "../client/src/pages/TaskDashboard";
 
 vi.mock("@/lib/trpc", () => ({
   trpc: {
+    tasks: {
+      list: { useQuery: () => ({ data: [], isLoading: false, isError: false }) },
+      uploadAttachment: { useMutation: () => ({ mutateAsync: vi.fn(), isPending: false }) },
+      transcribeVoice: { useMutation: () => ({ mutateAsync: vi.fn(), isPending: false }) },
+      create: { useMutation: () => ({ mutate: vi.fn(), isPending: false }) },
+    },
+    projects: { list: { useQuery: () => ({ data: [], isLoading: false, isError: false }) } },
+    settings: { get: { useQuery: () => ({ data: undefined, isLoading: false, isError: false }) } },
+    workspace: { usage: { useQuery: () => ({ data: { creditsBalance: 25 }, isLoading: false, isError: false }) } },
+    catalog: {
+      estimateTask: { useQuery: () => ({ data: undefined, isLoading: false, isError: false }) },
+      models: { useQuery: () => ({ data: { models: [] }, isLoading: false, isError: false }) },
+    },
     library: { list: { useQuery: () => ({ data: [], isLoading: false, isError: false }) } },
   },
 }));
@@ -42,5 +55,19 @@ describe("task composer attachments", () => {
       { sourceType: "upload", filename: "notes.txt", fileType: "text/plain", storageKey: "task-inputs/1/notes.txt", storageUrl: "/manus-storage/notes.txt" },
       { sourceType: "library", sourceDeliverableId: "a3f7b5e2-4218-41b1-98d4-dfbdde95c553" },
     ]);
+  });
+
+  it("exposes the compact plus attachment menu and organized workspace controls", async () => {
+    const user = userEvent.setup();
+    render(<TaskDashboard />);
+    const attachmentTrigger = screen.getByRole("button", { name: "Add a task attachment" });
+    await user.hover(attachmentTrigger);
+    expect(screen.getByText("Add from local files")).toBeTruthy();
+    expect(screen.getByText("From Library")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Choose model" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Start voice instruction" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Usage summary" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Open task files" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "More workspace actions" })).toBeTruthy();
   });
 });

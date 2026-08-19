@@ -45,6 +45,8 @@ import { encryptSecret } from "./security/encryption";
 import { getTaskArtifactUrl } from "./agent/artifactStorage";
 import { listHeartbeatJobs } from "./_core/heartbeat";
 import { storagePut } from "./storage";
+import { ENV } from "./_core/env";
+import { transcribeAudio } from "./_core/voiceTranscription";
 
 const taskIdSchema = z.object({ taskId: z.string().uuid() });
 const taskStatusSchema = z.enum([
@@ -69,6 +71,14 @@ const planSchema = z.array(
 
 const MAX_ATTACHMENT_BYTES = 10 * 1024 * 1024;
 const MAX_ATTACHMENT_BASE64_LENGTH = Math.ceil(MAX_ATTACHMENT_BYTES / 3) * 4;
+const MAX_VOICE_BYTES = 16 * 1024 * 1024;
+const MAX_VOICE_BASE64_LENGTH = Math.ceil(MAX_VOICE_BYTES / 3) * 4;
+const llmProviderSchema = z.enum(["groq", "openrouter", "gemini", "deepseek"]);
+const selectedModelSchema = z.object({
+  provider: llmProviderSchema,
+  model: z.string().trim().min(1).max(180),
+});
+const voiceMimeSchema = z.enum(["audio/webm", "audio/ogg", "audio/wav", "audio/mpeg", "audio/mp4", "audio/x-m4a"]);
 const attachmentMimeSchema = z.string().trim().min(3).max(100).regex(
   /^(application\/(pdf|json|zip|x-7z-compressed|x-tar|vnd\.(openxmlformats-officedocument\.(wordprocessingml\.document|spreadsheetml\.sheet)|ms-excel|msword))|text\/(plain|csv|markdown)|image\/(png|jpeg|webp))$/,
   "This file type is not supported.",
@@ -102,6 +112,46 @@ function decodeAttachmentBase64(value: string) {
     throw new TRPCError({ code: "BAD_REQUEST", message: "The attachment payload is invalid or exceeds 10 MB." });
   }
   return bytes;
+}
+
+function decodeVoiceBase64(value: string) {
+  if (value.length === 0 || value.length > MAX_VOICE_BASE64_LENGTH || value.length % 4 !== 0 || !/^[A-Za-z0-9+/]*={0,2}$/.test(value)) {
+    throw new TRPCError({ code: "BAD_REQUEST", message: "The voice recording is invalid or exceeds 16 MB." });
+  }
+  const bytes = Buffer.from(value, "base64");
+  if (bytes.length === 0 || bytes.length > MAX_VOICE_BYTES) {
+    throw new TRPCError({ code: "BAD_REQUEST", message: "The voice recording is invalid or exceeds 16 MB." });
+  }
+  return bytes;
+}
+
+function isProviderConfigured(provider: z.infer<typeof llmProviderSchema>) {
+  return ({ groq: Boolean(ENV.groqApiKey), openrouter: Boolean(ENV.openRouterApiKey), gemini: Boolean(ENV.geminiApiKey), deepseek: Boolean(ENV.deepseekApiKey) })[provider];
+}
+
+function configuredComposerModels() {
+  const defaults = [
+    { provider: ENV.orchestratorProvider, model: ENV.orchestratorModel, label: "Primary" },
+    { provider: ENV.subtaskProvider, model: ENV.subtaskModel, label: "Subtask" },
+  ];
+  const explicit = ENV.availableModels.map(model => ({ provider: ENV.orchestratorProvider, model, label: "Configured" }));
+  const seen = new Set<string>();
+  return [...defaults, ...explicit].flatMap(entry => {
+    const parsed = llmProviderSchema.safeParse(entry.provider);
+    if (!parsed.success || !entry.model || !isProviderConfigured(parsed.data)) return [];
+    const id = `${parsed.data}:${entry.model}`;
+    if (seen.has(id)) return [];
+    seen.add(id);
+    return [{ id, provider: parsed.data, model: entry.model, label: entry.label }];
+  });
+}
+
+function requestOrigin(request: { protocol: string; get(name: string): string | undefined; headers: Record<string, string | string[] | undefined> }) {
+  const forwardedProtocol = request.headers["x-forwarded-proto"];
+  const protocol = (Array.isArray(forwardedProtocol) ? forwardedProtocol[0] : forwardedProtocol)?.split(",")[0]?.trim() || request.protocol;
+  const host = request.get("host");
+  if (!host) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "The transcription service could not determine the storage origin." });
+  return `${protocol}://${host}`;
 }
 
 function toNotFound(taskId: string): never {
@@ -230,6 +280,31 @@ export const appRouter = router({
           throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "The attachment could not be stored." });
         }
       }),
+    transcribeVoice: protectedProcedure
+      .input(z.object({
+        filename: z.string().trim().min(1).max(255),
+        contentType: voiceMimeSchema,
+        dataBase64: z.string().min(1).max(MAX_VOICE_BASE64_LENGTH),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        await enforceUserMutationLimit(ctx.user.id, "task-voice-transcription", 12, 3_600);
+        const filename = safeAttachmentFilename(input.filename);
+        const bytes = decodeVoiceBase64(input.dataBase64);
+        try {
+          const stored = await storagePut(`voice-inputs/${ctx.user.id}/${randomUUID()}-${filename}`, bytes, input.contentType);
+          const origin = ENV.publicAppUrl.replace(/\/$/, "") || requestOrigin(ctx.req);
+          const result = await transcribeAudio({
+            audioUrl: stored.url.startsWith("http") ? stored.url : `${origin}${stored.url}`,
+            prompt: "Transcribe this task instruction accurately.",
+          });
+          if ("error" in result) throw new TRPCError({ code: "BAD_REQUEST", message: result.error });
+          return { text: result.text, language: result.language, duration: result.duration };
+        } catch (error) {
+          if (error instanceof TRPCError) throw error;
+          console.error(JSON.stringify({ event: "task_voice_transcription_failed", userId: ctx.user.id, message: error instanceof Error ? error.message : "unknown" }));
+          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "The voice recording could not be transcribed." });
+        }
+      }),
     create: protectedProcedure
       .input(
         z.object({
@@ -242,6 +317,7 @@ export const appRouter = router({
             allowWebSearch: z.boolean(),
             allowCodeExecution: z.boolean(),
             allowFileWrites: z.boolean(),
+            selectedModel: selectedModelSchema.optional(),
           }).default(DEFAULT_AUTONOMY_SETTINGS),
           involvesCode: z.boolean(),
           attachments: z.array(attachmentReferenceSchema).max(12).optional(),
@@ -249,6 +325,9 @@ export const appRouter = router({
       )
       .mutation(async ({ ctx, input }) => {
         await enforceUserMutationLimit(ctx.user.id, "task-create", 12, 3_600);
+        if (input.autonomySettings.selectedModel && !configuredComposerModels().some(model => model.id === `${input.autonomySettings.selectedModel!.provider}:${input.autonomySettings.selectedModel!.model}`)) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: "The selected model is not configured for this workspace." });
+        }
         if (input.projectId) await requireOwnedProject(input.projectId, ctx.user.id);
         const attachments = await Promise.all((input.attachments ?? []).map(async attachment => {
           if (attachment.sourceType === "upload") {
@@ -428,6 +507,7 @@ export const appRouter = router({
   catalog: router({
     taskStatuses: publicProcedure.query(() => taskStatusSchema.options),
     executionReadiness: protectedProcedure.query(() => ({ queueConfigured: isQueueConfigured() })),
+    models: protectedProcedure.query(() => ({ models: configuredComposerModels() })),
     estimateTask: protectedProcedure
       .input(z.object({ goal: z.string().trim().min(8).max(12_000), planSteps: z.number().int().min(1).max(25), involvesCode: z.boolean() }))
       .query(({ input }) => estimateTaskCredits(input)),
