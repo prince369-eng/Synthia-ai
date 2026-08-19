@@ -46,3 +46,11 @@
 - [x] Add regression coverage for static-preview runtime OAuth configuration injection and HTML escaping.
 - [x] Diagnose and repair the OAuth callback failure that blocks users from completing Synthia sign-in by restoring the managed MySQL account database boundary; end-to-end callback verification now reaches the authenticated dashboard.
 - [x] Add regression coverage proving session authentication uses the managed account user store rather than the external task database.
+- [x] Redesign the authenticated Synthia shell with a compact collapsible sidebar, icon-only collapsed rail, and balanced desktop proportions inspired by the supplied reference.
+- [x] Replace the oversized dashboard composer with a centered chat-first task surface, compact tool controls, and restrained suggested-task list while retaining Synthia task actions.
+- [x] Densify the task workspace, library, and settings visual hierarchy so panels and typography remain calm and readable across desktop and mobile widths.
+- [x] Add interaction and responsive regression coverage for sidebar collapse and the chat-first task entry experience.
+- [x] Show the compact external-data availability state promptly when Synthia’s deferred PostgreSQL store is not configured.
+- [x] Add a regression test for the bounded task-history retry policy used by the compact unavailable-data state.
+- [x] Remove task-history retry delay so the compact unavailable-data state appears immediately when PostgreSQL is intentionally unconfigured.
+- [x] Add a regression assertion that the collapsed desktop rail retains navigation icons while hiding text labels and task/account detail.

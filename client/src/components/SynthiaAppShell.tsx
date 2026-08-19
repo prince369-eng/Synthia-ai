@@ -1,9 +1,10 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import { startLogin } from "@/const";
+import { isSidebarCollapsed, SIDEBAR_COLLAPSE_STORAGE_KEY } from "@/lib/workspaceLayout";
 import { trpc } from "@/lib/trpc";
 import { cn } from "@/lib/utils";
-import { BookOpenText, ChevronRight, Command, Loader2, Plus, Settings2, Sparkles } from "lucide-react";
-import { type ReactNode } from "react";
+import { BookOpenText, ChevronRight, Command, Loader2, PanelLeftClose, PanelLeftOpen, Plus, Settings2, Sparkles } from "lucide-react";
+import { type ReactNode, useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import { Button } from "./ui/button";
 
@@ -28,7 +29,14 @@ const stateDot: Record<string, string> = {
 export function SynthiaAppShell({ children }: { children: ReactNode }) {
   const { user, loading, isAuthenticated } = useAuth();
   const [location, setLocation] = useLocation();
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() =>
+    typeof window !== "undefined" && isSidebarCollapsed(window.localStorage.getItem(SIDEBAR_COLLAPSE_STORAGE_KEY)),
+  );
   const tasksQuery = trpc.tasks.list.useQuery(undefined, { enabled: isAuthenticated, refetchInterval: 8_000 });
+
+  useEffect(() => {
+    window.localStorage.setItem(SIDEBAR_COLLAPSE_STORAGE_KEY, String(sidebarCollapsed));
+  }, [sidebarCollapsed]);
 
   if (loading) {
     return (
@@ -57,18 +65,23 @@ export function SynthiaAppShell({ children }: { children: ReactNode }) {
   }
 
   return (
-    <div className="synthia-shell">
-      <aside className="synthia-nav" aria-label="Primary navigation">
-        <button className="synthia-brand" onClick={() => setLocation("/")} aria-label="Go to Synthia tasks">
+    <div className={cn("synthia-shell", sidebarCollapsed && "synthia-shell-collapsed")}>
+      <aside className={cn("synthia-nav", sidebarCollapsed && "collapsed")} aria-label="Primary navigation">
+        <div className="synthia-nav-topline">
+          <button className="synthia-brand" onClick={() => setLocation("/")} aria-label="Go to Synthia tasks">
           <span className="synthia-logo-mark"><Sparkles size={17} /></span>
-          <span>Synthia <b>AI</b></span>
-        </button>
-        <Button className="synthia-new-task" onClick={() => setLocation("/")}><Plus size={16} /> New task</Button>
+            <span className="synthia-brand-copy">Synthia <b>AI</b></span>
+          </button>
+          <button className="synthia-collapse-button" type="button" onClick={() => setSidebarCollapsed(value => !value)} aria-label={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"} title={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}>
+            {sidebarCollapsed ? <PanelLeftOpen size={16} /> : <PanelLeftClose size={16} />}
+          </button>
+        </div>
+        <Button className="synthia-new-task" onClick={() => setLocation("/")} title="New task"><Plus size={16} /><span>New task</span></Button>
         <nav className="synthia-nav-links">
           {navItems.map(item => {
             const active = item.path === "/" ? location === "/" || location.startsWith("/tasks/") : location.startsWith(item.path);
             const Icon = item.icon;
-            return <button key={item.path} onClick={() => setLocation(item.path)} className={cn("synthia-nav-item", active && "active")}><Icon size={17} />{item.label}</button>;
+            return <button key={item.path} onClick={() => setLocation(item.path)} title={item.label} className={cn("synthia-nav-item", active && "active")}><Icon size={17} /><span>{item.label}</span></button>;
           })}
         </nav>
         <section className="synthia-task-rail" aria-label="Recent tasks">
@@ -85,7 +98,7 @@ export function SynthiaAppShell({ children }: { children: ReactNode }) {
         </section>
         <div className="synthia-account">
           <span className="synthia-avatar">{(user.name?.[0] ?? user.email?.[0] ?? "S").toUpperCase()}</span>
-          <span><b>{user.name ?? "Synthia user"}</b><small>{user.email ?? "Authenticated workspace"}</small></span>
+          <span className="synthia-account-copy"><b>{user.name ?? "Synthia user"}</b><small>{user.email ?? "Authenticated workspace"}</small></span>
         </div>
       </aside>
       <nav className="synthia-mobile-nav lg:hidden" aria-label="Mobile navigation">
