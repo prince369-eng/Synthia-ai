@@ -44,9 +44,22 @@ export const users = pgTable("users", {
 export const taskStatuses = ["queued", "booting", "planning", "running", "needs_input", "paused", "completed", "failed", "cancelled"] as const;
 export const eventTypes = ["user_message", "agent_message", "clarifying_question", "plan_update", "tool_call", "tool_result", "approval_request", "approval_response", "screenshot", "error", "status_change", "context_summary", "user_file_edit", "user_terminal_command"] as const;
 
+export const projects = pgTable("projects", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  name: varchar("name", { length: 120 }).notNull(),
+  description: text("description"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+}, table => [
+  index("projects_user_updated_idx").on(table.userId, table.updatedAt),
+  uniqueIndex("projects_user_name_unique").on(table.userId, table.name),
+]);
+
 export const tasks = pgTable("tasks", {
   id: varchar("id", { length: 36 }).primaryKey(),
   userId: integer("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  projectId: varchar("project_id", { length: 36 }).references(() => projects.id, { onDelete: "set null" }),
   title: varchar("title", { length: 180 }).notNull(),
   goal: text("goal").notNull(),
   status: taskStatusEnum("status").notNull().default("queued"),
@@ -68,6 +81,7 @@ export const tasks = pgTable("tasks", {
 }, table => [
   index("tasks_user_status_created_idx").on(table.userId, table.status, table.createdAt),
   index("tasks_user_pinned_created_idx").on(table.userId, table.isPinned, table.createdAt),
+  index("tasks_project_updated_idx").on(table.projectId, table.updatedAt),
 ]);
 
 export const taskEvents = pgTable("task_events", {
@@ -176,4 +190,5 @@ export const usageEvents = pgTable("usage_events", {
 export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
 export type Task = typeof tasks.$inferSelect;
+export type Project = typeof projects.$inferSelect;
 export type TaskEvent = typeof taskEvents.$inferSelect;

@@ -26,7 +26,7 @@ describe("Synthia navigation behavior", () => {
     expect(onSignUp).toHaveBeenCalledTimes(1);
   });
 
-  it("opens the profile menu and executes account destinations and sign-out", async () => {
+  it("opens the compact profile menu with all selected destinations and sign-out", async () => {
     const user = userEvent.setup();
     const onNavigate = vi.fn();
     const onLogout = vi.fn();
@@ -34,8 +34,14 @@ describe("Synthia navigation behavior", () => {
 
     await user.click(screen.getByRole("button", { name: "Open account menu" }));
     expect(screen.getAllByText("user@example.test")).toHaveLength(2);
-    await user.click(screen.getByRole("menuitem", { name: "Providers & integrations" }));
-    expect(onNavigate).toHaveBeenCalledWith("/settings/integrations");
+    expect(screen.getByRole("menuitem", { name: "Credits" })).toBeTruthy();
+    expect(screen.getByRole("menuitem", { name: "Account" })).toBeTruthy();
+    expect(screen.getByRole("menuitem", { name: "Personalization" })).toBeTruthy();
+    expect(screen.getByRole("menuitem", { name: "Settings" })).toBeTruthy();
+    expect(screen.getByRole("menuitem", { name: "Homepage" })).toBeTruthy();
+    expect(screen.getByRole("menuitem", { name: "Docs" })).toBeTruthy();
+    await user.click(screen.getByRole("menuitem", { name: "Credits" }));
+    expect(onNavigate).toHaveBeenCalledWith("/settings/billing");
 
     await user.click(screen.getByRole("button", { name: "Open account menu" }));
     await user.click(screen.getByRole("menuitem", { name: "Sign out" }));

@@ -3,14 +3,18 @@ import { startGoogleLogin, startLogin, startSignup } from "@/const";
 import { isSidebarCollapsed, PROFILE_MENU_DESTINATIONS, SIDEBAR_COLLAPSE_STORAGE_KEY } from "@/lib/workspaceLayout";
 import { trpc } from "@/lib/trpc";
 import { cn } from "@/lib/utils";
-import { BookOpenText, ChevronRight, Command, CreditCard, Loader2, LogOut, PanelLeftClose, PanelLeftOpen, Plus, Settings2, SlidersHorizontal, Sparkles, UserRound } from "lucide-react";
-import React, { type ReactNode, useEffect, useState } from "react";
+import { BookOpenText, Bot, Cable, CalendarClock, ChevronRight, Command, CreditCard, FolderKanban, Home, Loader2, LogOut, PanelLeftClose, PanelLeftOpen, Plus, Settings2, SlidersHorizontal, Sparkles, UserRound } from "lucide-react";
+import React, { type ReactNode, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { Button } from "./ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "./ui/dropdown-menu";
 
 const navItems = [
   { label: "Tasks", path: "/", icon: Command },
+  { label: "Projects", path: "/projects", icon: FolderKanban },
+  { label: "Scheduled", path: "/scheduled", icon: CalendarClock },
+  { label: "Agent", path: "/agent", icon: Bot },
+  { label: "Plugins", path: "/plugins", icon: Cable },
   { label: "Library", path: "/library", icon: BookOpenText },
   { label: "Settings", path: "/settings", icon: Settings2 },
 ];
@@ -34,6 +38,7 @@ export function SynthiaAppShell({ children }: { children: ReactNode }) {
     typeof window !== "undefined" && isSidebarCollapsed(window.localStorage.getItem(SIDEBAR_COLLAPSE_STORAGE_KEY)),
   );
   const tasksQuery = trpc.tasks.list.useQuery(undefined, { enabled: isAuthenticated, refetchInterval: 8_000 });
+  const usageQuery = trpc.workspace.usage.useQuery(undefined, { enabled: isAuthenticated, retry: false });
 
   useEffect(() => {
     window.localStorage.setItem(SIDEBAR_COLLAPSE_STORAGE_KEY, String(sidebarCollapsed));
@@ -100,6 +105,7 @@ export function SynthiaAppShell({ children }: { children: ReactNode }) {
         <ProfileMenu
           name={user.name ?? "Synthia user"}
           email={user.email ?? "Authenticated workspace"}
+          creditsBalance={usageQuery.data?.creditsBalance}
           onNavigate={setLocation}
           onLogout={() => void logout()}
         />
@@ -120,26 +126,35 @@ export function AuthEntryActions({ onSignIn, onSignUp, onGoogle }: { onSignIn: (
   return <div className="synthia-auth-actions"><Button onClick={onSignIn} className="synthia-primary-button w-full">Sign in to Synthia AI <ChevronRight size={16} /></Button><Button variant="outline" onClick={onGoogle} className="synthia-google-button w-full"><span className="synthia-google-glyph" aria-hidden="true">G</span>Continue with Google</Button><p className="synthia-auth-create">New to Synthia? <button type="button" onClick={onSignUp}>Create an account</button></p><small>The verified Manus account portal supports sign-in, account creation, and Google identity selection. Synthia never receives provider tokens.</small></div>;
 }
 
-export function ProfileMenu({ name, email, onNavigate, onLogout }: { name: string; email: string; onNavigate: (path: string) => void; onLogout: () => void }) {
+export function ProfileMenu({ name, email, creditsBalance, onNavigate, onLogout }: { name: string; email: string; creditsBalance?: number; onNavigate: (path: string) => void; onLogout: () => void }) {
   const initial = (name[0] ?? email[0] ?? "S").toUpperCase();
-  const menuIcons = [UserRound, SlidersHorizontal, CreditCard];
+  const [open, setOpen] = useState(false);
+  const pointerWithinMenu = useRef(false);
+  const menuIcons = { credits: CreditCard, account: UserRound, personalization: SlidersHorizontal, settings: Settings2, home: Home, docs: BookOpenText };
+  const accountItems = PROFILE_MENU_DESTINATIONS.filter(item => item.group === "account");
+  const navigationItems = PROFILE_MENU_DESTINATIONS.filter(item => item.group === "navigate");
 
-  return <DropdownMenu>
+  return <DropdownMenu open={open} onOpenChange={nextOpen => setOpen(nextOpen || pointerWithinMenu.current)}>
     <DropdownMenuTrigger asChild>
-      <button className="synthia-account-trigger" type="button" aria-label="Open account menu" title="Account menu">
+      <button className="synthia-account-trigger" type="button" aria-label="Open account menu" title="Account menu" onPointerEnter={() => { pointerWithinMenu.current = true; setOpen(true); }} onPointerLeave={() => { pointerWithinMenu.current = false; }}>
         <span className="synthia-avatar">{initial}</span>
         <span className="synthia-account-copy"><b>{name}</b><small>{email}</small></span>
       </button>
     </DropdownMenuTrigger>
-    <DropdownMenuContent align="start" side="right" sideOffset={10} className="synthia-account-menu">
-      <DropdownMenuLabel className="synthia-account-menu-label"><b>{name}</b><span>{email}</span></DropdownMenuLabel>
+    <DropdownMenuContent align="start" side="right" sideOffset={10} className="synthia-account-menu" onPointerEnter={() => { pointerWithinMenu.current = true; setOpen(true); }} onPointerLeave={() => { pointerWithinMenu.current = false; setOpen(false); }}>
+      <DropdownMenuLabel className="synthia-account-menu-label"><b>{name}</b><span>{email}</span><small>{creditsBalance === undefined ? "Credits unavailable" : `${creditsBalance} available credits`}</small></DropdownMenuLabel>
       <DropdownMenuSeparator />
-      {PROFILE_MENU_DESTINATIONS.map((item, index) => {
-        const Icon = menuIcons[index];
-        return <DropdownMenuItem key={item.path} onSelect={() => onNavigate(item.path)} className="synthia-account-menu-item"><Icon size={14} />{item.label}</DropdownMenuItem>;
+      {accountItems.map(item => {
+        const Icon = menuIcons[item.icon];
+        return <DropdownMenuItem key={item.path} onSelect={() => { setOpen(false); onNavigate(item.path); }} className="synthia-account-menu-item"><Icon size={14} />{item.label}</DropdownMenuItem>;
       })}
       <DropdownMenuSeparator />
-      <DropdownMenuItem onSelect={onLogout} className="synthia-account-menu-item synthia-account-menu-signout"><LogOut size={14} />Sign out</DropdownMenuItem>
+      {navigationItems.map(item => {
+        const Icon = menuIcons[item.icon];
+        return <DropdownMenuItem key={item.path} onSelect={() => { setOpen(false); onNavigate(item.path); }} className="synthia-account-menu-item"><Icon size={14} />{item.label}</DropdownMenuItem>;
+      })}
+      <DropdownMenuSeparator />
+      <DropdownMenuItem onSelect={() => { setOpen(false); onLogout(); }} className="synthia-account-menu-item synthia-account-menu-signout"><LogOut size={14} />Sign out</DropdownMenuItem>
     </DropdownMenuContent>
   </DropdownMenu>;
 }

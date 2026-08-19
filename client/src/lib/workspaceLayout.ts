@@ -10,9 +10,12 @@ export const TASK_ENTRY_SUGGESTIONS = [
 export const TASK_HISTORY_QUERY_OPTIONS = { retry: false } as const;
 
 export const PROFILE_MENU_DESTINATIONS = [
-  { label: "Account & preferences", path: "/settings/profile" },
-  { label: "Providers & integrations", path: "/settings/integrations" },
-  { label: "Usage & credits", path: "/settings/billing" },
+  { label: "Credits", path: "/settings/billing", icon: "credits", group: "account" },
+  { label: "Account", path: "/settings/profile", icon: "account", group: "account" },
+  { label: "Personalization", path: "/settings/personalization", icon: "personalization", group: "account" },
+  { label: "Settings", path: "/settings", icon: "settings", group: "navigate" },
+  { label: "Homepage", path: "/", icon: "home", group: "navigate" },
+  { label: "Docs", path: "/docs", icon: "docs", group: "navigate" },
 ] as const;
 
 export const WORKSPACE_RETURN_ROUTES = {

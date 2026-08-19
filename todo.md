@@ -57,6 +57,14 @@
 - [x] Remove task-history retry delay so the compact unavailable-data state appears immediately when PostgreSQL is intentionally unconfigured.
 - [x] Add a regression assertion that the collapsed desktop rail retains navigation icons while hiding text labels and task/account detail.
 - [ ] Configure the documented Synthia external-service and local Compose environment keys through secure project secrets management.
+- [x] Review the live Manus sidebar with the user and record only the user-selected navigation, layout, and feature changes for Synthia.
+- [x] Add a compact Projects area with clear project context and creation entry point.
+- [x] Add a compact Scheduled area that truthfully explains and lists Synthia scheduled work when configured.
+- [x] Fix the Scheduled screen’s response-shape handling so an empty or unavailable job list renders a compact truthful state rather than an error boundary.
+- [x] Add an Agent area that presents the existing autonomous-run capabilities without duplicating the task workspace.
+- [x] Add a Plugins area for user integrations, provider readiness, and connection setup guidance.
+- [x] Expand the lower profile control into a compact account panel with Credits, Account, Personalization, Settings, Homepage, Docs, and sign-out actions.
+- [x] Add navigation and behavioral coverage for Projects, Scheduled, Agent, Plugins, and lower profile-panel routes.
 - [x] Present each configured external Synthia provider with clear connected, ready-to-connect, or missing-credential state and setup guidance.
 - [x] Document the complete environment-variable contract in a safe public configuration reference without committing secrets.
 - [x] Encode the verified Manus unified account-portal behavior for account creation; the portal expressly supports sign-in or sign-up through its supported SSO mode.
@@ -71,3 +79,12 @@
 - [x] Replace the unavailable `.env.example` instruction with a safe environment-reference document for local Compose and managed secret configuration.
 - [x] Correct profile-control account typography and truncation styling for both expanded and collapsed sidebar states.
 - [x] Add rendered-source regression assertions for profile menu actions, grouped settings navigation, and visible dashboard/library workspace returns.
+- [x] Audit the live Manus Library, Scheduled, Agent, Plugins, and lower profile areas and record only layout and capability patterns that map to the approved Synthia scope.
+- [x] Extend Synthia Library with real artifact organization, task context, and truthful empty, loading, and unavailable states where supported by the existing artifact model.
+- [x] Extend Synthia Scheduled with real schedule lifecycle information and compact controls only where the configured Heartbeat API exposes the required operations.
+- [x] Extend Synthia Agent with live execution readiness, task-state, and operational capability context from existing Synthia services.
+- [x] Extend Synthia Plugins with real provider, connection, credential-readiness, and integration-management actions without exposing secrets.
+- [x] Refine the lower profile panel and related settings destinations with the selected compact information hierarchy and real account/session controls.
+- [x] Add behavioral and regression coverage for every implemented reference-led capability and verify the revised pages visually.
+- [x] Add frontend behavioral coverage for the Projects, Agent, and Plugins routes, including key navigation and interaction states.
+- [x] Add regression coverage for Agent readiness/task state, Plugins filtering and disconnect initiation, and lower-profile credit-status rendering.

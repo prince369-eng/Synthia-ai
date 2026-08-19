@@ -8,11 +8,13 @@ import {
   InsertUser,
   integrations,
   memoryFacts,
+  projects,
   sandboxes,
   taskEvents,
   taskEventSequences,
   taskMessages,
   tasks,
+  type Project,
   type Task,
   type User,
   usageEvents,
@@ -115,6 +117,45 @@ export async function listTasksForUser(userId: number) {
     .orderBy(desc(tasks.isPinned), desc(tasks.updatedAt));
 }
 
+export async function listProjectsForUser(userId: number): Promise<Project[]> {
+  const database = databaseRequired(await getDb());
+  return database
+    .select()
+    .from(projects)
+    .where(eq(projects.userId, userId))
+    .orderBy(desc(projects.updatedAt));
+}
+
+export async function getProjectForUser(projectId: string, userId: number): Promise<Project | undefined> {
+  const database = databaseRequired(await getDb());
+  const rows = await database
+    .select()
+    .from(projects)
+    .where(and(eq(projects.id, projectId), eq(projects.userId, userId)))
+    .limit(1);
+  return rows[0];
+}
+
+export async function createProjectForUser(input: {
+  userId: number;
+  name: string;
+  description?: string;
+}): Promise<Project> {
+  const database = databaseRequired(await getDb());
+  const id = randomUUID();
+  const [project] = await database
+    .insert(projects)
+    .values({
+      id,
+      userId: input.userId,
+      name: input.name,
+      description: input.description,
+    })
+    .returning();
+  if (!project) throw new Error("The project could not be created.");
+  return project;
+}
+
 export async function getTaskForUser(taskId: string, userId: number): Promise<Task | undefined> {
   const database = databaseRequired(await getDb());
   const result = await database
@@ -133,6 +174,7 @@ export async function getTaskById(taskId: string): Promise<Task | undefined> {
 
 export async function createTaskForUser(input: {
   userId: number;
+  projectId?: string;
   title: string;
   goal: string;
   plan: TaskPlan;
@@ -148,6 +190,7 @@ export async function createTaskForUser(input: {
     await transaction.insert(tasks).values({
       id,
       userId: input.userId,
+      projectId: input.projectId,
       title: input.title,
       goal: input.goal,
       plan: input.plan,
@@ -240,6 +283,26 @@ export async function listTaskDeliverables(taskId: string) {
     .select()
     .from(deliverables)
     .where(eq(deliverables.taskId, taskId))
+    .orderBy(desc(deliverables.isFinal), desc(deliverables.createdAt));
+}
+
+export async function listLibraryDeliverablesForUser(userId: number) {
+  const database = databaseRequired(await getDb());
+  return database
+    .select({
+      id: deliverables.id,
+      taskId: tasks.id,
+      taskTitle: tasks.title,
+      taskGoal: tasks.goal,
+      taskStatus: tasks.status,
+      filename: deliverables.filename,
+      fileType: deliverables.fileType,
+      isFinal: deliverables.isFinal,
+      createdAt: deliverables.createdAt,
+    })
+    .from(deliverables)
+    .innerJoin(tasks, eq(deliverables.taskId, tasks.id))
+    .where(eq(tasks.userId, userId))
     .orderBy(desc(deliverables.isFinal), desc(deliverables.createdAt));
 }
 

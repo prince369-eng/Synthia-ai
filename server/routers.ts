@@ -1,17 +1,22 @@
 import { COOKIE_NAME } from "@shared/const";
 import { TRPCError } from "@trpc/server";
+import { parse as parseCookieHeader } from "cookie";
 import { z } from "zod";
 import {
   appendTaskEvent,
+  createProjectForUser,
   createTaskForUser,
   completeOnboardingForUser,
   DEFAULT_AUTONOMY_SETTINGS,
   type TaskPlanStep,
   getTaskForUser,
+  getProjectForUser,
   getUserPreferences,
   getUsageSummary,
   listIntegrationsForUser,
+  listLibraryDeliverablesForUser,
   listMemoryFacts,
+  listProjectsForUser,
   listTaskApprovals,
   listTaskDeliverables,
   listTaskEvents,
@@ -35,6 +40,7 @@ import { serviceReadinessForUser } from "./integrations/catalog";
 import { estimateTaskCredits } from "./agent/creditEstimate";
 import { encryptSecret } from "./security/encryption";
 import { getTaskArtifactUrl } from "./agent/artifactStorage";
+import { listHeartbeatJobs } from "./_core/heartbeat";
 
 const taskIdSchema = z.object({ taskId: z.string().uuid() });
 const taskStatusSchema = z.enum([
@@ -67,6 +73,14 @@ async function requireOwnedTask(taskId: string, userId: number) {
   return task;
 }
 
+async function requireOwnedProject(projectId: string, userId: number) {
+  const project = await getProjectForUser(projectId, userId);
+  if (!project) {
+    throw new TRPCError({ code: "NOT_FOUND", message: `Project ${projectId} was not found.` });
+  }
+  return project;
+}
+
 function titleFromGoal(goal: string) {
   const normalized = goal.replace(/\s+/g, " ").trim();
   return normalized.length > 72 ? `${normalized.slice(0, 69)}…` : normalized;
@@ -78,6 +92,10 @@ function initialPlanFromGoal(goal: string): TaskPlanStep[] {
     { id: "execute", title: `Execute: ${titleFromGoal(goal)}`, state: "pending" },
     { id: "deliver", title: "Verify results and prepare deliverables", state: "pending" },
   ];
+}
+
+function userSessionFromRequest(cookieHeader: string | undefined): string {
+  return parseCookieHeader(cookieHeader ?? "")[COOKIE_NAME] ?? "";
 }
 
 async function enforceUserMutationLimit(userId: number, scope: string, limit: number, windowSeconds: number) {
@@ -100,6 +118,30 @@ export const appRouter = router({
       ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
       return { success: true } as const;
     }),
+  }),
+  projects: router({
+    list: protectedProcedure.query(({ ctx }) => listProjectsForUser(ctx.user.id)),
+    create: protectedProcedure
+      .input(z.object({
+        name: z.string().trim().min(2).max(120),
+        description: z.string().trim().max(2_000).optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        await enforceUserMutationLimit(ctx.user.id, "project-create", 30, 3_600);
+        return createProjectForUser({
+          userId: ctx.user.id,
+          name: input.name,
+          description: input.description || undefined,
+        });
+      }),
+  }),
+  scheduled: router({
+    list: protectedProcedure.query(({ ctx }) =>
+      listHeartbeatJobs(userSessionFromRequest(ctx.req.headers.cookie), { page: 1, pageSize: 50 }),
+    ),
+  }),
+  library: router({
+    list: protectedProcedure.query(({ ctx }) => listLibraryDeliverablesForUser(ctx.user.id)),
   }),
   tasks: router({
     list: protectedProcedure.query(({ ctx }) => listTasksForUser(ctx.user.id)),
@@ -133,6 +175,7 @@ export const appRouter = router({
         z.object({
           goal: z.string().trim().min(8).max(12_000),
           title: z.string().trim().min(1).max(180).optional(),
+          projectId: z.string().uuid().optional(),
           plan: planSchema.optional(),
           autonomySettings: z.object({
             mode: z.enum(["ask_before_risky", "supervised"]),
@@ -145,10 +188,12 @@ export const appRouter = router({
       )
       .mutation(async ({ ctx, input }) => {
         await enforceUserMutationLimit(ctx.user.id, "task-create", 12, 3_600);
+        if (input.projectId) await requireOwnedProject(input.projectId, ctx.user.id);
         const plan = input.plan ?? initialPlanFromGoal(input.goal);
         const estimate = estimateTaskCredits({ goal: input.goal, planSteps: plan.length, involvesCode: input.involvesCode });
         const task = await createTaskForUser({
           userId: ctx.user.id,
+          projectId: input.projectId,
           title: input.title ?? titleFromGoal(input.goal),
           goal: input.goal,
           plan,

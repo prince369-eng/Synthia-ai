@@ -8,6 +8,8 @@ import {
   TASK_HISTORY_QUERY_OPTIONS,
   WORKSPACE_RETURN_ROUTES,
 } from "../client/src/lib/workspaceLayout";
+import { filterLibraryItems } from "../client/src/pages/Library";
+import { normalizeScheduledJobs } from "../client/src/pages/Scheduled";
 
 describe("compact workspace layout contract", () => {
   it("restores only an explicit collapsed navigation preference", () => {
@@ -40,9 +42,12 @@ describe("compact workspace layout contract", () => {
 
   it("keeps account navigation and workspace returns explicit and route-safe", () => {
     expect(PROFILE_MENU_DESTINATIONS).toEqual([
-      { label: "Account & preferences", path: "/settings/profile" },
-      { label: "Providers & integrations", path: "/settings/integrations" },
-      { label: "Usage & credits", path: "/settings/billing" },
+      { label: "Credits", path: "/settings/billing", icon: "credits", group: "account" },
+      { label: "Account", path: "/settings/profile", icon: "account", group: "account" },
+      { label: "Personalization", path: "/settings/personalization", icon: "personalization", group: "account" },
+      { label: "Settings", path: "/settings", icon: "settings", group: "navigate" },
+      { label: "Homepage", path: "/", icon: "home", group: "navigate" },
+      { label: "Docs", path: "/docs", icon: "docs", group: "navigate" },
     ]);
     expect(WORKSPACE_RETURN_ROUTES).toEqual({ dashboard: "/", library: "/library" });
   });
@@ -65,5 +70,22 @@ describe("compact workspace layout contract", () => {
     expect(workspace).toContain("WORKSPACE_RETURN_ROUTES.library");
     expect(css).toContain(".synthia-account-trigger .synthia-account-copy b");
     expect(css).toContain(".synthia-nav.collapsed .synthia-account-copy");
+  });
+
+  it("normalizes an unavailable or malformed scheduled-job list into the compact empty state", () => {
+    expect(normalizeScheduledJobs(undefined)).toEqual([]);
+    expect(normalizeScheduledJobs({ jobs: "invalid" })).toEqual([]);
+    expect(normalizeScheduledJobs({ jobs: [{ taskUid: "job-1", name: "Morning review" }] })).toEqual([{ taskUid: "job-1", name: "Morning review" }]);
+  });
+
+  it("filters real library items by task context and final-output state without inventing records", () => {
+    const items = [
+      { id: "artifact-1", taskId: "task-1", taskTitle: "Research workspace", taskGoal: "Prepare a research brief", filename: "brief.md", fileType: "text/markdown", isFinal: true, createdAt: new Date() },
+      { id: "artifact-2", taskId: "task-2", taskTitle: "Build prototype", taskGoal: "Implement an interface", filename: "notes.txt", fileType: "text/plain", isFinal: false, createdAt: new Date() },
+    ];
+
+    expect(filterLibraryItems(items, "research", false)).toEqual([items[0]]);
+    expect(filterLibraryItems(items, "", true)).toEqual([items[0]]);
+    expect(filterLibraryItems(items, "missing", false)).toEqual([]);
   });
 });
