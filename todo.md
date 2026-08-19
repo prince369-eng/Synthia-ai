@@ -15,7 +15,7 @@
 - [x] Implement Resend and Postmark task notification delivery with server-only credentials and provider failover.
 - [x] Complete worker recovery with sandbox checkpoint restore, usage accounting, server-side credit estimates, and runnable worker scripts.
 - [x] Explicitly limit browser and screenshot capabilities to E2B in the Agent's Computer UI, sandbox runtime errors, and deployment documentation; Docker remains a code-only development fallback.
-- [ ] Add general artifact creation and retrieval flows, then cover the event stream, approval enforcement, queue retry, and provider readiness with focused tests. Sandbox file publication, model parsing, terminal policy, action policy, credits, worker recovery, and retries are covered.
+- [x] Complete general artifact retrieval from both task workspaces and Library, then verify the event stream, approval enforcement, queue retry, and provider readiness with focused tests. Sandbox file publication, model parsing, terminal policy, action policy, credits, worker recovery, and retries are covered.
 - [x] Add authenticated on-demand artifact URL refresh for task deliverables and cover ownership enforcement.
 - [x] Add authenticated on-demand artifact URL refresh for task deliverables and cover ownership enforcement.
 - [ ] Validate PostgreSQL event-sequence allocation under concurrent writer conditions after applying the migration to the external database.
@@ -96,3 +96,7 @@
 - [x] Add an explicit Account Settings action that routes users to the verified managed identity portal without handling identity-provider credentials in Synthia.
 - [x] Add a compact top-right close/back control to Settings that returns to the Synthia task workspace with an accessible label and keyboard support.
 - [x] Rebalance the Settings page header, section navigation, and content-panel proportions across desktop and mobile breakpoints.
+- [x] Refresh owned artifact URLs on secure workspace artifact open and align workspace artifact rendering with the persisted deliverable schema.
+- [x] Add an ownership-safe Library artifact-open action that refreshes the URL only after user interaction, plus focused event-stream and approval-enforcement regression coverage.
+- [x] Fix the General Settings capability-row grid so each switch stays inside its own content column at 1920px desktop width and responsive widths.
+- [x] Capture and retain a final post-fix desktop screenshot of the General Settings capability controls through the project screenshot service, alongside the completed repeatable layout assertion.

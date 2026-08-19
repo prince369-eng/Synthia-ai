@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from "vitest";
 import React from "react";
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { ProfileMenu } from "../client/src/components/SynthiaAppShell";
 import { AuthEntryActions } from "../client/src/components/SynthiaAppShell";
@@ -87,6 +87,21 @@ describe("Synthia navigation behavior", () => {
     expect(screen.getByRole("switch", { name: "Dark appearance" }).hasAttribute("disabled")).toBe(false);
     expect(screen.getByRole("button", { name: "Ask before risky" }).hasAttribute("disabled")).toBe(true);
     expect(screen.getByRole("switch", { name: "Web research" }).hasAttribute("disabled")).toBe(true);
+  });
+
+  it("renders General review and capability controls inside bounded grid cells", () => {
+    render(<SettingsGeneral preferences={{}} theme="dark" onToggleTheme={vi.fn()} onSave={vi.fn()} saving={false} persistenceAvailable />);
+
+    const reviewGrid = screen.getByRole("button", { name: "Ask before risky" }).parentElement;
+    expect(reviewGrid?.className).toContain("grid-cols-2");
+    expect(reviewGrid?.className).toContain("gap-2");
+
+    const researchSwitch = screen.getByRole("switch", { name: "Web research" });
+    const researchCell = researchSwitch.closest("[data-testid='settings-capability-card']");
+    expect(researchCell?.className).toContain("min-w-0");
+    expect(within(researchCell as HTMLElement).getByRole("switch", { name: "Web research" }).className).toContain("shrink-0");
+    expect(researchSwitch.parentElement?.className).toContain("w-full");
+    expect(screen.getAllByTestId("settings-capability-card")).toHaveLength(3);
   });
 
   it("exposes the managed account portal only through the explicit Account Settings action", async () => {

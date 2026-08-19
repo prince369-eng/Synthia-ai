@@ -10,6 +10,7 @@ import {
 } from "../client/src/lib/workspaceLayout";
 import { filterLibraryItems } from "../client/src/pages/Library";
 import { normalizeScheduledJobs } from "../client/src/pages/Scheduled";
+import { isScreenCapture } from "../client/src/pages/TaskWorkspace";
 
 describe("compact workspace layout contract", () => {
   it("restores only an explicit collapsed navigation preference", () => {
@@ -88,5 +89,40 @@ describe("compact workspace layout contract", () => {
     expect(filterLibraryItems(items, "research", false)).toEqual([items[0]]);
     expect(filterLibraryItems(items, "", true)).toEqual([items[0]]);
     expect(filterLibraryItems(items, "missing", false)).toEqual([]);
+  });
+
+  it("recognizes persisted image deliverables using the actual fileType schema field", () => {
+    expect(isScreenCapture({ fileType: "image/png" })).toBe(true);
+    expect(isScreenCapture({ fileType: "text/markdown" })).toBe(false);
+    expect(isScreenCapture({ mimeType: "image/png" })).toBe(false);
+  });
+
+  it("refreshes workspace artifact links through the owned task-artifact contract instead of persisting direct URLs", () => {
+    const workspace = readFileSync(new URL("../client/src/pages/TaskWorkspace.tsx", import.meta.url), "utf8");
+
+    expect(workspace).toContain("trpc.tasks.artifactUrl.useQuery");
+    expect(workspace).toContain("<ArtifactOpenButton taskId={taskId} deliverable={item} />");
+    expect(workspace).not.toContain("href={item.url}");
+    expect(workspace).toContain("item.fileType");
+  });
+
+  it("makes the same user-initiated secure artifact retrieval available from the Library", () => {
+    const library = readFileSync(new URL("../client/src/pages/Library.tsx", import.meta.url), "utf8");
+
+    expect(library).toContain("export function LibraryArtifactOpenButton");
+    expect(library).toContain("trpc.tasks.artifactUrl.useQuery");
+    expect(library).toContain("<LibraryArtifactOpenButton taskId={item.taskId} deliverable={item} />");
+    expect(library).toContain("Open task workspace →");
+  });
+
+  it("keeps General Settings review buttons and capability switches inside bounded responsive grid cells", () => {
+    const settings = readFileSync(new URL("../client/src/pages/Settings.tsx", import.meta.url), "utf8");
+
+    expect(settings).toContain('className="grid grid-cols-2 gap-2"');
+    expect(settings).toContain('cn("mt-0 w-full", defaults.mode');
+    expect(settings).toContain('className="grid min-w-0 gap-3 md:grid-cols-3"');
+    expect(settings).toContain('className="min-w-0 rounded-lg border border-white/8 bg-black/10 px-3 py-3"');
+    expect(settings).toContain('className="flex min-w-0 w-full items-start justify-between gap-3"');
+    expect(settings).toContain("w-9 shrink-0 rounded-full");
   });
 });

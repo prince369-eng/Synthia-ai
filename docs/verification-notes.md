@@ -73,3 +73,9 @@ The live Manus account page was inspected at `https://manus.im/login`. It explic
 ## 2026-08-19 — User-guided Manus sidebar review
 
 The live Manus sidebar is open in the connected browser for a user-guided reference review. Its visible structural groups are the product mark and collapse control, primary entries for **New task**, **Agent**, **Plugins**, **Scheduled**, and **Library**, a projects group with a create action, a recent-tasks group, and a compact account control anchored to the lower rail. No additional Synthia features will be added from this reference unless the user explicitly selects them.
+
+## 2026-08-19 — General Settings control containment repair
+
+The connected authenticated browser was reviewed at the user’s wide desktop viewport after the reported General Settings control overflow. The default review-mode actions now render as equal-width, aligned controls inside their own two-column card, and **Web research**, **Code execution**, and **File writes** each render in a separate bounded capability cell with a non-shrinking switch. The controls remain within their card boundaries at the reviewed width; no artificial settings or task data was introduced while the external PostgreSQL preferences store remains intentionally unconfigured.
+
+A final post-fix project screenshot of `/settings/general` was retained at a 1920 × 1020 desktop viewport. It visibly confirms all three capability switches remain inside separate cells in the **Default task capabilities** card, while the review-mode buttons remain aligned inside their adjacent card. The capture supplements the deterministic DOM and source-layout regression assertions.
