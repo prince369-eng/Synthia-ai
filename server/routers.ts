@@ -81,8 +81,8 @@ const selectedModelSchema = z.object({
   model: z.string().trim().min(1).max(180),
 });
 const voiceMimeSchema = z.enum(["audio/webm", "audio/ogg", "audio/wav", "audio/mpeg", "audio/mp4", "audio/x-m4a"]);
-const attachmentMimeSchema = z.string().trim().min(3).max(100).regex(
-  /^(application\/(pdf|json|zip|x-7z-compressed|x-tar|vnd\.(openxmlformats-officedocument\.(wordprocessingml\.document|spreadsheetml\.sheet)|ms-excel|msword))|text\/(plain|csv|markdown)|image\/(png|jpeg|webp))$/,
+export const attachmentMimeSchema = z.string().trim().min(3).max(100).regex(
+  /^(application\/(pdf|json|zip|x-7z-compressed|x-tar|vnd\.(openxmlformats-officedocument\.(wordprocessingml\.document|spreadsheetml\.sheet)|ms-excel|msword))|text\/(plain|csv|markdown)|image\/(png|jpeg|webp)|video\/(mp4|webm|quicktime))$/,
   "This file type is not supported.",
 );
 const attachmentReferenceSchema = z.discriminatedUnion("sourceType", [
@@ -554,6 +554,22 @@ export const appRouter = router({
         text: true,
         voice: Boolean(ENV.forgeApiUrl && ENV.forgeApiKey),
         vision: configuredComposerModels().some(model => model.capabilities.includes("vision")),
+      },
+    })),
+    media: protectedProcedure.query(() => ({
+      image: {
+        provider: ENV.imageProvider,
+        models: ENV.imageModels,
+        configured: Boolean(ENV.forgeApiUrl && ENV.forgeApiKey && ENV.imageProvider),
+        route: "server/_core/imageGeneration.ts",
+      },
+      video: {
+        provider: ENV.videoProvider || null,
+        models: ENV.videoModels,
+        configured: false,
+        reason: ENV.videoProvider && ENV.videoApiKey
+          ? "A provider-specific asynchronous video adapter must be verified before enabling generation."
+          : "Choose a video provider and add its credential before enabling generation.",
       },
     })),
     estimateTask: protectedProcedure

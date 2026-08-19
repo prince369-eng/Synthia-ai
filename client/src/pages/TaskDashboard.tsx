@@ -1,5 +1,5 @@
 import { trpc } from "@/lib/trpc";
-import { ArrowUp, ArrowUpRight, Bot, Code2, FileText, FolderOpen, Gauge, Loader2, Mic, MoreHorizontal, Play, Plus, Share2, Sparkles, Upload } from "lucide-react";
+import { ArrowUp, ArrowUpRight, Bot, Code2, FileText, FolderOpen, Gauge, ImageIcon, Loader2, Mic, MoreHorizontal, Play, Plus, Share2, Sparkles, Upload, Video } from "lucide-react";
 import React, { FormEvent, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
@@ -39,6 +39,7 @@ export default function TaskDashboard() {
   const [projectId, setProjectId] = useState("");
   const [attachmentError, setAttachmentError] = useState<string | null>(null);
   const [headerMenu, setHeaderMenu] = useState<"usage" | "more" | null>(null);
+  const [mediaMenuOpen, setMediaMenuOpen] = useState(false);
   const [modelMenuOpen, setModelMenuOpen] = useState(false);
   const [selectedModelId, setSelectedModelId] = useState("");
   const [voiceState, setVoiceState] = useState<"idle" | "recording" | "transcribing">("idle");
@@ -51,6 +52,7 @@ export default function TaskDashboard() {
   const settings = trpc.settings.get.useQuery(undefined, { retry: false });
   const usage = trpc.workspace.usage.useQuery(undefined, { retry: false });
   const availableModels = trpc.catalog.models.useQuery(undefined, { retry: false });
+  const mediaCapabilities = trpc.catalog.media.useQuery(undefined, { retry: false });
   const uploadAttachment = trpc.tasks.uploadAttachment.useMutation();
   const transcribeVoice = trpc.tasks.transcribeVoice.useMutation();
   const createTask = trpc.tasks.create.useMutation({
@@ -241,6 +243,10 @@ export default function TaskDashboard() {
             </div>
             <div className="synthia-composer-control-group synthia-composer-control-group-end">
               <select aria-label="Project for task" value={projectId} onChange={event => setProjectId(event.target.value)} className="synthia-project-select"><option value="">No project</option>{projects.data?.map(project => <option key={project.id} value={project.id}>{project.name}</option>)}</select>
+              <div className="relative">
+                <button type="button" className={cn("synthia-composer-toggle", mediaMenuOpen && "active")} aria-label="View media capabilities" aria-expanded={mediaMenuOpen} onClick={() => setMediaMenuOpen(value => !value)}><Sparkles size={13} /><span>Media</span></button>
+                {mediaMenuOpen ? <div className="synthia-model-menu synthia-media-menu" data-testid="media-capability-menu"><div className="synthia-media-capability"><ImageIcon size={14} /><span><b>Image generation</b><small>{mediaCapabilities.data?.image.configured ? `Ready · ${mediaCapabilities.data.image.provider}` : "Unavailable · configure image provider"}</small></span><em className={mediaCapabilities.data?.image.configured ? "ready" : "pending"}>{mediaCapabilities.data?.image.configured ? "Ready" : "Unavailable"}</em></div><div className="synthia-media-capability"><Video size={14} /><span><b>Video generation</b><small>{mediaCapabilities.data?.video.reason ?? "Checking provider adapter…"}</small></span><em className="pending">Unavailable</em></div><p>Generation jobs will appear here only after a verified provider adapter, storage path, and task route are configured.</p></div> : null}
+              </div>
               <div className="relative">
                 <button type="button" className={cn("synthia-composer-toggle synthia-model-trigger", modelMenuOpen && "active")} aria-label="Choose model" aria-expanded={modelMenuOpen} onClick={() => setModelMenuOpen(value => !value)}><Bot size={13} /><span>{selectedModel?.model ?? "Automatic"}</span></button>
                 {modelMenuOpen ? <div className="synthia-model-menu"><button type="button" className={cn(!selectedModelId && "active")} onClick={() => { setSelectedModelId(""); setModelMenuOpen(false); }}><b>Automatic routing</b><small>Use the configured runtime default for this task.</small></button>{availableModels.data?.models.map(model => <button key={model.id} type="button" className={cn(model.id === selectedModelId && "active")} onClick={() => { setSelectedModelId(model.id); setModelMenuOpen(false); }}><b>{model.label}</b><small>{model.provider} · {model.model} · {composerModelCapabilityLabel(model)}</small></button>)}{availableModels.data?.models.length ? <p>Voice instructions are transcribed into task text.</p> : <p>Automatic routing is active. Configure an orchestrator model to choose one explicitly.</p>}</div> : null}

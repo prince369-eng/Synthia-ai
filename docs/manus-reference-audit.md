@@ -133,3 +133,9 @@ The Settings rail now supports client-side section search while preserving the s
 The composer now offers an explicit **Automatic routing** choice alongside configured provider models. Each configured choice exposes its actual text or text-and-vision capability. A fixed text-only model cannot submit a task with image input; the user must select a vision-capable choice or return to automatic routing. Voice recordings continue through the authenticated transcription procedure and are inserted as task text rather than presented as a model choice.
 
 The active-task overflow menu now persists rename, pin, favorite, archive, and soft-delete actions through ownership-scoped task procedures. Delete requires an explicit confirmation. Scheduling remains visibly unavailable because there is no persisted task-to-Heartbeat schedule creation contract yet.
+
+
+The center composer now includes a compact **Media** capability panel. Image generation reports readiness only when the existing built-in ImageService route and Forge credentials are present. Video generation remains explicitly unavailable until a selected provider has a verified asynchronous adapter, polling/status lifecycle, artifact storage, and secure credential. The panel is informational and does not simulate generation jobs.
+
+
+Common `video/mp4`, `video/webm`, and `video/quicktime` files are now accepted through the authenticated attachment contract and hydrated into the isolated task input directory for sandbox-based processing. They are not silently converted into inline LLM vision content: only supported image MIME types are sent through the configured vision-model path, and the agent must use an available sandbox processing tool for video inspection.

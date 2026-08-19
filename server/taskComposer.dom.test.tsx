@@ -20,6 +20,7 @@ vi.mock("@/lib/trpc", () => ({
     catalog: {
       estimateTask: { useQuery: () => ({ data: undefined, isLoading: false, isError: false }) },
       models: { useQuery: () => ({ data: { models: [] }, isLoading: false, isError: false }) },
+      media: { useQuery: () => ({ data: { image: { provider: "forge", models: [], configured: true }, video: { provider: null, models: [], configured: false, reason: "Choose a video provider and add its credential before enabling generation." } }, isLoading: false, isError: false }) },
     },
     library: { list: { useQuery: () => ({ data: [], isLoading: false, isError: false }) } },
   },
@@ -65,6 +66,10 @@ describe("task composer attachments", () => {
     expect(screen.getByText("Add from local files")).toBeTruthy();
     expect(screen.getByText("From Library")).toBeTruthy();
     expect(screen.getByRole("button", { name: "Choose model" })).toBeTruthy();
+    await user.click(screen.getByRole("button", { name: "View media capabilities" }));
+    expect(screen.getByText("Image generation")).toBeTruthy();
+    expect(screen.getByText("Video generation")).toBeTruthy();
+    expect(screen.getByText("Unavailable", { exact: true })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Start voice instruction" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Usage summary" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Open task files" })).toBeTruthy();

@@ -178,6 +178,15 @@ button:not(:disabled):active { transform: scale(.97); }
   .synthia-model-menu b { @apply truncate text-[11px] font-medium text-[#eee2d3]; }
   .synthia-model-menu small, .synthia-model-menu p { @apply text-[10px] leading-4 text-[#8e8073]; }
   .synthia-model-menu p { @apply p-2; }
+  .synthia-media-menu { @apply w-72 gap-1 p-1.5; }
+  .synthia-media-capability { @apply flex items-start gap-2 rounded-md border border-white/6 bg-white/[.018] px-2 py-2; }
+  .synthia-media-capability > svg { @apply mt-0.5 shrink-0 text-orange-200; }
+  .synthia-media-capability > span { @apply min-w-0 flex-1; }
+  .synthia-media-capability b { @apply block truncate text-[11px] font-medium text-[#eee2d3]; }
+  .synthia-media-capability small { @apply mt-0.5 block leading-4 text-[#8e8073]; }
+  .synthia-media-capability em { @apply shrink-0 rounded-full border px-1.5 py-0.5 text-[9px] not-italic; }
+  .synthia-media-capability em.ready { @apply border-emerald-300/20 bg-emerald-400/[.08] text-emerald-200; }
+  .synthia-media-capability em.pending { @apply border-amber-300/20 bg-amber-400/[.08] text-amber-200; }
   .synthia-mic-button { @apply grid w-7 place-items-center px-0; }
   .synthia-recording-dot { @apply h-1.5 w-1.5 rounded-full bg-rose-300; }
   .synthia-estimate { @apply mt-2 px-1 text-[11px] text-[#7d6f62]; }
