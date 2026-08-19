@@ -4,8 +4,8 @@ import axios, { type AxiosInstance } from "axios";
 import { parse as parseCookieHeader } from "cookie";
 import type { Request } from "express";
 import { SignJWT, jwtVerify } from "jose";
-import type { User } from "../../drizzle/schema";
-import * as db from "../db";
+import type { AuthUser } from "../authDb";
+import * as authDb from "../authDb";
 import { ENV } from "./env";
 import type {
   ExchangeTokenRequest,
@@ -81,7 +81,7 @@ const createOAuthHttpClient = (): AxiosInstance =>
     timeout: AXIOS_TIMEOUT_MS,
   });
 
-class SDKServer {
+export class SDKServer {
   private readonly client: AxiosInstance;
   private readonly oauthService: OAuthService;
 
@@ -287,20 +287,20 @@ class SDKServer {
 
     const sessionUserId = session.openId;
     const signedInAt = new Date();
-    let user = await db.getUserByOpenId(sessionUserId);
+    let user = await authDb.getAuthUserByOpenId(sessionUserId);
 
     // If user not in DB, sync from OAuth server automatically
     if (!user) {
       try {
         const userInfo = await this.getUserInfoWithJwt(sessionToken ?? "");
-        await db.upsertUser({
+        await authDb.upsertAuthUser({
           openId: userInfo.openId,
           name: userInfo.name || null,
           email: userInfo.email ?? null,
           loginMethod: userInfo.loginMethod ?? userInfo.platform ?? null,
           lastSignedIn: signedInAt,
         });
-        user = await db.getUserByOpenId(userInfo.openId);
+        user = await authDb.getAuthUserByOpenId(userInfo.openId);
       } catch (error) {
         console.error("[Auth] Failed to sync user from OAuth:", error);
         throw ForbiddenError("Failed to sync user info");
@@ -311,7 +311,7 @@ class SDKServer {
       throw ForbiddenError("User not found");
     }
 
-    await db.upsertUser({
+    await authDb.upsertAuthUser({
       openId: user.openId,
       lastSignedIn: signedInAt,
     });
@@ -323,7 +323,7 @@ class SDKServer {
 const CRON_OPEN_ID_PREFIX = "cron_";
 
 /** Result of `sdk.authenticateRequest`. Cron callbacks set `isCron=true` and `taskUid`; see `/home/ubuntu/skills/webdev-periodic-updates/SKILL.md`. */
-export type AuthenticatedUser = User & {
+export type AuthenticatedUser = AuthUser & {
   taskUid?: string;
   isCron?: boolean;
 };

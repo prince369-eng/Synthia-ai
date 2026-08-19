@@ -16,7 +16,7 @@ const db = {
   updateTaskForWorker: vi.fn(),
 };
 const queue = { enqueueTaskCycle: vi.fn() };
-const provider = { restore: vi.fn(), execute: vi.fn(), writeFile: vi.fn(), openUrl: vi.fn(), screenshot: vi.fn(), checkpoint: vi.fn() };
+const provider = { restore: vi.fn(), execute: vi.fn(), readFile: vi.fn(), writeFile: vi.fn(), openUrl: vi.fn(), screenshot: vi.fn(), checkpoint: vi.fn() };
 const llm = { generateWithFallback: vi.fn() };
 
 vi.mock("../db", () => db);
@@ -26,7 +26,8 @@ vi.mock("./llm", async importOriginal => {
   const actual = await importOriginal<typeof import("./llm")>();
   return { ...actual, generateWithFallback: llm.generateWithFallback };
 });
-vi.mock("./artifactStorage", () => ({ putTaskArtifact: vi.fn() }));
+const artifacts = { putTaskArtifact: vi.fn() };
+vi.mock("./artifactStorage", () => artifacts);
 vi.mock("./notifications", () => ({ notifyTask: vi.fn() }));
 
 const baseTask = {
@@ -103,5 +104,21 @@ describe("Synthia task worker recovery", () => {
     expect(db.createApprovalForTask).toHaveBeenCalledWith(expect.objectContaining({ taskId: "task-1", toolName: "email.send", riskLevel: "high" }));
     expect(db.updateTaskForWorker).toHaveBeenLastCalledWith("task-1", expect.objectContaining({ status: "needs_input" }));
     expect(queue.enqueueTaskCycle).not.toHaveBeenCalled();
+  });
+
+  it("publishes a sandbox file as a durable final deliverable", async () => {
+    db.getRecoverableSandboxForTask.mockResolvedValue({ id: "sandbox-row-1", provider: "docker", status: "active", providerSandboxId: "sandbox-1", region: "local", maxSessionSeconds: 3_600 });
+    provider.readFile.mockResolvedValue("# Task report\n");
+    provider.checkpoint.mockResolvedValue("checkpoint-file");
+    artifacts.putTaskArtifact.mockResolvedValue({ key: "tasks/task-1/report.md", url: "https://storage.example/tasks/task-1/report.md" });
+    llm.generateWithFallback.mockResolvedValue({ provider: "groq", model: "model", content: JSON.stringify({ narration: "Publishing the report.", action: { kind: "publish_file", path: "/workspace/report.md", filename: "report.md", contentType: "text/markdown" } }), usage: { inputTokens: 100, outputTokens: 20, totalTokens: 120 } });
+    const { runTaskCycle } = await import("./taskRunner");
+
+    await runTaskCycle(baseTask.id);
+
+    expect(provider.readFile).toHaveBeenCalledWith(expect.any(Object), "/workspace/report.md");
+    expect(artifacts.putTaskArtifact).toHaveBeenCalledWith(expect.objectContaining({ filename: "report.md", contentType: "text/markdown" }));
+    expect(db.createDeliverable).toHaveBeenCalledWith(expect.objectContaining({ filename: "report.md", isFinal: true }));
+    expect(queue.enqueueTaskCycle).toHaveBeenCalledWith("task-1", 150);
   });
 });

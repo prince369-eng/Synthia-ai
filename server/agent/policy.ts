@@ -7,6 +7,7 @@ export type AgentAction =
   | { kind: "write_file"; path: string; content: string }
   | { kind: "open_url"; url: string }
   | { kind: "capture_screen" }
+  | { kind: "publish_file"; path: string; filename: string; contentType: string }
   | { kind: "complete"; summary: string }
   | { kind: "external_effect"; toolName: string; description: string; input: Record<string, unknown> };
 
@@ -42,6 +43,7 @@ export function isAgentAction(value: unknown): value is AgentAction {
     try { return ["http:", "https:"].includes(new URL(action.url as string).protocol); } catch { return false; }
   }
   if (action.kind === "capture_screen") return Object.keys(action).every(key => key === "kind");
+  if (action.kind === "publish_file") return nonEmpty("path", 1_024) && nonEmpty("filename", 255) && !/[\\/\0]/.test(action.filename as string) && nonEmpty("contentType", 120);
   if (action.kind === "complete") return nonEmpty("summary", 8_000);
   return action.kind === "external_effect" && nonEmpty("toolName", 128) && nonEmpty("description", 4_000) && Boolean(action.input) && typeof action.input === "object" && !Array.isArray(action.input);
 }

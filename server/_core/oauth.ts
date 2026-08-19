@@ -1,7 +1,7 @@
 import { COOKIE_NAME, ONE_YEAR_MS, OAUTH_STATE_COOKIE, decodeOAuthState } from "@shared/const";
 import { parse as parseCookieHeader } from "cookie";
 import type { Express, Request, Response } from "express";
-import * as db from "../db";
+import * as authDb from "../authDb";
 import { getSessionCookieOptions } from "./cookies";
 import { sdk } from "./sdk";
 
@@ -40,7 +40,7 @@ export function registerOAuthRoutes(app: Express) {
         return;
       }
 
-      await db.upsertUser({
+      await authDb.upsertAuthUser({
         openId: userInfo.openId,
         name: userInfo.name || null,
         email: userInfo.email ?? null,

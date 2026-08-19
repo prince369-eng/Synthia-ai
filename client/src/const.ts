@@ -2,6 +2,15 @@ import { OAUTH_STATE_COOKIE, encodeOAuthState } from "@shared/const";
 
 export { COOKIE_NAME, ONE_YEAR_MS } from "@shared/const";
 
+declare global {
+  interface Window {
+    __SYNTHIA_PUBLIC_CONFIG__?: {
+      appId?: string;
+      oauthPortalUrl?: string;
+    };
+  }
+}
+
 // Start the Manus OAuth login. Call this from an event handler or effect at the
 // moment you want to navigate, e.g. `onClick={() => startLogin()}`.
 //
@@ -13,8 +22,10 @@ export { COOKIE_NAME, ONE_YEAR_MS } from "@shared/const";
 // with "invalid oauth state". It returns void by design, so there is no URL to
 // stash across renders.
 export const startLogin = () => {
-  const oauthPortalUrl = import.meta.env.VITE_OAUTH_PORTAL_URL;
-  const appId = import.meta.env.VITE_APP_ID;
+  const { appId, oauthPortalUrl } = window.__SYNTHIA_PUBLIC_CONFIG__ ?? {};
+  if (!oauthPortalUrl || !appId) {
+    throw new Error("Synthia sign-in configuration is unavailable.");
+  }
   const redirectUri = `${window.location.origin}/api/oauth/callback`;
 
   const nonce = crypto.randomUUID();

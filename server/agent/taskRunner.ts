@@ -119,6 +119,14 @@ async function executeAction(taskId: string, action: AgentAction) {
     await createDeliverable({ taskId, eventId: event.id, filename: "agent-screen.png", fileType: frame.contentType, storageKey: artifact.key, storageUrl: artifact.url, isFinal: false });
     return { completed: false, summary: "Captured the current Agent's Computer frame." };
   }
+  if (action.kind === "publish_file") {
+    const content = await provider.readFile(sandbox.descriptor, action.path);
+    const artifact = await putTaskArtifact({ taskId, filename: action.filename, body: Buffer.from(content, "utf8"), contentType: action.contentType });
+    const event = await appendTaskEvent(taskId, { type: "tool_result", payload: { tool: "publish_file", path: action.path, filename: action.filename, storageKey: artifact.key, storageUrl: artifact.url } });
+    await createDeliverable({ taskId, eventId: event.id, filename: action.filename, fileType: action.contentType, storageKey: artifact.key, storageUrl: artifact.url, isFinal: true });
+    await checkpointSandbox(sandbox.dbSandboxId, sandbox.descriptor);
+    return { completed: false, summary: `Published ${action.filename} to task deliverables.` };
+  }
   throw new Error(`Unsupported action kind ${(action as { kind: string }).kind}.`);
 }
 
@@ -147,7 +155,7 @@ export async function runTaskCycle(taskId: string) {
     messages: [
       {
         role: "system",
-        content: "You are Synthia AI's task orchestrator. Choose exactly one next action. Never execute external side effects; use external_effect to request approval. Keep all sandbox files under /workspace. Return only JSON: { narration: string, action: { kind: respond|web_search|run_command|write_file|open_url|capture_screen|complete|external_effect, ... }, plan?: [{id,title,state}] }.",
+        content: "You are Synthia AI's task orchestrator. Choose exactly one next action. Never execute external side effects; use external_effect to request approval. Keep all sandbox files under /workspace. Use publish_file with a workspace path, a plain filename, and a MIME type to deliver a file. Return only JSON: { narration: string, action: { kind: respond|web_search|run_command|write_file|open_url|capture_screen|publish_file|complete|external_effect, ... }, plan?: [{id,title,state}] }.",
       },
       { role: "user", content: JSON.stringify({ title: task.title, goal: task.goal, plan: task.plan, events: taskContext(events) }) },
     ],

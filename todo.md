@@ -15,7 +15,7 @@
 - [x] Implement Resend and Postmark task notification delivery with server-only credentials and provider failover.
 - [x] Complete worker recovery with sandbox checkpoint restore, usage accounting, server-side credit estimates, and runnable worker scripts.
 - [x] Explicitly limit browser and screenshot capabilities to E2B in the Agent's Computer UI, sandbox runtime errors, and deployment documentation; Docker remains a code-only development fallback.
-- [ ] Add general artifact creation and retrieval flows, then cover the event stream, approval enforcement, queue retry, and provider readiness with focused tests. Model output parsing, terminal policy, action policy, and credit estimates are covered.
+- [ ] Add general artifact creation and retrieval flows, then cover the event stream, approval enforcement, queue retry, and provider readiness with focused tests. Sandbox file publication, model parsing, terminal policy, action policy, credits, worker recovery, and retries are covered.
 - [ ] Validate PostgreSQL event-sequence allocation under concurrent writer conditions after applying the migration to the external database.
 - [x] Add focused worker-recovery tests proving checkpoint restoration, task resumption, usage-ledger preservation, and server-side credit-estimate enforcement during retries.
 - [x] Add queue exhausted-retry regression coverage so unrecoverable worker jobs transition the task into a durable failed state.
@@ -31,4 +31,18 @@
 - [ ] Validate Docker Compose service configuration for the control plane, independent worker, PostgreSQL, Redis, migration job, and development-only sandbox image, with external provider configuration documented.
 - [ ] Add integration coverage for ordered replay events, authenticated task APIs, provider adapters, and frontend critical paths; unit coverage is complete for worker recovery, exhausted retries, approval gates, terminal policy, credits, parser validation, encryption, and logout.
 - [ ] Complete environment-dependent migration, container, and authenticated task-flow verification after credentials are supplied; static checks, unit tests, production build, and desktop/mobile sign-in boundaries have passed.
-- [ ] Create a GitHub-ready release checkpoint and push to the synthia-ai repository only after user confirmation.
+- [x] Diagnose and repair the reported preview-access failure; the development service was restarted and the live preview now opens successfully.
+- [x] Diagnose and repair the confirmed blank white client-rendering failure shown in the user's browser preview.
+- [x] Verify the production-style static preview bundle renders correctly in the connected browser and use it as the managed preview fallback.
+- [x] Determine that the connected browser was blocking Synthia's external module and stylesheet assets, then apply the compatible preview delivery fix.
+- [x] Validate the single-file Synthia client bundle in the connected browser; retain it as the managed preview fallback.
+- [x] Restore the development preview after the initial classic-bundle build failed on a style-only dependency, then rerun connected-browser compatibility verification.
+- [x] Identify and resolve the classic-bundle `React is not defined` bootstrap exception.
+- [x] Rebuild the classic bundle with React's automatic JSX runtime and confirm the connected browser reaches the styled sign-in interface.
+- [x] Verify inline delivery of the generated Synthia stylesheet restores the intended radiant-orange visual design in the connected browser.
+- [x] Add a visible nonblank Synthia bootstrap state and a fresh Vite entry revision so user browsers do not remain on a blank page while the workspace module loads.
+- [x] Create a GitHub-ready Synthia AI review checkpoint; GitHub push remains deferred until the user confirms it.
+- [x] Remove static-preview OAuth configuration warnings so the managed IIFE bundle preserves the sign-in redirect settings.
+- [x] Add regression coverage for static-preview runtime OAuth configuration injection and HTML escaping.
+- [x] Diagnose and repair the OAuth callback failure that blocks users from completing Synthia sign-in by restoring the managed MySQL account database boundary; end-to-end callback verification now reaches the authenticated dashboard.
+- [x] Add regression coverage proving session authentication uses the managed account user store rather than the external task database.

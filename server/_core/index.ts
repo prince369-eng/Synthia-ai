@@ -74,8 +74,9 @@ async function startServer() {
       createContext,
     })
   );
-  // development mode uses Vite, production mode uses static files
-  if (process.env.NODE_ENV === "development") {
+  // The managed preview can run from the same hashed client bundle as production.
+  // This avoids browsers that block Vite's development-module graph while retaining Vite for local HMR.
+  if (process.env.NODE_ENV === "development" && process.env.SYNTHIA_STATIC_PREVIEW !== "true") {
     await setupVite(app, server);
   } else {
     serveStatic(app);

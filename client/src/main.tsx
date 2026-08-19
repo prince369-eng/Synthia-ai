@@ -72,10 +72,36 @@ const trpcClient = trpc.createClient({
   ],
 });
 
-createRoot(document.getElementById("root")!).render(
-  <trpc.Provider client={trpcClient} queryClient={queryClient}>
-    <QueryClientProvider client={queryClient}>
-      <App />
-    </QueryClientProvider>
-  </trpc.Provider>
-);
+const rootElement = document.getElementById("root");
+const bootstrap = document.getElementById("synthia-bootstrap");
+
+if (!rootElement) {
+  throw new Error("Synthia AI could not locate its application root.");
+}
+
+declare global {
+  interface Window {
+    __SYNTHIA_BOOTSTRAPPED__?: boolean;
+  }
+}
+
+try {
+  if (window.__SYNTHIA_BOOTSTRAPPED__) {
+    // A compatible classic preview bundle has already mounted this root.
+  } else {
+    window.__SYNTHIA_BOOTSTRAPPED__ = true;
+  bootstrap?.remove();
+  createRoot(rootElement).render(
+    <trpc.Provider client={trpcClient} queryClient={queryClient}>
+      <QueryClientProvider client={queryClient}>
+        <App />
+      </QueryClientProvider>
+    </trpc.Provider>,
+  );
+  }
+} catch (error) {
+  rootElement.innerHTML = `<div id="synthia-bootstrap" role="alert"><div id="synthia-bootstrap-card"><div id="synthia-bootstrap-mark">!</div><h1>Unable to open Synthia AI</h1><p>The workspace could not start in this browser. Reload the preview once to refresh its client session.</p><p id="synthia-bootstrap-error" style="margin-top:12px;font-family:monospace;font-size:11px"></p></div></div>`;
+  const detail = document.getElementById("synthia-bootstrap-error");
+  if (detail) detail.textContent = `Preview error: ${error instanceof Error ? error.message.slice(0, 220) : "unknown bootstrap error"}`;
+  console.error("[Synthia bootstrap error]", error);
+}

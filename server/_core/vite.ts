@@ -6,6 +6,19 @@ import path from "path";
 import { createServer as createViteServer } from "vite";
 import viteConfig from "../../vite.config";
 
+export function publicRuntimeConfigScript(configValues?: {
+  appId?: string;
+  oauthPortalUrl?: string;
+}) {
+  const config = JSON.stringify({
+    appId: configValues?.appId ?? process.env.VITE_APP_ID ?? "",
+    oauthPortalUrl:
+      configValues?.oauthPortalUrl ?? process.env.VITE_OAUTH_PORTAL_URL ?? "",
+  }).replace(/</g, "\\u003c");
+
+  return `<script>window.__SYNTHIA_PUBLIC_CONFIG__=${config};</script>`;
+}
+
 export async function setupVite(app: Express, server: Server) {
   const serverOptions = {
     middlewareMode: true,
@@ -34,6 +47,7 @@ export async function setupVite(app: Express, server: Server) {
 
       // always reload the index.html file from disk incase it changes
       let template = await fs.promises.readFile(clientTemplate, "utf-8");
+      template = template.replace("</head>", `${publicRuntimeConfigScript()}</head>`);
       template = template.replace(
         `src="/src/main.tsx"`,
         `src="/src/main.tsx?v=${nanoid()}"`
@@ -58,10 +72,28 @@ export function serveStatic(app: Express) {
     );
   }
 
-  app.use(express.static(distPath));
+  const inlinePreviewStyles = process.env.SYNTHIA_STATIC_PREVIEW === "true";
+  app.use(express.static(distPath, { index: inlinePreviewStyles ? false : "index.html" }));
 
   // fall through to index.html if the file doesn't exist
-  app.use("*", (_req, res) => {
-    res.sendFile(path.resolve(distPath, "index.html"));
+  app.use("*", async (_req, res, next) => {
+    if (!inlinePreviewStyles) {
+      res.sendFile(path.resolve(distPath, "index.html"));
+      return;
+    }
+    try {
+      const indexPath = path.resolve(distPath, "index.html");
+      let document = await fs.promises.readFile(indexPath, "utf8");
+      const stylesheet = document.match(/<link rel="stylesheet" crossorigin href="([^"]+)">/);
+      if (stylesheet?.[1]) {
+        const cssPath = path.resolve(distPath, `.${stylesheet[1]}`);
+        const css = await fs.promises.readFile(cssPath, "utf8");
+        document = document.replace(stylesheet[0], `<style id="synthia-preview-styles">${css}</style>`);
+      }
+      document = document.replace("</head>", `${publicRuntimeConfigScript()}</head>`);
+      res.status(200).set({ "Content-Type": "text/html", "Cache-Control": "no-store" }).end(document);
+    } catch (error) {
+      next(error);
+    }
   });
 }
