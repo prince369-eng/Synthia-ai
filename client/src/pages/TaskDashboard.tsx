@@ -1,6 +1,6 @@
 import { trpc } from "@/lib/trpc";
 import { ArrowUp, ArrowUpRight, Bot, Code2, Loader2, Play, Send, Sparkles } from "lucide-react";
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -17,7 +17,11 @@ export default function TaskDashboard() {
   const [goal, setGoal] = useState("");
   const [involvesCode, setInvolvesCode] = useState(false);
   const [mode, setMode] = useState<"ask_before_risky" | "supervised">("ask_before_risky");
+  const [capabilities, setCapabilities] = useState({ allowWebSearch: true, allowCodeExecution: true, allowFileWrites: true });
+  const [preferencesApplied, setPreferencesApplied] = useState(false);
+  const composerRef = useRef<HTMLTextAreaElement>(null);
   const tasks = trpc.tasks.list.useQuery(undefined, TASK_HISTORY_QUERY_OPTIONS);
+  const settings = trpc.settings.get.useQuery(undefined, { retry: false });
   const createTask = trpc.tasks.create.useMutation({
     onSuccess: ({ task }) => setLocation(`/tasks/${task.id}`),
   });
@@ -26,13 +30,36 @@ export default function TaskDashboard() {
     { enabled: goal.trim().length >= 8, staleTime: 8_000 },
   );
 
+  useEffect(() => {
+    if (preferencesApplied || !settings.data) return;
+    const preferences = settings.data.preferences && typeof settings.data.preferences === "object" && !Array.isArray(settings.data.preferences)
+      ? settings.data.preferences as Record<string, unknown>
+      : {};
+    const defaults = preferences.taskDefaults && typeof preferences.taskDefaults === "object" && !Array.isArray(preferences.taskDefaults)
+      ? preferences.taskDefaults as Record<string, unknown>
+      : {};
+    if (defaults.mode === "ask_before_risky" || defaults.mode === "supervised") setMode(defaults.mode);
+    setCapabilities({
+      allowWebSearch: defaults.allowWebSearch !== false,
+      allowCodeExecution: defaults.allowCodeExecution !== false,
+      allowFileWrites: defaults.allowFileWrites !== false,
+    });
+    setPreferencesApplied(true);
+  }, [preferencesApplied, settings.data]);
+
+  useEffect(() => {
+    const focusComposer = () => composerRef.current?.focus();
+    window.addEventListener("synthia:focus-task-composer", focusComposer);
+    return () => window.removeEventListener("synthia:focus-task-composer", focusComposer);
+  }, []);
+
   function submit(event: FormEvent) {
     event.preventDefault();
     if (goal.trim().length < 8 || createTask.isPending) return;
     createTask.mutate({
       goal: goal.trim(),
       involvesCode,
-      autonomySettings: { mode, allowWebSearch: true, allowCodeExecution: true, allowFileWrites: true },
+      autonomySettings: { mode, ...capabilities },
     });
   }
 
@@ -50,7 +77,7 @@ export default function TaskDashboard() {
         <p className="synthia-chat-intro">Describe the outcome. Synthia will plan, execute, and show every decision.</p>
         <form onSubmit={submit} className="synthia-chat-composer">
             <label className="sr-only" htmlFor="task-goal">Task goal</label>
-            <Textarea id="task-goal" value={goal} onChange={event => setGoal(event.target.value)} placeholder="Ask Synthia anything — no task runs until you start it" className="synthia-chat-input" />
+            <Textarea ref={composerRef} id="task-goal" value={goal} onChange={event => setGoal(event.target.value)} placeholder="Ask Synthia anything — no task runs until you start it" className="synthia-chat-input" />
             <div className="synthia-composer-actions">
               <div className="flex min-w-0 items-center gap-1.5 overflow-x-auto">
                 <button type="button" onClick={() => setInvolvesCode(value => !value)} className={cn("synthia-composer-toggle", involvesCode && "active")}><Code2 size={14} /> <span>Code</span></button>

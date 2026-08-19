@@ -39,10 +39,42 @@ export function SynthiaAppShell({ children }: { children: ReactNode }) {
   );
   const tasksQuery = trpc.tasks.list.useQuery(undefined, { enabled: isAuthenticated, refetchInterval: 8_000 });
   const usageQuery = trpc.workspace.usage.useQuery(undefined, { enabled: isAuthenticated, retry: false });
+  const preferencesQuery = trpc.settings.get.useQuery(undefined, { enabled: isAuthenticated, retry: false });
+  const preferences = preferencesQuery.data?.preferences && typeof preferencesQuery.data.preferences === "object" && !Array.isArray(preferencesQuery.data.preferences)
+    ? preferencesQuery.data.preferences as Record<string, unknown>
+    : {};
+  const keyboardShortcutsEnabled = preferences.keyboardShortcutsEnabled !== false;
 
   useEffect(() => {
     window.localStorage.setItem(SIDEBAR_COLLAPSE_STORAGE_KEY, String(sidebarCollapsed));
   }, [sidebarCollapsed]);
+
+  useEffect(() => {
+    if (!keyboardShortcutsEnabled) return;
+    const openComposer = () => {
+      setLocation("/");
+      window.setTimeout(() => window.dispatchEvent(new Event("synthia:focus-task-composer")), 0);
+    };
+    const onKeyDown = (event: KeyboardEvent) => {
+      const target = event.target as HTMLElement | null;
+      if (target?.closest("input, textarea, select, [contenteditable='true']")) return;
+      const key = event.key.toLowerCase();
+      if (event.ctrlKey && event.shiftKey && key === "o") {
+        event.preventDefault();
+        openComposer();
+      }
+      if (event.ctrlKey && event.shiftKey && key === "b") {
+        event.preventDefault();
+        setSidebarCollapsed(value => !value);
+      }
+      if ((event.ctrlKey || event.metaKey) && key === "k") {
+        event.preventDefault();
+        openComposer();
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [keyboardShortcutsEnabled, setLocation]);
 
   if (loading) {
     return (
@@ -82,7 +114,7 @@ export function SynthiaAppShell({ children }: { children: ReactNode }) {
             {sidebarCollapsed ? <PanelLeftOpen size={16} /> : <PanelLeftClose size={16} />}
           </button>
         </div>
-        <Button className="synthia-new-task" onClick={() => setLocation("/")} title="New task"><Plus size={16} /><span>New task</span></Button>
+        <Button className="synthia-new-task" onClick={() => { setLocation("/"); window.setTimeout(() => window.dispatchEvent(new Event("synthia:focus-task-composer")), 0); }} title="New task (Ctrl+Shift+O)"><Plus size={16} /><span>New task</span></Button>
         <nav className="synthia-nav-links">
           {navItems.map(item => {
             const active = item.path === "/" ? location === "/" || location.startsWith("/tasks/") : location.startsWith(item.path);

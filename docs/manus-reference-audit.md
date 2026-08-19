@@ -55,3 +55,59 @@ For Synthia, the panel maps to the authenticated account identity, real Synthia 
 The Agent action opens a focused channel-selection dialog. It lets the user choose Telegram, LINE, or Slack, then presents a channel-specific setup panel with a QR-code handoff and an external continuation action. The underlying page retains its concise capability hierarchy while the dialog is active.
 
 Synthia does not currently include a configured messenger-channel integration in the approved service plan. Therefore, Synthia can adopt the visual pattern of a focused capability detail panel only for real, configured capabilities. It must not add messenger selection, QR enrollment, or external handoff controls until the corresponding authenticated integration and security contract exist.
+
+## Settings: General
+
+The live Settings surface is a compact modal with a fixed left navigation rail, a search field directly below the signed-in identity, and a scrollable content pane. The first group is **General**, **Account**, **Usage & Billing**, and **Shortcuts**. Capability, data/integration, developer, and support groups follow in the same rail.
+
+The observed **General** page uses short, labelled sections rather than dense cards. Appearance contains a language selector and a three-way Light/Dark/Auto theme control. Communication preferences then use one-line descriptions with right-aligned switches for browser notifications, completion sounds, product updates, and advertising consent.
+
+For Synthia, the applicable pattern is a searchable, sectioned settings shell; a local display/theme preference; an honest browser-notification preference only where supported; and concise descriptions for each control. Product-marketing and advertising-consent controls are not part of the approved Synthia scope and will not be copied.
+
+## Settings: Account and Usage
+
+The observed **Account** page begins with a compact editable full-name field and then groups plan, credit balance, daily credit refresh, email, stable user identifier, password, sign-in methods, and destructive account deletion into separated rows. Sensitive actions are visually subordinate to identity and plan context, while the destructive control is isolated at the end.
+
+The observed **Usage & Billing** page adds small product-category tabs, then restates plan and credit balance before presenting a dated, task-linked credit history. Entries are grouped by day and show positive or negative usage clearly. The account portal owns password and third-party-sign-in changes; those controls do not edit credentials directly in the application UI.
+
+For Synthia, the applicable mapping is a compact account identity summary, a usage/credits page populated only from the existing secure usage ledger, task-linked history where available, and a clear boundary that billing purchases and account-credential edits remain unavailable until a real, authorized integration exists. Synthia will not create a billing tab, purchase action, or fabricated plan/refresh schedule without a backed service contract.
+
+## Settings: Shortcuts and Personalization
+
+The observed **Keyboard shortcuts** section has a short explanation, a flat list of named actions, editable key-combination controls aligned on the right, per-row clear affordances, and one reset-to-default action. The reference currently includes actions for creating a task, plan mode, voice input, task search, and toggling the sidebar.
+
+The observed **Personalization** section uses Profile and Knowledge tabs. Profile contains a compact identity/context form—nickname, occupation, and a longer “more about you” instruction—with an explicit explanation that it personalizes future task responses. It also presents a distinct external-memory import action.
+
+For Synthia, the scope-aligned implementation is a keyboard-shortcut reference and local preference store for existing Synthia actions only (new task, focus search, toggle sidebar), plus the existing Synthia profile/preferences and memory settings. Voice input and external-memory imports will not be shown until real supported contracts exist.
+
+## Settings: Connectors and Skills
+
+The observed **Connectors** section is an “Added connectors” inventory: a search field, browse/create affordances, and concise connected-service cards with a check state. It is a management surface for external capabilities that are already attached to the account.
+
+The observed **Skills** section follows the same inventory pattern for named task capabilities: search, browse/create controls, short capability descriptions, provenance, and a per-skill enabled switch. It is clearly separated from data-source connectors.
+
+For Synthia, provider readiness and user-authorized integrations already have a real runtime contract, so Synthia can adopt the compact searchable inventory and connected/missing state presentation. Synthia will not show a generic skills marketplace, user-created skills, or enabled toggles until its own agent runtime has secure persisted skill definitions and execution policy enforcement.
+
+## Settings: Mail and Computer
+
+The observed **Mail** section lets an account create tasks by email. It separates a generated task-ingestion address, custom workflow email definitions, and approved sender allow-list management. The security boundary is explicit: only approved senders can create tasks.
+
+The observed **My Computer** section separates cloud and local computer options. Its cloud state is presented as a compact availability card describing persistent storage and always-on operation, with a provisioning action.
+
+Synthia already uses Resend/Postmark for outbound notifications and E2B/Docker for isolated agent execution, but it has no secure inbound-email task ingestion or persistent cloud-computer provisioner in the approved service contract. Synthia can use the compact operational-status layout for existing Agent’s Computer and sandbox readiness, but must not expose email addresses, sender management, local-device control, or cloud provisioning until real authenticated services are implemented.
+
+## Settings: Data Controls and Deployments
+
+The observed **Data controls** section places shared tasks, shared files, archived tasks, and cloud browser data behind compact tabbed views, with a dedicated plaintext-task-data setting. Empty states are direct and state which category has no data.
+
+The observed **Deployments** section separates Websites, Apps, and Domains. Each deployment row contains a thumbnail, project name, updated timestamp, clear publish status, a preview action, and a contextual overflow menu.
+
+For Synthia, the suitable mappings are security-oriented task, artifact, and retention visibility using actual Synthia data, plus the existing Manus project management surface for the Synthia deployment itself. Synthia does not yet expose user-to-user sharing, durable task archiving, cloud-browser data, project publishing, or domain provisioning as agent product capabilities, so those controls will remain absent until backed by ownership-checked services.
+
+## Settings: Integrations and Developers
+
+The observed **Integrations** section uses a concise two-column capability grid. Each card names a connected workflow channel and states the outcome, leaving setup behind a separate interaction. The observed examples include Zapier, Slack, Telegram, and LINE.
+
+The observed **Developers** section contains API-key and webhook tabs, a documentation row, an explicit empty state, and a create-key action. It is a credential-management surface, not a general settings collection.
+
+For Synthia, the integration-card hierarchy applies to the existing provider and account-integration readiness model, but only for configured services. Synthia has no approved Slack, Zapier, Telegram, LINE, user API-key, or webhook product contracts; therefore these actions and claims will not be added. Secrets will remain server-side and environment managed, never visible in the Synthia settings interface.

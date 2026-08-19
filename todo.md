@@ -88,3 +88,11 @@
 - [x] Add behavioral and regression coverage for every implemented reference-led capability and verify the revised pages visually.
 - [x] Add frontend behavioral coverage for the Projects, Agent, and Plugins routes, including key navigation and interaction states.
 - [x] Add regression coverage for Agent readiness/task state, Plugins filtering and disconnect initiation, and lower-profile credit-status rendering.
+- [x] Audit the live Manus Settings sections—General, Account, Usage and billing, Shortcuts, and related navigation—and record only patterns applicable to Synthia’s approved platform scope.
+- [x] Refine Synthia’s Settings information architecture and compact section navigation for account, usage, providers, integrations, security, workspace, and keyboard shortcuts.
+- [x] Add truthful account, usage, credit, billing-boundary, and keyboard-shortcut management states without fabricating external billing data or exposing secrets.
+- [x] Add behavioral and visual regression coverage for the upgraded Settings hierarchy and controls.
+- [x] Disable server-persisted Settings controls while the external preferences store is unavailable, while retaining the local appearance control.
+- [x] Add an explicit Account Settings action that routes users to the verified managed identity portal without handling identity-provider credentials in Synthia.
+- [x] Add a compact top-right close/back control to Settings that returns to the Synthia task workspace with an accessible label and keyboard support.
+- [x] Rebalance the Settings page header, section navigation, and content-panel proportions across desktop and mobile breakpoints.

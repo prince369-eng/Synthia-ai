@@ -535,7 +535,30 @@ export async function getUsageSummary(userId: number) {
     .select({ creditsConsumed: sql<number>`coalesce(sum(${usageEvents.creditsDelta}), 0)` })
     .from(usageEvents)
     .where(eq(usageEvents.userId, userId));
-  return { creditsBalance: user?.creditsBalance ?? 0, creditsConsumed: usage?.creditsConsumed ?? 0 };
+  const [taskTotal] = await database
+    .select({ taskCount: sql<number>`count(*)` })
+    .from(tasks)
+    .where(eq(tasks.userId, userId));
+  const recentEvents = await database
+    .select({
+      id: usageEvents.id,
+      taskId: usageEvents.taskId,
+      taskTitle: tasks.title,
+      creditsDelta: usageEvents.creditsDelta,
+      reason: usageEvents.reason,
+      createdAt: usageEvents.createdAt,
+    })
+    .from(usageEvents)
+    .leftJoin(tasks, eq(usageEvents.taskId, tasks.id))
+    .where(eq(usageEvents.userId, userId))
+    .orderBy(desc(usageEvents.createdAt))
+    .limit(8);
+  return {
+    creditsBalance: user?.creditsBalance ?? 0,
+    creditsConsumed: usage?.creditsConsumed ?? 0,
+    taskCount: Number(taskTotal?.taskCount ?? 0),
+    recentEvents,
+  };
 }
 
 export async function getUserPreferences(userId: number) {
@@ -550,8 +573,19 @@ export async function getUserPreferences(userId: number) {
 
 export async function updateUserPreferences(userId: number, preferences: Record<string, unknown>) {
   const database = databaseRequired(await getDb());
-  await database.update(users).set({ preferences }).where(eq(users.id, userId));
-  return getUserPreferences(userId);
+  return database.transaction(async transaction => {
+    const [current] = await transaction
+      .select({ preferences: users.preferences })
+      .from(users)
+      .where(eq(users.id, userId))
+      .limit(1);
+    const currentPreferences = current?.preferences && typeof current.preferences === "object" && !Array.isArray(current.preferences)
+      ? current.preferences as Record<string, unknown>
+      : {};
+    const mergedPreferences = { ...currentPreferences, ...preferences };
+    await transaction.update(users).set({ preferences: mergedPreferences }).where(eq(users.id, userId));
+    return mergedPreferences;
+  });
 }
 
 export async function completeOnboardingForUser(userId: number) {
