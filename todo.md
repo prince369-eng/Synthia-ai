@@ -100,3 +100,4 @@
 - [x] Add an ownership-safe Library artifact-open action that refreshes the URL only after user interaction, plus focused event-stream and approval-enforcement regression coverage.
 - [x] Fix the General Settings capability-row grid so each switch stays inside its own content column at 1920px desktop width and responsive widths.
 - [x] Capture and retain a final post-fix desktop screenshot of the General Settings capability controls through the project screenshot service, alongside the completed repeatable layout assertion.
+- [x] Capture a retained post-cache-refresh desktop Settings screenshot and assert the static preview always revisions its rebuilt browser bundle.

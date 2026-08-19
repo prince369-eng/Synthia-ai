@@ -6,6 +6,8 @@ import path from "path";
 import { createServer as createViteServer } from "vite";
 import viteConfig from "../../vite.config";
 
+export const STATIC_PREVIEW_CACHE_CONTROL = "no-store";
+
 export function publicRuntimeConfigScript(configValues?: {
   appId?: string;
   oauthPortalUrl?: string;
@@ -17,6 +19,13 @@ export function publicRuntimeConfigScript(configValues?: {
   }).replace(/</g, "\\u003c");
 
   return `<script>window.__SYNTHIA_PUBLIC_CONFIG__=${config};</script>`;
+}
+
+export function injectStaticPreviewBundleRevision(document: string, revision: string) {
+  return document.replace(
+    /src="\/synthia-preview\.js(?:\?[^\"]*)?"/,
+    `src="/synthia-preview.js?v=${encodeURIComponent(revision)}"`
+  );
 }
 
 export async function setupVite(app: Express, server: Server) {
@@ -73,7 +82,14 @@ export function serveStatic(app: Express) {
   }
 
   const inlinePreviewStyles = process.env.SYNTHIA_STATIC_PREVIEW === "true";
-  app.use(express.static(distPath, { index: inlinePreviewStyles ? false : "index.html" }));
+  app.use(express.static(distPath, {
+    index: inlinePreviewStyles ? false : "index.html",
+    setHeaders(response) {
+      if (inlinePreviewStyles) {
+        response.setHeader("Cache-Control", STATIC_PREVIEW_CACHE_CONTROL);
+      }
+    },
+  }));
 
   // fall through to index.html if the file doesn't exist
   app.use("*", async (_req, res, next) => {
@@ -90,8 +106,11 @@ export function serveStatic(app: Express) {
         const css = await fs.promises.readFile(cssPath, "utf8");
         document = document.replace(stylesheet[0], `<style id="synthia-preview-styles">${css}</style>`);
       }
+      const previewBundlePath = path.resolve(distPath, "synthia-preview.js");
+      const previewBundleStat = await fs.promises.stat(previewBundlePath);
+      document = injectStaticPreviewBundleRevision(document, String(previewBundleStat.mtimeMs));
       document = document.replace("</head>", `${publicRuntimeConfigScript()}</head>`);
-      res.status(200).set({ "Content-Type": "text/html", "Cache-Control": "no-store" }).end(document);
+      res.status(200).set({ "Content-Type": "text/html", "Cache-Control": STATIC_PREVIEW_CACHE_CONTROL }).end(document);
     } catch (error) {
       next(error);
     }
