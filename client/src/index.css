@@ -148,10 +148,17 @@ button:not(:disabled):active { transform: scale(.97); }
   .synthia-chat-intro { @apply mt-3 text-center text-sm text-[#948578]; }
   .synthia-chat-composer { @apply mt-8 w-full rounded-2xl border border-white/10 bg-[#201d1a] p-3 shadow-[0_18px_56px_rgba(0,0,0,.22)]; }
   .synthia-chat-input { @apply min-h-24 w-full resize-none border-0 bg-transparent px-2 py-2 text-sm leading-6 text-[#f7ede0] placeholder:text-[#776a5e] focus-visible:ring-0; }
+  .synthia-attachment-chips { @apply flex flex-wrap gap-1.5 px-2 pb-2; }
+  .synthia-attachment-chip { @apply inline-flex max-w-full items-center gap-1 rounded-md border border-orange-300/18 bg-orange-400/[.07] py-1 pl-1.5 pr-1 text-[10px] text-orange-100; }
+  .synthia-attachment-chip > span { @apply max-w-45 truncate; }
+  .synthia-attachment-chip button { @apply grid h-4 w-4 place-items-center rounded text-orange-200 hover:bg-orange-300/15 hover:text-orange-50 focus-visible:ring-1 focus-visible:ring-orange-200; }
   .synthia-composer-actions { @apply flex items-center justify-between gap-3 border-t border-white/7 pt-2; }
   .synthia-composer-toggle { @apply inline-flex h-7 shrink-0 items-center gap-1.5 rounded-md border border-transparent px-2 text-[11px] text-[#8f8173] hover:bg-white/5 hover:text-[#e9ddcf]; }
   .synthia-composer-toggle.active { @apply border-orange-300/25 bg-orange-400/10 text-orange-200; }
   .synthia-send-button { @apply h-8 w-8 shrink-0 rounded-full bg-gradient-to-br from-orange-200 to-orange-500 text-[#2b170d] hover:from-orange-100 hover:to-orange-400; }
+  .synthia-attachment-menu { @apply absolute bottom-[calc(100%+.4rem)] left-0 z-20 grid w-40 overflow-hidden rounded-lg border border-white/10 bg-[#28231f] p-1 shadow-xl; }
+  .synthia-attachment-menu button { @apply flex h-8 items-center gap-2 rounded-md px-2 text-left text-[11px] text-[#dacdbf] hover:bg-orange-400/10 hover:text-orange-100; }
+  .synthia-project-select { @apply h-7 max-w-32 rounded-md border border-white/8 bg-[#1a1714] px-2 text-[10px] text-[#a89788] outline-none hover:border-orange-300/25 focus:border-orange-300/40; }
   .synthia-estimate { @apply mt-2 px-1 text-[11px] text-[#7d6f62]; }
   .synthia-estimate span { @apply text-orange-200; }
   .synthia-prompt-chips { @apply mt-4 flex w-full flex-wrap justify-center gap-1.5; }
@@ -188,6 +195,15 @@ button:not(:disabled):active { transform: scale(.97); }
   .synthia-library-final, .synthia-library-type { @apply mt-0! inline-flex! items-center gap-1 rounded-full border px-1.5 py-0.5 text-[9px]!; }
   .synthia-library-final { @apply border-emerald-300/20 bg-emerald-400/[.08] text-emerald-200!; }
   .synthia-library-type { @apply border-white/8 bg-white/[.025] text-[#a99888]!; }
+  .synthia-library-picker { @apply max-w-xl border-white/10 bg-[#211c18] p-4 text-[#eee3d7] sm:max-w-xl; }
+  .synthia-library-picker [data-slot="dialog-title"] { @apply text-sm text-[#fff4e7]; }
+  .synthia-library-picker [data-slot="dialog-description"] { @apply text-xs leading-5 text-[#9e8e7f]; }
+  .synthia-library-picker-controls { @apply flex gap-2; }
+  .synthia-library-picker-list { @apply mt-3 grid max-h-[50vh] gap-1.5 overflow-y-auto pr-1; }
+  .synthia-library-picker-item { @apply flex items-start gap-2 rounded-lg border border-white/8 bg-white/[.018] p-2.5; }
+  .synthia-library-picker-item b { @apply block truncate text-xs font-medium text-[#eee3d7]; }
+  .synthia-library-picker-item p { @apply mt-0.5 truncate text-[11px] text-[#a69586]; }
+  .synthia-library-picker-item small { @apply mt-1 block text-[10px] text-[#75685d]; }
   .synthia-plugin-tabs { @apply flex h-9 shrink-0 items-center rounded-md border border-white/8 bg-[#1c1815] p-0.5; }
   .synthia-plugin-tabs button { @apply h-7 rounded px-2 text-[10px] text-[#9a8a7b] hover:text-[#eadfd2]; }
   .synthia-plugin-tabs button[aria-selected="true"] { @apply bg-orange-400/12 text-orange-100; }

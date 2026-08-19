@@ -1,6 +1,7 @@
 import { COOKIE_NAME } from "@shared/const";
 import { TRPCError } from "@trpc/server";
 import { parse as parseCookieHeader } from "cookie";
+import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import {
   appendTaskEvent,
@@ -9,6 +10,7 @@ import {
   completeOnboardingForUser,
   DEFAULT_AUTONOMY_SETTINGS,
   type TaskPlanStep,
+  getLibraryDeliverableForUser,
   getTaskForUser,
   getProjectForUser,
   getUserPreferences,
@@ -18,6 +20,7 @@ import {
   listMemoryFacts,
   listProjectsForUser,
   listTaskApprovals,
+  listTaskAttachments,
   listTaskDeliverables,
   listTaskEvents,
   listTaskMessages,
@@ -41,6 +44,7 @@ import { estimateTaskCredits } from "./agent/creditEstimate";
 import { encryptSecret } from "./security/encryption";
 import { getTaskArtifactUrl } from "./agent/artifactStorage";
 import { listHeartbeatJobs } from "./_core/heartbeat";
+import { storagePut } from "./storage";
 
 const taskIdSchema = z.object({ taskId: z.string().uuid() });
 const taskStatusSchema = z.enum([
@@ -62,6 +66,43 @@ const planSchema = z.array(
     state: z.enum(["pending", "active", "done", "blocked"]),
   }),
 ).min(1).max(25);
+
+const MAX_ATTACHMENT_BYTES = 10 * 1024 * 1024;
+const MAX_ATTACHMENT_BASE64_LENGTH = Math.ceil(MAX_ATTACHMENT_BYTES / 3) * 4;
+const attachmentMimeSchema = z.string().trim().min(3).max(100).regex(
+  /^(application\/(pdf|json|zip|x-7z-compressed|x-tar|vnd\.(openxmlformats-officedocument\.(wordprocessingml\.document|spreadsheetml\.sheet)|ms-excel|msword))|text\/(plain|csv|markdown)|image\/(png|jpeg|webp))$/,
+  "This file type is not supported.",
+);
+const attachmentReferenceSchema = z.discriminatedUnion("sourceType", [
+  z.object({
+    sourceType: z.literal("upload"),
+    filename: z.string().trim().min(1).max(255),
+    fileType: attachmentMimeSchema,
+    storageKey: z.string().trim().min(1).max(1024),
+    storageUrl: z.string().trim().min(1).max(2048),
+  }),
+  z.object({
+    sourceType: z.literal("library"),
+    sourceDeliverableId: z.string().uuid(),
+  }),
+]);
+
+function safeAttachmentFilename(value: string) {
+  const cleaned = value.replace(/[\\/\u0000-\u001f:*?"<>|]/g, "_").replace(/^\.+/, "").trim().slice(0, 240);
+  if (!cleaned) throw new TRPCError({ code: "BAD_REQUEST", message: "A valid attachment filename is required." });
+  return cleaned;
+}
+
+function decodeAttachmentBase64(value: string) {
+  if (value.length === 0 || value.length > MAX_ATTACHMENT_BASE64_LENGTH || value.length % 4 !== 0 || !/^[A-Za-z0-9+/]*={0,2}$/.test(value)) {
+    throw new TRPCError({ code: "BAD_REQUEST", message: "The attachment payload is invalid or exceeds 10 MB." });
+  }
+  const bytes = Buffer.from(value, "base64");
+  if (bytes.length === 0 || bytes.length > MAX_ATTACHMENT_BYTES) {
+    throw new TRPCError({ code: "BAD_REQUEST", message: "The attachment payload is invalid or exceeds 10 MB." });
+  }
+  return bytes;
+}
 
 function toNotFound(taskId: string): never {
   throw new TRPCError({ code: "NOT_FOUND", message: `Task ${taskId} was not found.` });
@@ -147,14 +188,15 @@ export const appRouter = router({
     list: protectedProcedure.query(({ ctx }) => listTasksForUser(ctx.user.id)),
     get: protectedProcedure.input(taskIdSchema).query(async ({ ctx, input }) => {
       const task = await requireOwnedTask(input.taskId, ctx.user.id);
-      const [events, messages, approvals, deliverables, sandboxRows] = await Promise.all([
+      const [events, messages, approvals, deliverables, attachments, sandboxRows] = await Promise.all([
         listTaskEvents(task.id),
         listTaskMessages(task.id),
         listTaskApprovals(task.id),
         listTaskDeliverables(task.id),
+        listTaskAttachments(task.id),
         listTaskSandboxes(task.id),
       ]);
-      return { task, events, messages, approvals, deliverables, sandboxes: sandboxRows };
+      return { task, events, messages, approvals, deliverables, attachments, sandboxes: sandboxRows };
     }),
     artifactUrl: protectedProcedure
       .input(taskIdSchema.extend({ deliverableId: z.string().uuid() }))
@@ -170,6 +212,24 @@ export const appRouter = router({
           url: await getTaskArtifactUrl(deliverable.storageKey),
         };
       }),
+    uploadAttachment: protectedProcedure
+      .input(z.object({
+        filename: z.string().trim().min(1).max(255),
+        contentType: attachmentMimeSchema,
+        dataBase64: z.string().min(1).max(MAX_ATTACHMENT_BASE64_LENGTH),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        await enforceUserMutationLimit(ctx.user.id, "task-attachment-upload", 20, 3_600);
+        const filename = safeAttachmentFilename(input.filename);
+        const bytes = decodeAttachmentBase64(input.dataBase64);
+        try {
+          const stored = await storagePut(`task-inputs/${ctx.user.id}/${randomUUID()}-${filename}`, bytes, input.contentType);
+          return { storageKey: stored.key, storageUrl: stored.url, filename, fileType: input.contentType };
+        } catch (error) {
+          console.error(JSON.stringify({ event: "task_attachment_upload_failed", userId: ctx.user.id, filename, message: error instanceof Error ? error.message : "unknown" }));
+          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "The attachment could not be stored." });
+        }
+      }),
     create: protectedProcedure
       .input(
         z.object({
@@ -184,11 +244,30 @@ export const appRouter = router({
             allowFileWrites: z.boolean(),
           }).default(DEFAULT_AUTONOMY_SETTINGS),
           involvesCode: z.boolean(),
+          attachments: z.array(attachmentReferenceSchema).max(12).optional(),
         }),
       )
       .mutation(async ({ ctx, input }) => {
         await enforceUserMutationLimit(ctx.user.id, "task-create", 12, 3_600);
         if (input.projectId) await requireOwnedProject(input.projectId, ctx.user.id);
+        const attachments = await Promise.all((input.attachments ?? []).map(async attachment => {
+          if (attachment.sourceType === "upload") {
+            if (!attachment.storageKey.startsWith(`task-inputs/${ctx.user.id}/`) || !attachment.storageUrl.startsWith("/manus-storage/")) {
+              throw new TRPCError({ code: "FORBIDDEN", message: "The uploaded attachment is not available to this account." });
+            }
+            return attachment;
+          }
+          const deliverable = await getLibraryDeliverableForUser(attachment.sourceDeliverableId, ctx.user.id);
+          if (!deliverable) throw new TRPCError({ code: "NOT_FOUND", message: "The selected Library file was not found." });
+          return {
+            filename: deliverable.filename,
+            fileType: deliverable.fileType,
+            storageKey: deliverable.storageKey,
+            storageUrl: deliverable.storageUrl,
+            sourceType: "library" as const,
+            sourceDeliverableId: deliverable.id,
+          };
+        }));
         const plan = input.plan ?? initialPlanFromGoal(input.goal);
         const estimate = estimateTaskCredits({ goal: input.goal, planSteps: plan.length, involvesCode: input.involvesCode });
         const task = await createTaskForUser({
@@ -199,6 +278,7 @@ export const appRouter = router({
           plan,
           autonomySettings: input.autonomySettings,
           involvesCode: input.involvesCode,
+          attachments,
           ...estimate,
         });
         if (!task) {

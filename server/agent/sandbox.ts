@@ -27,7 +27,7 @@ export type SandboxScreenshot = {
 
 export type SandboxFile = {
   path: string;
-  content: string;
+  content: string | Uint8Array;
 };
 
 export interface SandboxProvider {
@@ -60,6 +60,10 @@ function requireSafePath(path: string) {
   if (!path.startsWith("/workspace/") || path.includes("\0") || path.split("/").includes("..")) {
     throw new Error("Sandbox file access is restricted to /workspace.");
   }
+}
+
+function toArrayBuffer(bytes: Uint8Array): ArrayBuffer {
+  return bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer;
 }
 
 export class E2BSandboxProvider implements SandboxProvider {
@@ -110,7 +114,7 @@ export class E2BSandboxProvider implements SandboxProvider {
   async writeFile(descriptor: SandboxDescriptor, file: SandboxFile): Promise<void> {
     requireSafePath(file.path);
     const sandbox = await this.connect(descriptor);
-    await sandbox.files.write(file.path, file.content);
+    await sandbox.files.write(file.path, typeof file.content === "string" ? file.content : toArrayBuffer(file.content));
   }
 
   async openUrl(descriptor: SandboxDescriptor, url: string): Promise<void> {
@@ -218,7 +222,7 @@ export class DockerSandboxProvider implements SandboxProvider {
 
   async writeFile(descriptor: SandboxDescriptor, file: SandboxFile): Promise<void> {
     requireSafePath(file.path);
-    const content = Buffer.from(file.content, "utf8").toString("base64");
+    const content = (typeof file.content === "string" ? Buffer.from(file.content, "utf8") : Buffer.from(file.content)).toString("base64");
     const escapedPath = file.path.replace(/'/g, "'\\''");
     const result = await this.execute(descriptor, `printf %s '${content}' | base64 -d > '${escapedPath}'`);
     if (result.exitCode !== 0) throw new Error(result.stderr || "The sandbox file could not be written.");

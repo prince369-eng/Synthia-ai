@@ -82,6 +82,7 @@ describe("projects and scheduled router procedures", () => {
     const events = [{ id: "event-1", sequenceNumber: 1 }, { id: "event-2", sequenceNumber: 2 }];
     vi.spyOn(db, "getTaskForUser").mockResolvedValue(task as never);
     vi.spyOn(db, "listTaskEvents").mockResolvedValue(events as never);
+    vi.spyOn(db, "listTaskAttachments").mockResolvedValue([] as never);
     vi.spyOn(db, "listTaskMessages").mockResolvedValue([] as never);
     vi.spyOn(db, "listTaskApprovals").mockResolvedValue([] as never);
     vi.spyOn(db, "listTaskDeliverables").mockResolvedValue([] as never);

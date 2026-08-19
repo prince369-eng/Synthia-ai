@@ -7,6 +7,7 @@ import {
   getRecoverableSandboxForTask,
   getTaskById,
   getUserById,
+  listTaskAttachments,
   listTaskEvents,
   recordAgentMessage,
   recordUsageForTask,
@@ -15,7 +16,7 @@ import {
   updateTaskForWorker,
 } from "../db";
 import { ENV } from "../_core/env";
-import { putTaskArtifact } from "./artifactStorage";
+import { getTaskArtifactUrl, putTaskArtifact } from "./artifactStorage";
 import { generateWithFallback, parseStructuredModelOutput } from "./llm";
 import { evaluateActionPolicy, isAgentAction, type AgentAction } from "./policy";
 import { enqueueTaskCycle } from "./queue";
@@ -23,6 +24,7 @@ import { sandboxProviderFor, createSandboxProvider, type SandboxDescriptor } fro
 import { searchWeb } from "./search";
 import { logger } from "../security/logger";
 import { notifyTask } from "./notifications";
+import { storageGetSignedUrl } from "../storage";
 
 type ModelDecision = {
   narration: string;
@@ -72,6 +74,31 @@ async function checkpointSandbox(dbSandboxId: string, descriptor: SandboxDescrip
   await updateSandboxCheckpoint(dbSandboxId, checkpointRef);
 }
 
+function safeInputPath(index: number, filename: string) {
+  const sanitized = filename.replace(/[^A-Za-z0-9._-]/g, "_").replace(/^\.+/, "").slice(0, 160) || "attachment";
+  return `/workspace/inputs/${String(index + 1).padStart(2, "0")}-${sanitized}`;
+}
+
+async function hydrateTaskAttachments(taskId: string, descriptor: SandboxDescriptor) {
+  const attachments = await listTaskAttachments(taskId);
+  if (!attachments.length) return [];
+  const provider = sandboxProviderFor(descriptor.provider);
+  const directory = await provider.execute(descriptor, "mkdir -p /workspace/inputs");
+  if (directory.exitCode !== 0) throw new Error(directory.stderr || "The attachment workspace could not be prepared.");
+  return Promise.all(attachments.map(async (attachment, index) => {
+    const url = attachment.sourceType === "library"
+      ? await getTaskArtifactUrl(attachment.storageKey)
+      : await storageGetSignedUrl(attachment.storageKey);
+    const response = await fetch(url);
+    if (!response.ok) throw new Error(`The attachment ${attachment.filename} could not be retrieved.`);
+    const bytes = new Uint8Array(await response.arrayBuffer());
+    if (bytes.byteLength > 10 * 1024 * 1024) throw new Error(`The attachment ${attachment.filename} exceeds the task input limit.`);
+    const path = safeInputPath(index, attachment.filename);
+    await provider.writeFile(descriptor, { path, content: bytes });
+    return { filename: attachment.filename, fileType: attachment.fileType, path };
+  }));
+}
+
 async function executeAction(taskId: string, action: AgentAction) {
   if (action.kind === "respond") {
     await recordAgentMessage(taskId, action.content);
@@ -93,6 +120,7 @@ async function executeAction(taskId: string, action: AgentAction) {
   }
   const sandbox = await resolveSandbox(taskId);
   const provider = sandboxProviderFor(sandbox.descriptor.provider);
+  await hydrateTaskAttachments(taskId, sandbox.descriptor);
   if (action.kind === "run_command") {
     await appendTaskEvent(taskId, { type: "tool_call", payload: { tool: "run_command", command: action.command } });
     const result = await provider.execute(sandbox.descriptor, action.command);
@@ -141,7 +169,7 @@ export async function runTaskCycle(taskId: string) {
     return;
   }
   try {
-    const events = await listTaskEvents(task.id);
+    const [events, attachments] = await Promise.all([listTaskEvents(task.id), listTaskAttachments(task.id)]);
     const iterations = events.filter(event => event.type === "tool_call").length;
     if (iterations >= ENV.maxAgentIterations) {
       await updateTaskForWorker(task.id, { status: "needs_input", currentStepSummary: "Iteration safety cap reached." });
@@ -155,9 +183,9 @@ export async function runTaskCycle(taskId: string) {
     messages: [
       {
         role: "system",
-        content: "You are Synthia AI's task orchestrator. Choose exactly one next action. Never execute external side effects; use external_effect to request approval. Keep all sandbox files under /workspace. Use publish_file with a workspace path, a plain filename, and a MIME type to deliver a file. Return only JSON: { narration: string, action: { kind: respond|web_search|run_command|write_file|open_url|capture_screen|publish_file|complete|external_effect, ... }, plan?: [{id,title,state}] }.",
+        content: "You are Synthia AI's task orchestrator. Choose exactly one next action. Never execute external side effects; use external_effect to request approval. Keep all sandbox files under /workspace. Task input attachments are hydrated as read-only files in /workspace/inputs before a sandbox action; inspect them only through sandbox commands. Use publish_file with a workspace path, a plain filename, and a MIME type to deliver a file. Return only JSON: { narration: string, action: { kind: respond|web_search|run_command|write_file|open_url|capture_screen|publish_file|complete|external_effect, ... }, plan?: [{id,title,state}] }.",
       },
-      { role: "user", content: JSON.stringify({ title: task.title, goal: task.goal, plan: task.plan, events: taskContext(events) }) },
+      { role: "user", content: JSON.stringify({ title: task.title, goal: task.goal, plan: task.plan, attachments: attachments.map((attachment, index) => ({ filename: attachment.filename, fileType: attachment.fileType, path: safeInputPath(index, attachment.filename) })), events: taskContext(events) }) },
     ],
   });
     const decision = validatedDecision(parseStructuredModelOutput<ModelDecision>(model.content));

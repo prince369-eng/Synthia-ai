@@ -8,6 +8,7 @@ const db = {
   getRecoverableSandboxForTask: vi.fn(),
   getTaskById: vi.fn(),
   getUserById: vi.fn(),
+  listTaskAttachments: vi.fn(),
   listTaskEvents: vi.fn(),
   recordAgentMessage: vi.fn(),
   recordUsageForTask: vi.fn(),
@@ -44,6 +45,7 @@ const baseTask = {
 beforeEach(() => {
   vi.clearAllMocks();
   db.getTaskById.mockResolvedValue(baseTask);
+  db.listTaskAttachments.mockResolvedValue([]);
   db.listTaskEvents.mockResolvedValue([]);
   db.appendTaskEvent.mockResolvedValue({ id: "event-1", sequenceNumber: 1 });
   db.recordAgentMessage.mockResolvedValue(undefined);

@@ -137,6 +137,22 @@ export const deliverables = pgTable("deliverables", {
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 }, table => [index("deliverables_task_final_created_idx").on(table.taskId, table.isFinal, table.createdAt)]);
 
+export const taskAttachments = pgTable("task_attachments", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  taskId: varchar("task_id", { length: 36 }).notNull().references(() => tasks.id, { onDelete: "cascade" }),
+  userId: integer("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  filename: varchar("filename", { length: 255 }).notNull(),
+  fileType: varchar("file_type", { length: 100 }).notNull(),
+  storageKey: varchar("storage_key", { length: 1024 }).notNull(),
+  storageUrl: text("storage_url").notNull(),
+  sourceType: varchar("source_type", { length: 20 }).notNull().default("upload"),
+  sourceDeliverableId: varchar("source_deliverable_id", { length: 36 }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, table => [
+  index("task_attachments_task_created_idx").on(table.taskId, table.createdAt),
+  index("task_attachments_user_created_idx").on(table.userId, table.createdAt),
+]);
+
 export const approvalRequests = pgTable("approval_requests", {
   id: varchar("id", { length: 36 }).primaryKey(),
   taskId: varchar("task_id", { length: 36 }).notNull().references(() => tasks.id, { onDelete: "cascade" }),

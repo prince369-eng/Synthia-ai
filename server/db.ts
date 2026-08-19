@@ -10,6 +10,7 @@ import {
   memoryFacts,
   projects,
   sandboxes,
+  taskAttachments,
   taskEvents,
   taskEventSequences,
   taskMessages,
@@ -36,6 +37,15 @@ export type AutonomySettings = {
   allowWebSearch: boolean;
   allowCodeExecution: boolean;
   allowFileWrites: boolean;
+};
+
+export type TaskAttachmentInput = {
+  filename: string;
+  fileType: string;
+  storageKey: string;
+  storageUrl: string;
+  sourceType: "upload" | "library";
+  sourceDeliverableId?: string;
 };
 
 export const DEFAULT_AUTONOMY_SETTINGS: AutonomySettings = {
@@ -183,6 +193,7 @@ export async function createTaskForUser(input: {
   estimateBand: "quick" | "standard" | "extensive";
   estimatedCreditsMin: number;
   estimatedCreditsMax: number;
+  attachments?: TaskAttachmentInput[];
 }) {
   const database = databaseRequired(await getDb());
   const id = randomUUID();
@@ -211,6 +222,25 @@ export async function createTaskForUser(input: {
       role: "user",
       content: input.goal,
     });
+    if (input.attachments?.length) {
+      await transaction.insert(taskAttachments).values(input.attachments.map(attachment => ({
+        id: randomUUID(),
+        taskId: id,
+        userId: input.userId,
+        ...attachment,
+      })));
+      await appendTaskEventInTransaction(transaction, id, {
+        type: "user_file_edit",
+        payload: {
+          attachments: input.attachments.map(attachment => ({
+            filename: attachment.filename,
+            fileType: attachment.fileType,
+            sourceType: attachment.sourceType,
+            sourceDeliverableId: attachment.sourceDeliverableId,
+          })),
+        },
+      });
+    }
     await appendTaskEventInTransaction(transaction, id, {
       type: "status_change",
       payload: { status: "queued", summary: "Task queued for agent orchestration." },
@@ -284,6 +314,32 @@ export async function listTaskDeliverables(taskId: string) {
     .from(deliverables)
     .where(eq(deliverables.taskId, taskId))
     .orderBy(desc(deliverables.isFinal), desc(deliverables.createdAt));
+}
+
+export async function listTaskAttachments(taskId: string) {
+  const database = databaseRequired(await getDb());
+  return database
+    .select()
+    .from(taskAttachments)
+    .where(eq(taskAttachments.taskId, taskId))
+    .orderBy(asc(taskAttachments.createdAt));
+}
+
+export async function getLibraryDeliverableForUser(deliverableId: string, userId: number) {
+  const database = databaseRequired(await getDb());
+  const rows = await database
+    .select({
+      id: deliverables.id,
+      filename: deliverables.filename,
+      fileType: deliverables.fileType,
+      storageKey: deliverables.storageKey,
+      storageUrl: deliverables.storageUrl,
+    })
+    .from(deliverables)
+    .innerJoin(tasks, eq(deliverables.taskId, tasks.id))
+    .where(and(eq(deliverables.id, deliverableId), eq(tasks.userId, userId)))
+    .limit(1);
+  return rows[0];
 }
 
 export async function listLibraryDeliverablesForUser(userId: number) {

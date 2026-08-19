@@ -101,3 +101,9 @@
 - [x] Fix the General Settings capability-row grid so each switch stays inside its own content column at 1920px desktop width and responsive widths.
 - [x] Capture and retain a final post-fix desktop screenshot of the General Settings capability controls through the project screenshot service, alongside the completed repeatable layout assertion.
 - [x] Capture a retained post-cache-refresh desktop Settings screenshot and assert the static preview always revisions its rebuilt browser bundle.
+- [x] Redesign the central task composer with compact workspace summary, attachment controls, lower control bar, suggestions, and recent-task hierarchy.
+- [x] Add a persisted user-owned task-attachment schema and reviewed PostgreSQL migration for local uploads and selected Library artifacts.
+- [x] Add a rate-limited authenticated attachment-upload contract with strict filename, MIME, and 10 MB file validation through secure object storage.
+- [x] Extend task creation to validate, persist, and event-log attachment references before queueing a task.
+- [x] Hydrate persisted task attachments into isolated agent workspaces and structured model context without cross-user storage access.
+- [x] Add focused attachment composer and task-contract regression coverage, then complete full verification and visual review.
