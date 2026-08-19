@@ -1,0 +1,18 @@
+# Synthia AI Environment Reference
+
+Configure these values through the deployment secret manager or a local, ignored `.env` file. Do not commit credentials. The managed Manus authentication values are pre-injected in hosted environments; external Synthia providers must be supplied before their related capabilities can run.
+
+| Group | Keys | Notes |
+|---|---|---|
+| Core and auth | `NODE_ENV`, `PORT`, `DATABASE_URL`, `JWT_SECRET`, `VITE_APP_ID`, `VITE_OAUTH_PORTAL_URL`, `OAUTH_SERVER_URL`, `OWNER_OPEN_ID`, `OWNER_NAME` | `DATABASE_URL` is the managed MySQL account store used by OAuth. Do not point it at Synthia’s task database. |
+| Synthia controls | `SYNTHIA_PUBLIC_APP_URL`, `SYNTHIA_WORKER_MODE`, `SYNTHIA_LOG_LEVEL`, `SYNTHIA_ENCRYPTION_KEY`, `SYNTHIA_EVENT_RETENTION_DAYS`, `SYNTHIA_SANDBOX_RETENTION_DAYS`, `SYNTHIA_MAX_AGENT_ITERATIONS`, `SYNTHIA_TASK_TIMEOUT_SECONDS` | Use a 32-byte AES-GCM key encoded as 64 hexadecimal characters for `SYNTHIA_ENCRYPTION_KEY`. |
+| Durable state | `SYNTHIA_POSTGRES_URL`, `REDIS_URL`, `REDIS_TLS_ENABLED` | PostgreSQL holds event-sourced Synthia state; Redis holds queues, rate-limit counters, and event fan-out. |
+| Local Compose only | `SYNTHIA_LOCAL_POSTGRES_PASSWORD`, `SYNTHIA_LOCAL_REDIS_PASSWORD`, `SYNTHIA_HTTP_PORT` | Compose derives its internal PostgreSQL and Redis connection strings from these values. |
+| Sandbox | `SYNTHIA_SANDBOX_PROVIDER`, `E2B_API_KEY`, `E2B_TEMPLATE_ID`, `E2B_SANDBOX_TIMEOUT_SECONDS`, `SYNTHIA_DOCKER_SANDBOX_IMAGE`, `SYNTHIA_SANDBOX_ALLOWED_HOSTS`, `SYNTHIA_SANDBOX_REGION` | Production uses E2B. Docker is a development-only, code-only fallback. |
+| LLM routing | `SYNTHIA_ORCHESTRATOR_PROVIDER`, `SYNTHIA_ORCHESTRATOR_MODEL`, `SYNTHIA_SUBTASK_PROVIDER`, `SYNTHIA_SUBTASK_MODEL`, `GROQ_API_KEY`, `OPENROUTER_API_KEY`, `OPENROUTER_HTTP_REFERER`, `OPENROUTER_APP_NAME`, `GEMINI_API_KEY`, `DEEPSEEK_API_KEY` | Configure at least one model-provider key before task execution. |
+| Search | `SYNTHIA_SEARCH_PRIMARY`, `TAVILY_API_KEY`, `SERPER_API_KEY` | Configure the selected provider; the other is available as failover when supplied. |
+| Artifact storage | `SYNTHIA_STORAGE_PROVIDER`, `AWS_REGION`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_S3_BUCKET`, `AWS_S3_ENDPOINT`, `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET`, `R2_PUBLIC_BASE_URL` | Select `s3` or `r2`; only artifact references are stored in PostgreSQL. |
+| Email | `SYNTHIA_EMAIL_PRIMARY`, `SYNTHIA_EMAIL_FROM`, `RESEND_API_KEY`, `POSTMARK_SERVER_TOKEN`, `POSTMARK_MESSAGE_STREAM` | Configure the selected provider. The second provider becomes failover when supplied. |
+| Optional integration readiness | `GITHUB_OAUTH_CLIENT_ID`, `GITHUB_OAUTH_CLIENT_SECRET`, `GOOGLE_OAUTH_CLIENT_ID`, `GOOGLE_OAUTH_CLIENT_SECRET`, `NOTION_OAUTH_CLIENT_ID`, `NOTION_OAUTH_CLIENT_SECRET`, `SLACK_OAUTH_CLIENT_ID`, `SLACK_OAUTH_CLIENT_SECRET` | These values only report integration readiness until their OAuth flows are enabled. |
+
+For a local Compose run, create an ignored `.env` file, supply the three local secrets required by Compose (`SYNTHIA_LOCAL_POSTGRES_PASSWORD`, `SYNTHIA_LOCAL_REDIS_PASSWORD`, and `JWT_SECRET`), plus the OAuth values required for login. Then configure provider credentials only for the integrations to exercise. In hosted environments, add the same values through secure project-secret configuration rather than committing an environment template.

@@ -28,7 +28,7 @@
 - [x] Split route-level workspace code so the dashboard's initial client load does not include the full Code, Library, and Settings feature surface.
 - [x] Refine the default-open Code workspace so its visible layout includes file-tree/editor context and concise terminal, timeline, and artifact context without requiring tab changes.
 - [x] Verify and test the existing server-side terminal policy against allowed commands, blocked commands, path restrictions, and approval enforcement.
-- [ ] Validate Docker Compose service configuration for the control plane, independent worker, PostgreSQL, Redis, migration job, and development-only sandbox image, with external provider configuration documented.
+- [ ] Statically validate Docker Compose service configuration for the control plane, independent worker, PostgreSQL, Redis, migration job, and development-only sandbox image, with external provider configuration documented; runtime Compose execution is deferred because Docker is unavailable in this sandbox and credentials remain intentionally unset.
 - [ ] Add integration coverage for ordered replay events, authenticated task APIs, provider adapters, and frontend critical paths; unit coverage is complete for worker recovery, exhausted retries, approval gates, terminal policy, credits, parser validation, encryption, and logout.
 - [ ] Complete environment-dependent migration, container, and authenticated task-flow verification after credentials are supplied; static checks, unit tests, production build, and desktop/mobile sign-in boundaries have passed.
 - [x] Diagnose and repair the reported preview-access failure; the development service was restarted and the live preview now opens successfully.
@@ -54,3 +54,11 @@
 - [x] Add a regression test for the bounded task-history retry policy used by the compact unavailable-data state.
 - [x] Remove task-history retry delay so the compact unavailable-data state appears immediately when PostgreSQL is intentionally unconfigured.
 - [x] Add a regression assertion that the collapsed desktop rail retains navigation icons while hiding text labels and task/account detail.
+- [ ] Configure the documented Synthia external-service and local Compose environment keys through secure project secrets management.
+- [x] Add a compact profile control with account details and Synthia session actions to the persistent navigation shell.
+- [x] Reorganize Synthia settings into clear account, provider, integrations, security, and workspace groups with direct section navigation.
+- [x] Add visible, keyboard-accessible return navigation from every Agent’s Computer workspace to the task dashboard and library.
+- [x] Extend compact navigation regression coverage for profile menu state, settings routes, and workspace return paths.
+- [x] Replace the unavailable `.env.example` instruction with a safe environment-reference document for local Compose and managed secret configuration.
+- [x] Correct profile-control account typography and truncation styling for both expanded and collapsed sidebar states.
+- [x] Add rendered-source regression assertions for profile menu actions, grouped settings navigation, and visible dashboard/library workspace returns.

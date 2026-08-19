@@ -3,8 +3,9 @@ import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { trpc } from "@/lib/trpc";
 import { useTaskEventStream } from "@/hooks/useTaskEventStream";
-import { AlertTriangle, Bot, Check, ChevronLeft, CirclePause, Code2, FileCode2, FileText, FolderTree, ListTree, Loader2, MonitorDot, Play, Send, Square, TerminalSquare, X } from "lucide-react";
-import { FormEvent, useMemo, useState } from "react";
+import { AlertTriangle, BookOpenText, Bot, Check, ChevronLeft, CirclePause, Code2, FileCode2, FileText, FolderTree, ListTree, Loader2, MonitorDot, Play, Send, Square, TerminalSquare, X } from "lucide-react";
+import { WORKSPACE_RETURN_ROUTES } from "@/lib/workspaceLayout";
+import React, { FormEvent, useMemo, useState } from "react";
 import { Link, useLocation, useRoute } from "wouter";
 
 type WorkspaceTab = "screen" | "code" | "terminal" | "files" | "timeline" | "plan";
@@ -35,13 +36,13 @@ export default function TaskWorkspace({ replayMode = false }: { replayMode?: boo
 
   function sendMessage(event: FormEvent) { event.preventDefault(); if (taskId && message.trim()) addMessage.mutate({ taskId, content: message.trim() }); }
   if (snapshot.isLoading) return <div className="grid min-h-screen place-items-center text-sm text-[#a89889]"><Loader2 className="mr-2 animate-spin" size={16} />Loading task workspace…</div>;
-  if (snapshot.isError || !task || !taskId) return <main className="p-8"><Link href="/" className="text-sm text-orange-300">← Back to tasks</Link><p role="alert" className="mt-5 text-rose-300">{snapshot.error?.message ?? "The requested task is unavailable."}</p></main>;
+  if (snapshot.isError || !task || !taskId) return <main className="p-8"><Link href={WORKSPACE_RETURN_ROUTES.dashboard} className="text-sm text-orange-300">← Back to tasks</Link><p role="alert" className="mt-5 text-rose-300">{snapshot.error?.message ?? "The requested task is unavailable."}</p></main>;
 
   const tabs: Array<{ id: WorkspaceTab; label: string; icon: typeof Code2 }> = [{ id: "screen", label: "Screen", icon: MonitorDot }, { id: "code", label: "Code", icon: Code2 }, { id: "terminal", label: "Terminal", icon: TerminalSquare }, { id: "files", label: "Files", icon: FolderTree }, { id: "timeline", label: "Timeline", icon: ListTree }, { id: "plan", label: "Plan", icon: FileText }];
   const activeApprovals = data.approvals.filter(approval => approval.status === "pending");
 
   return <div className="synthia-workspace">
-    <header className="synthia-workspace-header"><div className="min-w-0"><button onClick={() => setLocation("/")} className="flex items-center gap-1 text-[11px] text-[#a69788] hover:text-orange-300"><ChevronLeft size={13} /> Tasks</button><h1 className="mt-0.5 truncate text-sm font-semibold text-[#f9eddf]">{task.title}</h1></div><div className="flex items-center gap-2"><span className={cn("hidden text-[11px] font-medium sm:inline", statusColor[task.status])}>{task.status.replace(/_/g, " ")}</span><span title={connected ? "Live task stream connected" : "Reconnecting task stream"} className={cn("h-1.5 w-1.5 rounded-full", connected ? "bg-emerald-400" : "bg-amber-400 animate-pulse")} />{task.status === "running" || task.status === "planning" || task.status === "booting" ? <Button size="sm" variant="outline" onClick={() => pause.mutate({ taskId })} disabled={pause.isPending} className="h-7 border-white/12 bg-transparent px-2 text-[11px] text-[#dfd1c1] hover:bg-white/5"><CirclePause size={13} />Pause</Button> : null}{task.status === "paused" || task.status === "needs_input" ? <Button size="sm" onClick={() => resume.mutate({ taskId })} disabled={resume.isPending} className="h-7 bg-orange-400 px-2 text-[11px] text-[#2b170c] hover:bg-orange-300"><Play size={13} />Resume</Button> : null}{!["completed", "failed", "cancelled"].includes(task.status) ? <Button size="sm" variant="ghost" onClick={() => cancel.mutate({ taskId })} disabled={cancel.isPending} className="h-7 px-2 text-[11px] text-[#a89889] hover:text-rose-300"><Square size={12} />Stop</Button> : null}</div></header>
+    <header className="synthia-workspace-header"><div className="min-w-0"><WorkspaceReturnNavigation onNavigate={setLocation} /><h1 className="mt-1 truncate text-sm font-semibold text-[#f9eddf]">{task.title}</h1></div><div className="flex items-center gap-2"><span className={cn("hidden text-[11px] font-medium sm:inline", statusColor[task.status])}>{task.status.replace(/_/g, " ")}</span><span title={connected ? "Live task stream connected" : "Reconnecting task stream"} className={cn("h-1.5 w-1.5 rounded-full", connected ? "bg-emerald-400" : "bg-amber-400 animate-pulse")} />{task.status === "running" || task.status === "planning" || task.status === "booting" ? <Button size="sm" variant="outline" onClick={() => pause.mutate({ taskId })} disabled={pause.isPending} className="h-7 border-white/12 bg-transparent px-2 text-[11px] text-[#dfd1c1] hover:bg-white/5"><CirclePause size={13} />Pause</Button> : null}{task.status === "paused" || task.status === "needs_input" ? <Button size="sm" onClick={() => resume.mutate({ taskId })} disabled={resume.isPending} className="h-7 bg-orange-400 px-2 text-[11px] text-[#2b170c] hover:bg-orange-300"><Play size={13} />Resume</Button> : null}{!["completed", "failed", "cancelled"].includes(task.status) ? <Button size="sm" variant="ghost" onClick={() => cancel.mutate({ taskId })} disabled={cancel.isPending} className="h-7 px-2 text-[11px] text-[#a89889] hover:text-rose-300"><Square size={12} />Stop</Button> : null}</div></header>
     <div className="grid min-h-[calc(100vh-3.5rem)] lg:grid-cols-[minmax(320px,.9fr)_minmax(480px,1.2fr)]">
       <section className="flex min-h-0 flex-col border-r border-white/8">
         <div className="border-b border-white/8 px-4 py-4 sm:px-5"><p className="text-[9px] font-semibold uppercase tracking-[.16em] text-orange-300">Task objective</p><p className="mt-1.5 max-w-3xl text-xs leading-5 text-[#d6c8b8]">{task.goal}</p>{replayMode ? <div className="mt-3 rounded-md border border-orange-300/20 bg-orange-300/5 px-2.5 py-1.5 text-[11px] text-orange-100">Replay mode — move through the durable event record without changing task execution.</div> : null}</div>
@@ -66,6 +67,10 @@ export default function TaskWorkspace({ replayMode = false }: { replayMode?: boo
       </aside>
     </div>
   </div>;
+}
+
+export function WorkspaceReturnNavigation({ onNavigate }: { onNavigate: (path: string) => void }) {
+  return <div className="synthia-workspace-return-nav" aria-label="Workspace return navigation"><button type="button" onClick={() => onNavigate(WORKSPACE_RETURN_ROUTES.dashboard)}><ChevronLeft size={13} />Dashboard</button><button type="button" onClick={() => onNavigate(WORKSPACE_RETURN_ROUTES.library)}><BookOpenText size={13} />Library</button></div>;
 }
 
 function CodePanel({ deliverables, events, onOpenTab }: { deliverables: Array<any>; events: Array<any>; onOpenTab: (tab: WorkspaceTab) => void }) {

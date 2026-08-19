@@ -1,12 +1,13 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import { startLogin } from "@/const";
-import { isSidebarCollapsed, SIDEBAR_COLLAPSE_STORAGE_KEY } from "@/lib/workspaceLayout";
+import { isSidebarCollapsed, PROFILE_MENU_DESTINATIONS, SIDEBAR_COLLAPSE_STORAGE_KEY } from "@/lib/workspaceLayout";
 import { trpc } from "@/lib/trpc";
 import { cn } from "@/lib/utils";
-import { BookOpenText, ChevronRight, Command, Loader2, PanelLeftClose, PanelLeftOpen, Plus, Settings2, Sparkles } from "lucide-react";
-import { type ReactNode, useEffect, useState } from "react";
+import { BookOpenText, ChevronRight, Command, CreditCard, Loader2, LogOut, PanelLeftClose, PanelLeftOpen, Plus, Settings2, SlidersHorizontal, Sparkles, UserRound } from "lucide-react";
+import React, { type ReactNode, useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import { Button } from "./ui/button";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "./ui/dropdown-menu";
 
 const navItems = [
   { label: "Tasks", path: "/", icon: Command },
@@ -27,7 +28,7 @@ const stateDot: Record<string, string> = {
 };
 
 export function SynthiaAppShell({ children }: { children: ReactNode }) {
-  const { user, loading, isAuthenticated } = useAuth();
+  const { user, loading, isAuthenticated, logout } = useAuth();
   const [location, setLocation] = useLocation();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() =>
     typeof window !== "undefined" && isSidebarCollapsed(window.localStorage.getItem(SIDEBAR_COLLAPSE_STORAGE_KEY)),
@@ -96,10 +97,12 @@ export function SynthiaAppShell({ children }: { children: ReactNode }) {
             </button>
           ))}
         </section>
-        <div className="synthia-account">
-          <span className="synthia-avatar">{(user.name?.[0] ?? user.email?.[0] ?? "S").toUpperCase()}</span>
-          <span className="synthia-account-copy"><b>{user.name ?? "Synthia user"}</b><small>{user.email ?? "Authenticated workspace"}</small></span>
-        </div>
+        <ProfileMenu
+          name={user.name ?? "Synthia user"}
+          email={user.email ?? "Authenticated workspace"}
+          onNavigate={setLocation}
+          onLogout={() => void logout()}
+        />
       </aside>
       <nav className="synthia-mobile-nav lg:hidden" aria-label="Mobile navigation">
         {navItems.map(item => {
@@ -111,4 +114,28 @@ export function SynthiaAppShell({ children }: { children: ReactNode }) {
       <main className="synthia-main">{children}</main>
     </div>
   );
+}
+
+export function ProfileMenu({ name, email, onNavigate, onLogout }: { name: string; email: string; onNavigate: (path: string) => void; onLogout: () => void }) {
+  const initial = (name[0] ?? email[0] ?? "S").toUpperCase();
+  const menuIcons = [UserRound, SlidersHorizontal, CreditCard];
+
+  return <DropdownMenu>
+    <DropdownMenuTrigger asChild>
+      <button className="synthia-account-trigger" type="button" aria-label="Open account menu" title="Account menu">
+        <span className="synthia-avatar">{initial}</span>
+        <span className="synthia-account-copy"><b>{name}</b><small>{email}</small></span>
+      </button>
+    </DropdownMenuTrigger>
+    <DropdownMenuContent align="start" side="right" sideOffset={10} className="synthia-account-menu">
+      <DropdownMenuLabel className="synthia-account-menu-label"><b>{name}</b><span>{email}</span></DropdownMenuLabel>
+      <DropdownMenuSeparator />
+      {PROFILE_MENU_DESTINATIONS.map((item, index) => {
+        const Icon = menuIcons[index];
+        return <DropdownMenuItem key={item.path} onSelect={() => onNavigate(item.path)} className="synthia-account-menu-item"><Icon size={14} />{item.label}</DropdownMenuItem>;
+      })}
+      <DropdownMenuSeparator />
+      <DropdownMenuItem onSelect={onLogout} className="synthia-account-menu-item synthia-account-menu-signout"><LogOut size={14} />Sign out</DropdownMenuItem>
+    </DropdownMenuContent>
+  </DropdownMenu>;
 }

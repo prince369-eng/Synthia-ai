@@ -83,10 +83,17 @@ button:not(:disabled):active { transform: scale(.97); }
   .synthia-state-dot { @apply h-1.5 w-1.5 shrink-0 rounded-full; }
   .synthia-mini-status { @apply mt-3 block px-2.5 text-[11px] text-[#766a5f]; }
   .synthia-mini-status.error { @apply text-rose-300; }
-  .synthia-account { @apply mt-3 flex items-center gap-2 border-t border-white/8 px-2 pt-3; }
+  .synthia-account-trigger { @apply mt-3 flex w-full items-center gap-2 rounded-md border-t border-white/8 px-2 pt-3 text-left hover:bg-white/[.035]; }
   .synthia-avatar { @apply flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-orange-400/15 text-[11px] font-bold text-orange-300; }
-  .synthia-account b { @apply block max-w-40 truncate text-xs font-medium text-[#eee3d5]; }
-  .synthia-account small { @apply block max-w-40 truncate text-[10px] text-[#766a5f]; }
+  .synthia-account-trigger .synthia-account-copy { @apply min-w-0 flex-1; }
+  .synthia-account-trigger .synthia-account-copy b { @apply block max-w-40 truncate text-xs font-medium text-[#eee3d5]; }
+  .synthia-account-trigger .synthia-account-copy small { @apply block max-w-40 truncate text-[10px] text-[#766a5f]; }
+  .synthia-account-menu { @apply w-58 border-white/10 bg-[#24201c] p-1.5 text-[#eee3d5] shadow-2xl; }
+  .synthia-account-menu-label { @apply flex flex-col gap-0.5 px-2 py-2; }
+  .synthia-account-menu-label b { @apply truncate text-xs text-[#f6ecdf]; }
+  .synthia-account-menu-label span { @apply truncate text-[10px] font-normal text-[#8b7c6e]; }
+  .synthia-account-menu-item { @apply h-8 cursor-pointer text-[11px] text-[#cfc1b2] focus:bg-orange-400/10 focus:text-orange-100; }
+  .synthia-account-menu-signout { @apply text-rose-300 focus:bg-rose-400/10 focus:text-rose-200; }
   .synthia-auth-shell { @apply flex min-h-screen items-center justify-center bg-[#15110d] px-5; background-image: radial-gradient(circle at 50% 0%, rgba(249,115,22,.22), transparent 40%); }
   .synthia-auth-card { @apply w-full max-w-md rounded-[1.75rem] border border-white/10 bg-[#211913] p-8 shadow-2xl; }
   .synthia-auth-card h1 { @apply mt-5 text-3xl font-semibold tracking-tight text-[#fff7eb]; }
@@ -126,6 +133,8 @@ button:not(:disabled):active { transform: scale(.97); }
   .synthia-task-row small { @apply mt-0.5 block truncate text-[11px] text-[#817368]; }
   .synthia-workspace { @apply min-h-screen overflow-hidden bg-[#171410]; }
   .synthia-workspace-header { @apply flex h-14 items-center justify-between gap-3 border-b border-white/8 px-4 sm:px-5; }
+  .synthia-workspace-return-nav { @apply flex items-center gap-1; }
+  .synthia-workspace-return-nav button { @apply inline-flex h-6 items-center gap-1 rounded-md px-1.5 text-[10px] text-[#a69788] hover:bg-white/5 hover:text-orange-200; }
   .synthia-utility-page { @apply min-h-screen px-5 py-5 sm:px-7; }
   .synthia-utility-header { @apply border-b border-white/8 pb-4; }
   .synthia-utility-header > p { @apply text-[10px] font-semibold uppercase tracking-[.18em] text-orange-300; }
@@ -136,6 +145,8 @@ button:not(:disabled):active { transform: scale(.97); }
   .synthia-library-card p { @apply mt-1 line-clamp-2 text-[11px] leading-5 text-[#9e8f80]; }
   .synthia-library-card span { @apply mt-3 block text-[11px] text-orange-200; }
   .synthia-settings-nav { @apply grid grid-cols-2 gap-1 lg:block; }
+  .synthia-settings-group { @apply mb-4 last:mb-0; }
+  .synthia-settings-group > p { @apply mb-1 px-2.5 text-[9px] font-semibold uppercase tracking-[.15em] text-[#75685d]; }
   .synthia-settings-nav button { @apply flex h-8 w-full items-center gap-2 rounded-md px-2.5 text-left text-xs text-[#a79687] hover:bg-white/5 hover:text-[#ece0d1]; }
   .synthia-settings-nav button.active { @apply bg-orange-400/10 text-orange-200; }
   .synthia-settings-panel { @apply min-w-0 rounded-lg border border-white/8 bg-[#1d1a17] p-4 sm:p-5; }

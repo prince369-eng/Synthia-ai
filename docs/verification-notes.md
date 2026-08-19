@@ -51,3 +51,15 @@ The full-page capture intentionally omitted the fixed sidebar under the preview 
 A 1440 × 900 viewport capture confirmed the visible desktop navigation rail uses compact rows, an explicit collapse control, a single lightweight primary action, and a restrained account treatment. The composer and recent-task area maintain their horizontal balance beside that rail. A 390 × 844 mobile capture confirmed the desktop rail is replaced by concise top navigation, the question wraps without collision, the composer controls remain usable, and suggested-task controls stay within the available width.
 
 The task-history query has no automatic retry while the required external PostgreSQL store is intentionally absent, and its regression contract is covered by the compact layout test suite. Static-preview capture after a server restart begins at the expected authenticated-session loading boundary because the preview capture environment does not retain the connected-browser session; prior authenticated desktop and mobile captures remain the evidence for the final workspace composition. No artificial account or task data was created to bypass that boundary.
+
+## 2026-08-19 — Navigation reference review
+
+The connected browser was used to inspect the user-requested Manus reference. The selected structural patterns are a compact persistent sidebar with one clear “New task” action, grouped recent work, and an anchored profile control; a profile popover separating account, preferences, and settings actions; and a settings surface with its own section navigation and focused content pane.
+
+For Synthia’s Agent’s Computer, the implementation will retain its own task tooling while adding obvious dashboard and library return actions in the workspace header. These changes adopt interaction hierarchy and density only; Synthia retains its name, radiant-orange identity, product copy, and autonomous-agent functions.
+
+## 2026-08-19 — Authenticated navigation verification
+
+The connected browser verified the implemented Synthia settings route after the navigation redesign. The expanded rail presents the Synthia brand, a compact primary task action, tasks, library, settings, a restrained recent-task region, and an anchored signed-in account control. The settings view renders the intended grouped hierarchy: **Account**, **Agent workspace**, and **Controls**, with direct routes for account preferences, model providers, integrations, durable memory, security, and usage.
+
+Opening the authenticated account control exposes the compact profile menu with **Account & preferences**, **Providers & integrations**, **Usage & credits**, and a separated **Sign out** action. The verification also confirmed that user identity is visibly anchored to the rail without obscuring the primary navigation. Task history remains unavailable until the intentionally deferred external PostgreSQL connection and migration are configured; no artificial task data was introduced for visual verification.

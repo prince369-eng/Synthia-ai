@@ -13,7 +13,7 @@ Synthia AI separates its **control plane** from its **durable worker plane**. Th
 
 ## Local development with Docker Compose
 
-Create an ignored `.env` file by copying `.env.example`, set `SYNTHIA_LOCAL_POSTGRES_PASSWORD`, `SYNTHIA_LOCAL_REDIS_PASSWORD`, `JWT_SECRET`, and the OAuth variables needed for login. Supply real provider credentials only for integrations you intend to invoke. Build the isolated local fallback image with `docker build -t synthia-sandbox:latest -f infrastructure/sandbox/Dockerfile .`, then start the stack with `docker compose up --build`.
+Create an ignored `.env` file using the keys in [the environment reference](./environment-reference.md), then set `SYNTHIA_LOCAL_POSTGRES_PASSWORD`, `SYNTHIA_LOCAL_REDIS_PASSWORD`, `JWT_SECRET`, and the OAuth variables needed for login. Supply real provider credentials only for integrations you intend to invoke. Build the isolated local fallback image with `docker build -t synthia-sandbox:latest -f infrastructure/sandbox/Dockerfile .`, then start the stack with `docker compose up --build`.
 
 The compose stack starts a real PostgreSQL instance, a password-protected Redis instance, a one-time migration job, the control plane, and an independent worker. It does not mount a Docker daemon into the worker. The local Docker sandbox implementation therefore requires a separately managed, security-reviewed development Docker host; E2B is the production sandbox path.
 
