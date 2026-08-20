@@ -118,6 +118,13 @@
 - [x] Diagnose the dashboard task-history loading state observed during visual review without creating mock task data.
 - [x] Correct the state only if runtime evidence identifies a loading, empty, or unavailable-state defect.
 - [x] Add regression coverage and visually verify the final task-history state before checkpointing.
+
+## Agent’s Computer visual-system completion
+
+- [x] Audit Agent’s Computer controls for non-decision orange tokens that conflict with the approved teal/cyan palette.
+- [x] Replace standard workspace accents with teal/cyan while retaining amber only for approvals and warnings.
+- [x] Add regression coverage and verify the workspace visually at desktop and mobile sizes before checkpointing.
+- [x] Confirm at 1440×1000 and 390×844 that the compact teal/cyan composer, starter chips, empty task-history state, and mobile navigation remain contained without clipped controls or non-decision orange emphasis.
 - [x] Redesign the central task composer with compact workspace summary, attachment controls, lower control bar, suggestions, and recent-task hierarchy.
 - [x] Add a persisted user-owned task-attachment schema and reviewed PostgreSQL migration for local uploads and selected Library artifacts.
 - [x] Add a rate-limited authenticated attachment-upload contract with strict filename, MIME, and 10 MB file validation through secure object storage.

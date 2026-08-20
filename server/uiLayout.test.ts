@@ -168,4 +168,17 @@ describe("compact workspace layout contract", () => {
     expect(css).toContain(".synthia-workspace article:has(.text-amber-100)");
     expect(css).toContain('p[role="alert"].text-amber-200');
   });
+
+  it("uses teal and cyan for standard Agent’s Computer controls while retaining amber approval affordances", () => {
+    const workspace = readFileSync(new URL("../client/src/pages/TaskWorkspace.tsx", import.meta.url), "utf8");
+
+    expect(workspace).toContain('className="bg-teal-400 text-[#072a27] hover:bg-cyan-300"');
+    expect(workspace).toContain('className="text-cyan-300"');
+    expect(workspace).toContain('border border-teal-300/15 bg-teal-300/[.04]');
+    expect(workspace).toContain('bg-teal-400/15 text-cyan-200');
+    expect(workspace).toContain('border border-amber-300/25 bg-amber-300/[.07]');
+    expect(workspace).not.toContain('text-orange-');
+    expect(workspace).not.toContain('bg-orange-');
+    expect(workspace).not.toContain('border-orange-');
+  });
 });
