@@ -132,6 +132,12 @@
 - [x] Correct a verified semantic-color violation without affecting credential-gated functionality.
 - [x] Add targeted regression coverage and verify affected routes at desktop and mobile sizes before checkpointing.
 - [x] Verify `/`, `/agent`, and `/settings` at 1440×1000 and 390×844: normal task-state signals remain teal, operational-unavailable and approval attention remain amber, and controls remain visible without clipping.
+
+## Environment-contract consistency audit
+
+- [x] Compare runtime environment validation, the maintained public environment reference, and the public go-live credential guide without reading or adding secret values.
+- [x] Correct the verified Gemini media-readiness adapter label so image and video configuration both identify the implemented shared `server/media/gemini.ts` adapter while preserving all credentials as user-supplied secure project configuration.
+- [x] Keep the existing non-secret media-readiness regression aligned with the implemented adapter and complete TypeScript, test-suite, and production-build verification before checkpointing.
 - [x] Redesign the central task composer with compact workspace summary, attachment controls, lower control bar, suggestions, and recent-task hierarchy.
 - [x] Add a persisted user-owned task-attachment schema and reviewed PostgreSQL migration for local uploads and selected Library artifacts.
 - [x] Add a rate-limited authenticated attachment-upload contract with strict filename, MIME, and 10 MB file validation through secure object storage.

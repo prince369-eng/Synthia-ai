@@ -48,7 +48,7 @@ export function mediaReadiness(environment: MediaProviderEnvironment): {
       provider: imageProvider,
       models: imageModels,
       configured: imageConfigured,
-      route: imageProvider === "gemini" ? "server/media/gemini-image.ts" : "server/_core/imageGeneration.ts",
+      route: imageProvider === "gemini" ? "server/media/gemini.ts" : "server/_core/imageGeneration.ts",
       reason: imageConfigured
         ? undefined
         : "Add a real image provider credential and at least one configured image model before enabling generation.",
@@ -57,7 +57,7 @@ export function mediaReadiness(environment: MediaProviderEnvironment): {
       provider: videoProvider,
       models: videoModels,
       configured: videoConfigured,
-      route: videoProvider === "gemini-omni-flash" ? "server/media/gemini-video.ts" : "server/media/video.ts",
+      route: videoProvider === "gemini-omni-flash" ? "server/media/gemini.ts" : "server/media/video.ts",
       reason: videoConfigured
         ? undefined
         : "Add a real video provider credential and at least one configured video model before enabling generation.",

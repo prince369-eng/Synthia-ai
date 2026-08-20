@@ -15,13 +15,13 @@ describe("mediaReadiness", () => {
       provider: "gemini",
       models: ["gemini-3.1-flash-image"],
       configured: true,
-      route: "server/media/gemini-image.ts",
+      route: "server/media/gemini.ts",
     });
     expect(result.video).toMatchObject({
       provider: "gemini-omni-flash",
       models: ["gemini-omni-flash"],
       configured: true,
-      route: "server/media/gemini-video.ts",
+      route: "server/media/gemini.ts",
     });
     expect(result.image.reason).toBeUndefined();
     expect(result.video.reason).toBeUndefined();
