@@ -61,9 +61,8 @@ async function inspectOpenRouter(apiKey) {
       sampleFreeModelIds: freeModels.slice(0, 12).map((model) => model.id),
     },
     usage: {
-      accountCreditBalance: totalCredits === null || totalUsage === null ? null : totalCredits - totalUsage,
-      totalCredits,
-      totalUsage,
+      reportedTotalCredits: totalCredits,
+      reportedTotalUsage: totalUsage,
       perKeyLimitRemaining: numeric(keyPayload?.data?.limit_remaining),
       perKeyLimitReset: typeof keyPayload?.data?.limit_reset === "string" ? keyPayload.data.limit_reset : null,
     },
