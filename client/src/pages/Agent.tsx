@@ -14,7 +14,7 @@ export function runtimeCapabilityCopy({ isLoading, configuredModels, configuredS
   return {
     models: `${configuredModels} configured provider${configuredModels === 1 ? "" : "s"}`,
     search: `${configuredSearch} configured search provider${configuredSearch === 1 ? "" : "s"}`,
-    sandbox: configuredSandboxes ? "Configured for isolated execution" : "Sandbox credentials are required",
+    sandbox: configuredSandboxes ? `${configuredSandboxes} sandbox provider${configuredSandboxes === 1 ? "" : "s"} configured for isolated execution` : "E2B or Bunnyshell HopX sandbox credentials are required",
   };
 }
 

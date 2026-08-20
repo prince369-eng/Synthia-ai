@@ -37,7 +37,7 @@ describe("reference-led Synthia sidebar areas", () => {
     expect(onCreateTask).toHaveBeenCalledTimes(1);
     expect(onOpenServices).toHaveBeenCalledTimes(1);
     expect(agentTaskStateCopy({ isLoading: false, isError: true, activeCount: 0 })).toContain("data store is configured");
-    expect(runtimeCapabilityCopy({ isLoading: false, configuredModels: 1, configuredSearch: 2, configuredSandboxes: 0 })).toEqual({ models: "1 configured provider", search: "2 configured search providers", sandbox: "Sandbox credentials are required" });
+    expect(runtimeCapabilityCopy({ isLoading: false, configuredModels: 1, configuredSearch: 2, configuredSandboxes: 0 })).toEqual({ models: "1 configured provider", search: "2 configured search providers", sandbox: "E2B or Bunnyshell HopX sandbox credentials are required" });
   });
 
   it("filters real Plugin readiness records and initiates the selected integration disconnect", async () => {

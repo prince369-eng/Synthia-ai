@@ -169,6 +169,12 @@
 - [x] Add Bunnyshell HopX alongside E2B and Pixazo alongside Gemini through secure environment contracts, provider abstractions, a persisted HopX sandbox-provider migration, and truthful readiness states only.
 - [x] Keep Pixazo media generation and all live provider calls explicit opt-in; no free-tier quota was consumed during implementation or routine tests.
 - [x] Add non-secret adapter and readiness regressions and verify the authenticated Connectors surface lists Pixazo and Bunnyshell HopX as credentials-required without displaying keys or running billable generation.
+
+## Alternate-sandbox runtime copy
+
+- [x] Audit Agent and workspace readiness text for legacy E2B-only assumptions after adding Bunnyshell HopX.
+- [x] Correct the verified Agent generic sandbox-requirement copy so it explicitly identifies E2B or Bunnyshell HopX without invoking either provider.
+- [x] Add non-secret coverage and visually verify the settled Agent state: Redis queue and both configured search providers are ready, while models and both sandbox options remain transparently credential-gated.
 - [x] Redesign the central task composer with compact workspace summary, attachment controls, lower control bar, suggestions, and recent-task hierarchy.
 - [x] Add a persisted user-owned task-attachment schema and reviewed PostgreSQL migration for local uploads and selected Library artifacts.
 - [x] Add a rate-limited authenticated attachment-upload contract with strict filename, MIME, and 10 MB file validation through secure object storage.

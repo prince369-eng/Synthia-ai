@@ -182,6 +182,22 @@ describe("compact workspace layout contract", () => {
     expect(workspace).not.toContain('border-orange-');
   });
 
+  it("describes both supported desktop sandbox providers without overstating local Docker capability", () => {
+    const workspace = readFileSync(new URL("../client/src/pages/TaskWorkspace.tsx", import.meta.url), "utf8");
+
+    expect(workspace).toContain("configured E2B desktop or Bunnyshell HopX sandbox");
+    expect(workspace).toContain("Docker fallback is intentionally code-only");
+    expect(workspace).not.toContain("require an E2B desktop sandbox.");
+  });
+
+  it("keeps Agent runtime readiness explicit about both supported sandbox providers", () => {
+    const agent = readFileSync(new URL("../client/src/pages/Agent.tsx", import.meta.url), "utf8");
+
+    expect(agent).toContain("E2B or Bunnyshell HopX sandbox credentials are required");
+    expect(agent).toContain("sandbox provider${configuredSandboxes === 1 ? \"\" : \"s\"} configured for isolated execution");
+    expect(agent).not.toContain('sandbox: "Sandbox credentials are required"');
+  });
+
   it("keeps ordinary shared-shell task states in the teal signal family", () => {
     const shell = readFileSync(new URL("../client/src/components/SynthiaAppShell.tsx", import.meta.url), "utf8");
 
