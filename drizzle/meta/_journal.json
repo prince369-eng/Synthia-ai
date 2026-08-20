@@ -43,6 +43,13 @@
       "when": 1787205194406,
       "tag": "0005_add_hopx_sandbox_provider",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1787216724477,
+      "tag": "0006_minor_anita_blake",
+      "breakpoints": true
     }
   ]
 }

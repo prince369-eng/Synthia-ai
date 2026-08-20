@@ -270,6 +270,15 @@
 
 ## Go-live modality provider contract
 
+- [x] Review the current Personalization settings experience against the requested graph, session-memory, and long-term-memory controls without copying private account content.
+- [x] Add a secure user-scoped personalization schema with explicit personality dimensions, session memory, long-term memory, retention metadata, and deletion controls.
+- [x] Build a Personalization settings column that visualizes the editable personality graph and lets the user inspect, edit, disable, and erase remembered preferences.
+- [x] Apply only user-approved personalization and memory context to Synthia task interactions, with bounded context, auditability, and no silent inference-based personality claims.
+- [x] Add database, router, UI, and privacy regression coverage for adaptive personalization, then verify the authenticated settings experience without invoking an LLM.
+- [x] Make the blocked-microphone warning dismissible and clear it after a successful retry, while preserving text-only task composition when access remains denied.
+- [x] Implement capability-aware Automatic routing for text, vision-input, and development tasks; preserve image, video, and audio generation as explicit user-started routes to avoid silent workload consumption.
+- [x] Wire the tested Automatic resolver into the task worker so image attachments, code tasks, primary tasks, and manual model overrides use the selected route at execution time.
+- [x] Add deterministic microphone-lifecycle and automatic-routing regressions, then verify the authenticated composer without inference, media generation, or browser automation.
 - [x] Correct the video-generation readiness mismatch so the configured LTX route is shown as ready only when its authenticated task route and artifact contract are genuinely available.
 - [x] Improve microphone permission recovery with an explicit retry action and browser-specific guidance while retaining the text-composer fallback when permission is unavailable.
 - [x] Add deterministic video-readiness and microphone-permission regressions, then verify the repaired composer without invoking video generation or speech transcription.
@@ -279,7 +288,7 @@
 - [x] Add opt-in-only provider-account regressions and user-facing status coverage for the three configured language-model services.
 - [x] Confirm the selected image-generation provider and required API credential before enabling image generation.
 - [x] Confirm the selected video-generation provider and required API credential before enabling video generation.
-- [ ] Confirm the selected vision-capable LLM models and `SYNTHIA_VISION_MODELS` configuration before enabling visual task execution.
+- [x] Confirm the selected vision-capable Agnes model and `SYNTHIA_VISION_MODELS` configuration before enabling visual task execution.
 - [ ] Confirm the selected audio transcription provider and credential before enabling voice input in production.
 - [ ] Confirm media storage, sandbox, queue, database, search, email, and application secret values before live end-to-end testing.
 

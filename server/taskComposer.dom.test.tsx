@@ -147,9 +147,18 @@ describe("task composer attachments", () => {
     await user.click(screen.getByRole("button", { name: "Start voice instruction" }));
     expect(await screen.findByText("Microphone access is blocked. Allow it in this site’s browser settings, then try again.")).toBeTruthy();
     expect(screen.getByRole("button", { name: "Try microphone again" })).toBeTruthy();
+    await user.click(screen.getByRole("button", { name: "Dismiss microphone warning" }));
+    expect(screen.queryByText("Microphone access is blocked. Allow it in this site’s browser settings, then try again.")).toBeNull();
 
     Object.defineProperty(navigator, "mediaDevices", { configurable: true, value: mediaDevices });
     Object.defineProperty(globalThis, "MediaRecorder", { configurable: true, value: mediaRecorder });
+  });
+
+  it("explains capability-aware Automatic routing without claiming that media generation starts itself", async () => {
+    const user = userEvent.setup();
+    render(<TaskDashboard />);
+    await user.click(screen.getByRole("button", { name: "Choose model" }));
+    expect(screen.getByText("Uses vision for images and code-focused models for development. Media generation stays explicit.")).toBeTruthy();
   });
 
   it("loads task history only for an authenticated workspace and renders a calm empty state", () => {

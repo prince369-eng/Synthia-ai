@@ -8,6 +8,8 @@ import {
   InsertUser,
   integrations,
   memoryFacts,
+  personalityProfiles,
+  personalizationMemories,
   projects,
   sandboxes,
   taskAttachments,
@@ -54,6 +56,22 @@ export const DEFAULT_AUTONOMY_SETTINGS: AutonomySettings = {
   allowWebSearch: true,
   allowCodeExecution: true,
   allowFileWrites: true,
+};
+
+export type PersonalityDimensions = {
+  warmth: number;
+  directness: number;
+  detail: number;
+  creativity: number;
+  initiative: number;
+};
+
+export const DEFAULT_PERSONALITY_DIMENSIONS: PersonalityDimensions = {
+  warmth: 55,
+  directness: 60,
+  detail: 60,
+  creativity: 50,
+  initiative: 55,
 };
 
 type TaskEventInput = {
@@ -657,6 +675,141 @@ export async function updateUserPreferences(userId: number, preferences: Record<
     await transaction.update(users).set({ preferences: mergedPreferences }).where(eq(users.id, userId));
     return mergedPreferences;
   });
+}
+
+function normalizedPersonalityDimensions(value: Partial<PersonalityDimensions>): PersonalityDimensions {
+  return {
+    warmth: Math.min(100, Math.max(0, Math.round(value.warmth ?? DEFAULT_PERSONALITY_DIMENSIONS.warmth))),
+    directness: Math.min(100, Math.max(0, Math.round(value.directness ?? DEFAULT_PERSONALITY_DIMENSIONS.directness))),
+    detail: Math.min(100, Math.max(0, Math.round(value.detail ?? DEFAULT_PERSONALITY_DIMENSIONS.detail))),
+    creativity: Math.min(100, Math.max(0, Math.round(value.creativity ?? DEFAULT_PERSONALITY_DIMENSIONS.creativity))),
+    initiative: Math.min(100, Math.max(0, Math.round(value.initiative ?? DEFAULT_PERSONALITY_DIMENSIONS.initiative))),
+  };
+}
+
+export async function getPersonalizationProfile(userId: number) {
+  const database = databaseRequired(await getDb());
+  const [profile] = await database
+    .select()
+    .from(personalityProfiles)
+    .where(eq(personalityProfiles.userId, userId))
+    .limit(1);
+  if (!profile) {
+    return {
+      userId,
+      dimensions: DEFAULT_PERSONALITY_DIMENSIONS,
+      enabled: true,
+      sessionMemoryEnabled: true,
+      longTermMemoryEnabled: true,
+      updatedAt: null as Date | null,
+    };
+  }
+  const storedDimensions = profile.dimensions && typeof profile.dimensions === "object" && !Array.isArray(profile.dimensions)
+    ? profile.dimensions as Partial<PersonalityDimensions>
+    : {};
+  return { ...profile, dimensions: normalizedPersonalityDimensions(storedDimensions) };
+}
+
+export async function updatePersonalizationProfile(input: {
+  userId: number;
+  dimensions: PersonalityDimensions;
+  enabled: boolean;
+  sessionMemoryEnabled: boolean;
+  longTermMemoryEnabled: boolean;
+}) {
+  const database = databaseRequired(await getDb());
+  const dimensions = normalizedPersonalityDimensions(input.dimensions);
+  await database
+    .insert(personalityProfiles)
+    .values({ ...input, dimensions })
+    .onConflictDoUpdate({
+      target: personalityProfiles.userId,
+      set: {
+        dimensions,
+        enabled: input.enabled,
+        sessionMemoryEnabled: input.sessionMemoryEnabled,
+        longTermMemoryEnabled: input.longTermMemoryEnabled,
+        updatedAt: new Date(),
+      },
+    });
+  return getPersonalizationProfile(input.userId);
+}
+
+export async function listPersonalizationMemories(userId: number, memoryType?: "session" | "long_term") {
+  const database = databaseRequired(await getDb());
+  const predicate = memoryType
+    ? and(eq(personalizationMemories.userId, userId), eq(personalizationMemories.memoryType, memoryType))
+    : eq(personalizationMemories.userId, userId);
+  return database
+    .select()
+    .from(personalizationMemories)
+    .where(predicate)
+    .orderBy(desc(personalizationMemories.updatedAt));
+}
+
+export async function createPersonalizationMemory(input: {
+  userId: number;
+  memoryType: "session" | "long_term";
+  content: string;
+  expiresAt?: Date;
+}) {
+  const database = databaseRequired(await getDb());
+  const id = randomUUID();
+  await database.insert(personalizationMemories).values({
+    id,
+    userId: input.userId,
+    memoryType: input.memoryType,
+    content: input.content,
+    source: "user",
+    expiresAt: input.expiresAt,
+  });
+  return id;
+}
+
+export async function updatePersonalizationMemory(input: {
+  id: string;
+  userId: number;
+  content: string;
+  enabled: boolean;
+}) {
+  const database = databaseRequired(await getDb());
+  await database
+    .update(personalizationMemories)
+    .set({ content: input.content, enabled: input.enabled, updatedAt: new Date() })
+    .where(and(eq(personalizationMemories.id, input.id), eq(personalizationMemories.userId, input.userId)));
+}
+
+export async function deletePersonalizationMemory(id: string, userId: number) {
+  const database = databaseRequired(await getDb());
+  await database.delete(personalizationMemories).where(and(eq(personalizationMemories.id, id), eq(personalizationMemories.userId, userId)));
+}
+
+export async function clearSessionPersonalizationMemories(userId: number) {
+  const database = databaseRequired(await getDb());
+  await database
+    .delete(personalizationMemories)
+    .where(and(eq(personalizationMemories.userId, userId), eq(personalizationMemories.memoryType, "session")));
+}
+
+export async function getApprovedPersonalizationContext(userId: number) {
+  const profile = await getPersonalizationProfile(userId);
+  if (!profile.enabled) return { dimensions: null, sessionMemories: [] as string[], longTermMemories: [] as string[] };
+  const now = Date.now();
+  const records = await listPersonalizationMemories(userId);
+  const active = records.filter(record => record.enabled && (!record.expiresAt || record.expiresAt.getTime() > now));
+  const takeBounded = (items: typeof active, maxItems: number, maxCharacters: number) => {
+    let remaining = maxCharacters;
+    return items.slice(0, maxItems).flatMap(item => {
+      const content = item.content.trim().slice(0, remaining);
+      remaining -= content.length;
+      return content ? [content] : [];
+    });
+  };
+  return {
+    dimensions: profile.dimensions,
+    sessionMemories: profile.sessionMemoryEnabled ? takeBounded(active.filter(record => record.memoryType === "session"), 3, 360) : [],
+    longTermMemories: profile.longTermMemoryEnabled ? takeBounded(active.filter(record => record.memoryType === "long_term"), 6, 720) : [],
+  };
 }
 
 export async function completeOnboardingForUser(userId: number) {

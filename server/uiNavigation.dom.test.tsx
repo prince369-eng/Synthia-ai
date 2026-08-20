@@ -5,7 +5,7 @@ import { cleanup, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { ProfileMenu } from "../client/src/components/SynthiaAppShell";
 import { AuthEntryActions } from "../client/src/components/SynthiaAppShell";
-import { modelCapabilityLabel, PreferenceSwitch, ServiceConnectionCard, SettingsAccount, SettingsCloseButton, SettingsGeneral, SettingsModels, SettingsSectionNav, SettingsUsage } from "../client/src/pages/Settings";
+import { modelCapabilityLabel, PreferenceSwitch, ServiceConnectionCard, SettingsAccount, SettingsCloseButton, SettingsGeneral, SettingsModels, SettingsPersonalization, SettingsSectionNav, SettingsUsage } from "../client/src/pages/Settings";
 import { TaskMediaMenu, TaskOverflowMenu, WorkspaceReturnNavigation } from "../client/src/pages/TaskWorkspace";
 
 vi.mock("@/lib/trpc", () => ({
@@ -187,6 +187,25 @@ describe("Synthia navigation behavior", () => {
     expect(screen.getAllByText("Text", { exact: true })).toHaveLength(2);
     expect(screen.queryByText("AIHubMix · Primary")).toBeNull();
     expect(screen.queryByText("Agnes AI · Configured")).toBeNull();
+  });
+
+  it("renders an editable user-controlled personality graph with explicit session and long-term memory controls", async () => {
+    const user = userEvent.setup();
+    const onAddMemory = vi.fn();
+    const onClearSession = vi.fn();
+    render(<SettingsPersonalization profile={{ dimensions: { warmth: 60, directness: 55, detail: 65, creativity: 70, initiative: 50 }, enabled: true, sessionMemoryEnabled: true, longTermMemoryEnabled: true, updatedAt: null }} memories={[{ id: "memory-1", memoryType: "long_term", content: "Prefer concise technical explanations.", enabled: true, expiresAt: null, updatedAt: new Date() }, { id: "memory-2", memoryType: "session", content: "Focus on the current release.", enabled: true, expiresAt: new Date(Date.now() + 86_400_000), updatedAt: new Date() }]} loading={false} error={false} onSaveProfile={vi.fn()} onAddMemory={onAddMemory} onUpdateMemory={vi.fn()} onDeleteMemory={vi.fn()} onClearSession={onClearSession} saving={false} />);
+
+    expect(screen.getByTestId("personality-graph")).toBeTruthy();
+    expect(screen.getByRole("img", { name: "Personality web graph" })).toBeTruthy();
+    expect(screen.getByRole("slider", { name: "Warmth preference" })).toBeTruthy();
+    expect(screen.getByText("Prefer concise technical explanations.")).toBeTruthy();
+    expect(screen.getByText("Focus on the current release.")).toBeTruthy();
+    expect(screen.getByText(/not an inferred personality score/i)).toBeTruthy();
+    await user.type(screen.getByRole("textbox", { name: "New memory" }), "Use TypeScript by default.");
+    await user.click(screen.getByRole("button", { name: /Add note/i }));
+    expect(onAddMemory).toHaveBeenCalledWith({ memoryType: "long_term", content: "Use TypeScript by default." });
+    await user.click(screen.getByRole("button", { name: "Clear session" }));
+    expect(onClearSession).toHaveBeenCalledTimes(1);
   });
 
   it("exposes scoped task actions and keeps scheduling visibly unavailable while requiring delete confirmation", async () => {

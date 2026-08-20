@@ -5,6 +5,8 @@ import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import {
   appendTaskEvent,
+  clearSessionPersonalizationMemories,
+  createPersonalizationMemory,
   createDeliverable,
   createProjectForUser,
   createTaskForUser,
@@ -13,12 +15,14 @@ import {
   type TaskPlanStep,
   getLibraryDeliverableForUser,
   getTaskForUser,
+  getPersonalizationProfile,
   getProjectForUser,
   getUserPreferences,
   getUsageSummary,
   listIntegrationsForUser,
   listLibraryDeliverablesForUser,
   listMemoryFacts,
+  listPersonalizationMemories,
   listProjectsForUser,
   listTaskApprovals,
   listTaskAttachments,
@@ -32,7 +36,10 @@ import {
   softDeleteTaskForUser,
   updateTaskForUser,
   updateUserPreferences,
+  updatePersonalizationMemory,
+  updatePersonalizationProfile,
   updateMemoryFactStatus,
+  deletePersonalizationMemory,
   deleteIntegrationForUser,
   createIntegrationForUser,
 } from "./db";
@@ -54,7 +61,7 @@ import { generatePixazoAudio, generatePixazoImage, generatePixazoVideo, PixazoMe
 import { AIHubMixMediaError, generateAIHubMixAudio, generateAIHubMixImage, generateAIHubMixVideo } from "./media/aihubmix";
 import { logger } from "./security/logger";
 import { transcribeAudio } from "./_core/voiceTranscription";
-import { configuredComposerModels as composerModelsFromEnvironment } from "./agent/modelCatalog";
+import { runtimeConfiguredComposerModels } from "./agent/modelCatalog";
 
 const taskIdSchema = z.object({ taskId: z.string().uuid() });
 const taskTitleSchema = z.string().trim().min(1).max(180);
@@ -86,6 +93,13 @@ const llmProviderSchema = z.enum(["groq", "agnes", "aihubmix", "openrouter", "ge
 const selectedModelSchema = z.object({
   provider: llmProviderSchema,
   model: z.string().trim().min(1).max(180),
+});
+const personalityDimensionsSchema = z.object({
+  warmth: z.number().int().min(0).max(100),
+  directness: z.number().int().min(0).max(100),
+  detail: z.number().int().min(0).max(100),
+  creativity: z.number().int().min(0).max(100),
+  initiative: z.number().int().min(0).max(100),
 });
 const voiceMimeSchema = z.enum(["audio/webm", "audio/ogg", "audio/wav", "audio/mpeg", "audio/mp4", "audio/x-m4a"]);
 const mediaGenerationSchema = taskIdSchema.extend({
@@ -140,29 +154,6 @@ function decodeVoiceBase64(value: string) {
     throw new TRPCError({ code: "BAD_REQUEST", message: "The voice recording is invalid or exceeds 16 MB." });
   }
   return bytes;
-}
-
-function isProviderConfigured(provider: z.infer<typeof llmProviderSchema>) {
-  return ({ groq: Boolean(ENV.groqApiKey), agnes: Boolean(ENV.agnesApiKey), aihubmix: Boolean(ENV.aihubmixApiKey), openrouter: Boolean(ENV.openRouterApiKey), gemini: Boolean(ENV.geminiApiKey), deepseek: Boolean(ENV.deepseekApiKey) })[provider];
-}
-
-function configuredComposerModels() {
-  return composerModelsFromEnvironment({
-    orchestratorProvider: ENV.orchestratorProvider,
-    orchestratorModel: ENV.orchestratorModel,
-    subtaskProvider: ENV.subtaskProvider,
-    subtaskModel: ENV.subtaskModel,
-    availableModels: ENV.availableModels,
-    visionModels: ENV.visionModels,
-    configuredProviders: {
-      groq: isProviderConfigured("groq"),
-      agnes: isProviderConfigured("agnes"),
-      aihubmix: isProviderConfigured("aihubmix"),
-      openrouter: isProviderConfigured("openrouter"),
-      gemini: isProviderConfigured("gemini"),
-      deepseek: isProviderConfigured("deepseek"),
-    },
-  });
 }
 
 function requestOrigin(request: { protocol: string; get(name: string): string | undefined; headers: Record<string, string | string[] | undefined> }) {
@@ -466,7 +457,7 @@ export const appRouter = router({
       )
       .mutation(async ({ ctx, input }) => {
         await enforceUserMutationLimit(ctx.user.id, "task-create", 12, 3_600);
-        if (input.autonomySettings.selectedModel && !configuredComposerModels().some(model => model.id === `${input.autonomySettings.selectedModel!.provider}:${input.autonomySettings.selectedModel!.model}`)) {
+        if (input.autonomySettings.selectedModel && !runtimeConfiguredComposerModels().some(model => model.id === `${input.autonomySettings.selectedModel!.provider}:${input.autonomySettings.selectedModel!.model}`)) {
           throw new TRPCError({ code: "BAD_REQUEST", message: "The selected model is not configured for this workspace." });
         }
         if (input.projectId) await requireOwnedProject(input.projectId, ctx.user.id);
@@ -600,6 +591,56 @@ export const appRouter = router({
       .mutation(({ ctx, input }) => updateUserPreferences(ctx.user.id, input.preferences)),
     completeOnboarding: protectedProcedure.mutation(({ ctx }) => completeOnboardingForUser(ctx.user.id)),
   }),
+  personalization: router({
+    profile: protectedProcedure.query(({ ctx }) => getPersonalizationProfile(ctx.user.id)),
+    updateProfile: protectedProcedure
+      .input(z.object({
+        dimensions: personalityDimensionsSchema,
+        enabled: z.boolean(),
+        sessionMemoryEnabled: z.boolean(),
+        longTermMemoryEnabled: z.boolean(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        await enforceUserMutationLimit(ctx.user.id, "personalization-profile", 30, 3_600);
+        return updatePersonalizationProfile({ userId: ctx.user.id, ...input });
+      }),
+    memories: protectedProcedure.query(({ ctx }) => listPersonalizationMemories(ctx.user.id)),
+    addMemory: protectedProcedure
+      .input(z.object({
+        memoryType: z.enum(["session", "long_term"]),
+        content: z.string().trim().min(1).max(1_200),
+        sessionExpiresInHours: z.number().int().min(1).max(168).optional(),
+      }).superRefine((value, issue) => {
+        if (value.memoryType === "long_term" && value.sessionExpiresInHours !== undefined) {
+          issue.addIssue({ code: "custom", path: ["sessionExpiresInHours"], message: "Long-term memories cannot have a session expiry." });
+        }
+      }))
+      .mutation(async ({ ctx, input }) => {
+        await enforceUserMutationLimit(ctx.user.id, "personalization-memory", 60, 3_600);
+        const expiresAt = input.memoryType === "session"
+          ? new Date(Date.now() + (input.sessionExpiresInHours ?? 24) * 60 * 60 * 1_000)
+          : undefined;
+        const id = await createPersonalizationMemory({ userId: ctx.user.id, memoryType: input.memoryType, content: input.content, expiresAt });
+        return { id };
+      }),
+    updateMemory: protectedProcedure
+      .input(z.object({ id: z.string().uuid(), content: z.string().trim().min(1).max(1_200), enabled: z.boolean() }))
+      .mutation(async ({ ctx, input }) => {
+        await enforceUserMutationLimit(ctx.user.id, "personalization-memory", 60, 3_600);
+        await updatePersonalizationMemory({ userId: ctx.user.id, ...input });
+        return { success: true };
+      }),
+    deleteMemory: protectedProcedure
+      .input(z.object({ id: z.string().uuid() }))
+      .mutation(async ({ ctx, input }) => {
+        await deletePersonalizationMemory(input.id, ctx.user.id);
+        return { success: true };
+      }),
+    clearSession: protectedProcedure.mutation(async ({ ctx }) => {
+      await clearSessionPersonalizationMemories(ctx.user.id);
+      return { success: true };
+    }),
+  }),
   memory: router({
     archive: protectedProcedure
       .input(z.object({ memoryId: z.string().uuid() }))
@@ -649,11 +690,11 @@ export const appRouter = router({
     taskStatuses: publicProcedure.query(() => taskStatusSchema.options),
     executionReadiness: protectedProcedure.query(() => ({ queueConfigured: isQueueConfigured() })),
     models: protectedProcedure.query(() => ({
-      models: configuredComposerModels(),
+      models: runtimeConfiguredComposerModels(),
       input: {
         text: true,
         voice: Boolean(ENV.forgeApiUrl && ENV.forgeApiKey),
-        vision: configuredComposerModels().some(model => model.capabilities.includes("vision")),
+        vision: runtimeConfiguredComposerModels().some(model => model.capabilities.includes("vision")),
       },
     })),
     media: protectedProcedure.query(() => mediaReadiness(ENV)),

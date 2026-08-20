@@ -229,6 +229,11 @@ export default function TaskDashboard() {
     }
   }
 
+  function dismissVoiceWarning() {
+    setVoicePermissionBlocked(false);
+    setAttachmentError(current => current?.startsWith("Microphone") || current?.startsWith("Synthia could not access your microphone") ? null : current);
+  }
+
   return (
     <div className="synthia-dashboard">
       <header className="synthia-dashboard-header">
@@ -279,7 +284,7 @@ export default function TaskDashboard() {
               </div>
               <div className="relative">
                 <button type="button" className={cn("synthia-composer-toggle synthia-model-trigger", modelMenuOpen && "active")} aria-label="Choose model" aria-expanded={modelMenuOpen} onClick={() => setModelMenuOpen(value => !value)}><Bot size={13} /><span>{selectedModel?.model ?? "Automatic"}</span></button>
-                {modelMenuOpen ? <div className="synthia-model-menu" data-testid="composer-model-menu" data-scrollable="true"><button type="button" className={cn(!selectedModelId && "active")} onClick={() => { setSelectedModelId(""); setModelMenuOpen(false); }}><b>Automatic</b><small>Let Synthia choose for this task.</small></button>{availableModels.data?.models.map(model => <button key={model.id} type="button" className={cn(model.id === selectedModelId && "active")} onClick={() => { setSelectedModelId(model.id); setModelMenuOpen(false); }}><b>{model.model}</b><small>{composerModelCapabilityLabel(model)}</small></button>)}{availableModels.data?.models.length ? null : <p>Automatic selection is active.</p>}</div> : null}
+                {modelMenuOpen ? <div className="synthia-model-menu" data-testid="composer-model-menu" data-scrollable="true"><button type="button" className={cn(!selectedModelId && "active")} onClick={() => { setSelectedModelId(""); setModelMenuOpen(false); }}><b>Automatic</b><small>Uses vision for images and code-focused models for development. Media generation stays explicit.</small></button>{availableModels.data?.models.map(model => <button key={model.id} type="button" className={cn(model.id === selectedModelId && "active")} onClick={() => { setSelectedModelId(model.id); setModelMenuOpen(false); }}><b>{model.model}</b><small>{composerModelCapabilityLabel(model)}</small></button>)}{availableModels.data?.models.length ? null : <p>Automatic selection is active.</p>}</div> : null}
               </div>
               <button type="button" className={cn("synthia-composer-toggle synthia-mic-button", voiceState !== "idle" && "active")} aria-label={voiceState === "recording" ? "Stop recording voice instruction" : "Start voice instruction"} title={voiceState === "transcribing" ? "Transcribing voice instruction" : voiceState === "recording" ? "Stop recording" : "Add voice instruction"} onClick={() => void toggleVoiceCapture()} disabled={voiceState === "transcribing"}><Mic size={14} /><span className="sr-only">Voice input</span>{voiceState === "recording" ? <span className="synthia-recording-dot" /> : null}</button>
               <Button type="submit" size="icon" aria-label="Start task" title="Start task" disabled={goal.trim().length < 8 || createTask.isPending || visualInputBlocked} className="synthia-send-button">{createTask.isPending ? <Loader2 className="animate-spin" size={17} /> : <ArrowUp size={18} />}</Button>
@@ -287,7 +292,7 @@ export default function TaskDashboard() {
           </div>
           {estimate.data ? <p className="synthia-estimate">Estimated: <span>{estimate.data.estimatedCreditsMin}–{estimate.data.estimatedCreditsMax} credits</span></p> : null}
           {visualInputBlocked ? <p role="alert" className="mt-2 px-1 text-xs text-amber-200">This task includes an image. Select a vision-capable model or return to Automatic routing before starting.</p> : null}
-          {attachmentError ? <div role="alert" className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 px-1 text-xs text-rose-300"><span>{attachmentError}</span>{voicePermissionBlocked ? <button type="button" className="font-medium text-cyan-200 underline decoration-cyan-300/50 underline-offset-2 transition-colors hover:text-cyan-100" onClick={() => void toggleVoiceCapture()}>Try microphone again</button> : null}</div> : null}
+          {attachmentError ? <div role="alert" className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 px-1 text-xs text-rose-300"><span>{attachmentError}</span>{voicePermissionBlocked ? <><button type="button" className="font-medium text-cyan-200 underline decoration-cyan-300/50 underline-offset-2 transition-colors hover:text-cyan-100" onClick={() => void toggleVoiceCapture()}>Try microphone again</button><button type="button" className="font-medium text-[#c4b8a6] underline decoration-white/20 underline-offset-2 transition-colors hover:text-[#f5eadb]" aria-label="Dismiss microphone warning" onClick={dismissVoiceWarning}>Dismiss</button></> : null}</div> : null}
           {createTask.isError ? <p role="alert" className="mt-3 text-xs text-rose-300">{createTask.error.message}</p> : null}
           <input ref={fileInputRef} onChange={event => void chooseLocalFile(event)} className="sr-only" type="file" accept=".pdf,.txt,.md,.csv,.json,.doc,.docx,.xls,.xlsx,.zip,.7z,.tar,.png,.jpg,.jpeg,.webp,.mp4,.webm,.mov" />
         </form>

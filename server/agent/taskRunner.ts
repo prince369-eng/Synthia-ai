@@ -4,6 +4,7 @@ import {
   createApprovalForTask,
   createDeliverable,
   createSandboxForTask,
+  getApprovedPersonalizationContext,
   getRecoverableSandboxForTask,
   getTaskById,
   getUserById,
@@ -25,6 +26,9 @@ import { searchWeb } from "./search";
 import { logger } from "../security/logger";
 import { notifyTask } from "./notifications";
 import { storageGetSignedUrl } from "../storage";
+import { personalizationInstruction } from "./personalizationContext";
+import { resolveAutomaticTaskModel } from "./automaticRouting";
+import { runtimeConfiguredComposerModels } from "./modelCatalog";
 
 type ModelDecision = {
   narration: string;
@@ -207,14 +211,26 @@ export async function runTaskCycle(taskId: string) {
     }
     await updateTaskForWorker(task.id, { status: "planning", currentStepSummary: "Analyzing task state and selecting one action.", startedAt: task.startedAt ?? new Date() });
     await appendTaskEvent(task.id, { type: "status_change", payload: { status: "planning", summary: "Analyzing task state and selecting one action." } });
-    const selectedModel = (task.autonomySettings as AutonomySettings).selectedModel;
+    const autonomySettings = task.autonomySettings as AutonomySettings;
+    const routing = resolveAutomaticTaskModel({
+      selectedModel: autonomySettings.selectedModel,
+      involvesCode: task.involvesCode,
+      attachments,
+      models: runtimeConfiguredComposerModels(),
+    });
+    const selectedModel = routing.model;
+    const personalization = await getApprovedPersonalizationContext(task.userId);
+    const personalizationPrompt = personalizationInstruction(personalization);
     const model = await generateWithFallback({
     purpose: "orchestrator",
     selectedModel,
     messages: [
       {
         role: "system",
-        content: "You are Synthia AI's task orchestrator. Choose exactly one next action. Never execute external side effects; use external_effect to request approval. Keep all sandbox files under /workspace. Task input attachments are hydrated as read-only files in /workspace/inputs before a sandbox action; inspect them only through sandbox commands. Use publish_file with a workspace path, a plain filename, and a MIME type to deliver a file. Return only JSON: { narration: string, action: { kind: respond|web_search|run_command|write_file|open_url|capture_screen|publish_file|complete|external_effect, ... }, plan?: [{id,title,state}] }.",
+        content: [
+          "You are Synthia AI's task orchestrator. Choose exactly one next action. Never execute external side effects; use external_effect to request approval. Keep all sandbox files under /workspace. Task input attachments are hydrated as read-only files in /workspace/inputs before a sandbox action; inspect them only through sandbox commands. Use publish_file with a workspace path, a plain filename, and a MIME type to deliver a file. Return only JSON: { narration: string, action: { kind: respond|web_search|run_command|write_file|open_url|capture_screen|publish_file|complete|external_effect, ... }, plan?: [{id,title,state}] }.",
+          personalizationPrompt,
+        ].filter(Boolean).join("\n\n"),
       },
       { role: "user", content: await taskModelInput({ title: task.title, goal: task.goal, plan: task.plan, attachments, selectedModel, events: taskContext(events) }) },
     ],
@@ -232,7 +248,7 @@ export async function runTaskCycle(taskId: string) {
     await updateTaskForWorker(task.id, { plan: decision.plan });
     await appendTaskEvent(task.id, { type: "plan_update", payload: { plan: decision.plan, source: "agent" } });
   }
-    const policy = evaluateActionPolicy(decision.action, task.autonomySettings as AutonomySettings);
+    const policy = evaluateActionPolicy(decision.action, autonomySettings);
     if (!policy.allowed) {
     if (!policy.requiresApproval) throw new Error(policy.reason);
     const event = await appendTaskEvent(task.id, { type: "approval_request", payload: { action: decision.action, reason: policy.reason, riskLevel: policy.riskLevel } });

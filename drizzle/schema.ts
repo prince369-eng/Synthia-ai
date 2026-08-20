@@ -199,6 +199,30 @@ export const memoryFacts = pgTable("memory_facts", {
   lastUsedAt: timestamp("last_used_at", { withTimezone: true }),
 }, table => [index("memory_facts_user_status_idx").on(table.userId, table.status)]);
 
+export const personalityProfiles = pgTable("personality_profiles", {
+  userId: integer("user_id").primaryKey().references(() => users.id, { onDelete: "cascade" }),
+  dimensions: jsonb("dimensions").notNull(),
+  enabled: boolean("enabled").notNull().default(true),
+  sessionMemoryEnabled: boolean("session_memory_enabled").notNull().default(true),
+  longTermMemoryEnabled: boolean("long_term_memory_enabled").notNull().default(true),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+export const personalizationMemories = pgTable("personalization_memories", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  memoryType: varchar("memory_type", { length: 16 }).notNull(),
+  content: text("content").notNull(),
+  source: varchar("source", { length: 32 }).notNull().default("user"),
+  enabled: boolean("enabled").notNull().default(true),
+  expiresAt: timestamp("expires_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+}, table => [
+  index("personalization_memories_user_type_updated_idx").on(table.userId, table.memoryType, table.updatedAt),
+  index("personalization_memories_user_enabled_expiry_idx").on(table.userId, table.enabled, table.expiresAt),
+]);
+
 export const usageEvents = pgTable("usage_events", {
   id: varchar("id", { length: 36 }).primaryKey(),
   userId: integer("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),

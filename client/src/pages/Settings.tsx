@@ -15,17 +15,45 @@ import {
   KeyRound,
   Loader2,
   Palette,
+  Plus,
   PlugZap,
   Search,
   ServerCog,
   Settings2,
   ShieldCheck,
   Sparkles,
+  Trash2,
   UserRound,
   X,
 } from "lucide-react";
 import React from "react";
 import { useLocation } from "wouter";
+
+function PersonalityGraph({ dimensions }: { dimensions: PersonalityDimensions }) {
+  const axes = personalityDimensionMeta.map((dimension, index) => {
+    const angle = (-90 + index * 72) * Math.PI / 180;
+    const value = dimensions[dimension.key] / 100;
+    return { ...dimension, x: 50 + Math.cos(angle) * 37 * value, y: 50 + Math.sin(angle) * 37 * value, labelX: 50 + Math.cos(angle) * 45, labelY: 50 + Math.sin(angle) * 45 };
+  });
+  return <div className="rounded-xl border border-white/8 bg-black/10 p-3" data-testid="personality-graph"><svg viewBox="0 0 100 100" className="mx-auto block h-44 w-full max-w-[280px]" role="img" aria-label="Personality web graph"><circle cx="50" cy="50" r="37" fill="none" stroke="rgba(255,255,255,.12)" strokeWidth=".6" /><circle cx="50" cy="50" r="18.5" fill="none" stroke="rgba(255,255,255,.08)" strokeWidth=".6" />{axes.map(axis => <line key={axis.key} x1="50" y1="50" x2={axis.labelX} y2={axis.labelY} stroke="rgba(34,211,238,.28)" strokeWidth=".6" />)}<polygon points={axes.map(axis => `${axis.x},${axis.y}`).join(" ")} fill="rgba(20,184,166,.22)" stroke="#22d3ee" strokeWidth="1.2" />{axes.map(axis => <g key={axis.key}><circle cx={axis.x} cy={axis.y} r="2" fill="#14b8a6" /><text x={axis.labelX} y={axis.labelY + 2} textAnchor="middle" fontSize="5.4" fill="#b7ddd7">{axis.label}</text></g>)}</svg><p className="mt-1 text-center text-xs leading-5 text-[#839792]">A summary of your chosen preferences, not an inferred personality score.</p></div>;
+}
+
+function MemoryPanel({ title, detail, memories, editingId, editingText, onEdit, onText, onUpdate, onDelete, saving, action }: { title: string; detail: string; memories: PersonalizationMemory[]; editingId: string | null; editingText: string; onEdit: (id: string | null, content?: string) => void; onText: (text: string) => void; onUpdate: (input: { id: string; content: string; enabled: boolean }) => void; onDelete: (id: string) => void; saving: boolean; action?: React.ReactNode }) {
+  return <SettingsCard title={title} detail={detail}>{action ? <div className="mb-3 flex justify-end">{action}</div> : null}{memories.length ? <div className="space-y-2">{memories.map(memory => <div key={memory.id} className="rounded-lg border border-white/8 bg-black/10 p-3"><div className="flex items-start justify-between gap-3"><div className="min-w-0 flex-1">{editingId === memory.id ? <textarea aria-label={`Edit memory ${memory.id}`} value={editingText} onChange={event => onText(event.target.value)} maxLength={1200} className="min-h-16 w-full rounded-md border border-white/10 bg-black/15 p-2 text-sm text-[#e5f2ef] outline-none focus:border-cyan-300/60" /> : <p className="whitespace-pre-wrap break-words text-sm text-[#e5f2ef]">{memory.content}</p>}<p className="mt-1 text-xs text-[#839792]">{memory.enabled ? "Available to Synthia" : "Disabled"}{memory.expiresAt ? ` · Expires ${new Date(memory.expiresAt).toLocaleString()}` : ""}</p></div><div className="flex shrink-0 flex-col gap-1">{editingId === memory.id ? <Button size="sm" variant="outline" onClick={() => { const content = editingText.trim(); if (content) onUpdate({ id: memory.id, content, enabled: memory.enabled }); onEdit(null); }} disabled={saving}>Save</Button> : <Button size="sm" variant="ghost" onClick={() => onEdit(memory.id, memory.content)} disabled={saving}>Edit</Button>}<Button size="sm" variant="ghost" className={memory.enabled ? "text-[#b7ddd7]" : "text-[#8fa39d]"} onClick={() => onUpdate({ id: memory.id, content: memory.content, enabled: !memory.enabled })} disabled={saving}>{memory.enabled ? "Disable" : "Enable"}</Button><Button size="sm" variant="ghost" className="text-rose-300" aria-label={`Delete memory ${memory.id}`} onClick={() => onDelete(memory.id)} disabled={saving}><Trash2 size={14} /></Button></div></div></div>)}</div> : <div className="rounded-lg border border-dashed border-white/12 px-4 py-4 text-sm text-[#839792]">No {title.toLowerCase()} notes yet.</div>}</SettingsCard>;
+}
+
+export function SettingsPersonalization({ profile, memories, loading, error, onSaveProfile, onAddMemory, onUpdateMemory, onDeleteMemory, onClearSession, saving, mutationError }: { profile: PersonalizationProfile | null; memories: PersonalizationMemory[]; loading: boolean; error: boolean; onSaveProfile: (input: { dimensions: PersonalityDimensions; enabled: boolean; sessionMemoryEnabled: boolean; longTermMemoryEnabled: boolean }) => void; onAddMemory: (input: { memoryType: "session" | "long_term"; content: string; sessionExpiresInHours?: number }) => void; onUpdateMemory: (input: { id: string; content: string; enabled: boolean }) => void; onDeleteMemory: (id: string) => void; onClearSession: () => void; saving: boolean; mutationError?: string }) {
+  const [draft, setDraft] = React.useState<PersonalizationProfile>({ dimensions: defaultPersonalityDimensions, enabled: true, sessionMemoryEnabled: true, longTermMemoryEnabled: true, updatedAt: null });
+  const [memoryType, setMemoryType] = React.useState<"session" | "long_term">("long_term");
+  const [memoryText, setMemoryText] = React.useState("");
+  const [editingId, setEditingId] = React.useState<string | null>(null);
+  const [editingText, setEditingText] = React.useState("");
+  React.useEffect(() => { if (profile) setDraft(profile); }, [profile]);
+  const sessionMemories = memories.filter(memory => memory.memoryType === "session");
+  const longTermMemories = memories.filter(memory => memory.memoryType === "long_term");
+  const addMemory = () => { const content = memoryText.trim(); if (!content) return; onAddMemory({ memoryType, content, ...(memoryType === "session" ? { sessionExpiresInHours: 24 } : {}) }); setMemoryText(""); };
+  return <div><SectionHeading icon={Sparkles} title="Personalization" description="Choose how Synthia communicates and manage notes you explicitly allow it to use between interactions." />{loading ? <LoadingRow label="Loading your personalization controls…" /> : null}{error ? <SettingsUnavailable message="Personalization controls will be available after the external Synthia data store is configured." /> : null}{mutationError ? <p role="alert" className="mt-4 text-xs text-rose-300">{mutationError}</p> : null}{!loading && !error ? <div className="mt-6 grid gap-4 xl:grid-cols-[minmax(0,1fr)_300px]"><div className="space-y-4"><SettingsCard title="Interaction preferences" detail="Used only when personalization is enabled. Your current task and safety controls always take priority."><div className="space-y-3">{personalityDimensionMeta.map(dimension => <label key={dimension.key} className="block rounded-lg border border-white/8 bg-black/10 px-3 py-2.5"><div className="flex items-baseline justify-between gap-3"><span className="text-sm text-[#e5f2ef]">{dimension.label}</span><span className="font-mono text-xs text-cyan-200">{draft.dimensions[dimension.key]}</span></div><p className="mt-0.5 text-xs text-[#839792]">{dimension.detail}</p><input aria-label={`${dimension.label} preference`} type="range" min="0" max="100" value={draft.dimensions[dimension.key]} onChange={event => setDraft(current => ({ ...current, dimensions: { ...current.dimensions, [dimension.key]: Number(event.target.value) } }))} className="mt-2 h-1.5 w-full accent-teal-400" /></label>)}</div><div className="mt-4 grid gap-3 border-t border-white/8 pt-4 sm:grid-cols-3"><PreferenceSwitch label="Personalization" description="Use these preferences." enabled={draft.enabled} onChange={enabled => setDraft(current => ({ ...current, enabled }))} disabled={saving} /><PreferenceSwitch label="Session memory" description="Use temporary notes." enabled={draft.sessionMemoryEnabled} onChange={sessionMemoryEnabled => setDraft(current => ({ ...current, sessionMemoryEnabled }))} disabled={saving || !draft.enabled} /><PreferenceSwitch label="Long-term memory" description="Use saved notes later." enabled={draft.longTermMemoryEnabled} onChange={longTermMemoryEnabled => setDraft(current => ({ ...current, longTermMemoryEnabled }))} disabled={saving || !draft.enabled} /></div><div className="mt-4 flex items-center justify-between gap-3"><p className="text-xs text-[#839792]">Synthia never creates or infers these notes automatically.</p><Button size="sm" className="synthia-primary-button" onClick={() => onSaveProfile({ dimensions: draft.dimensions, enabled: draft.enabled, sessionMemoryEnabled: draft.sessionMemoryEnabled, longTermMemoryEnabled: draft.longTermMemoryEnabled })} disabled={saving}>Save preferences</Button></div></SettingsCard><SettingsCard title="Remember something" detail="Add a note yourself. Synthia treats memory as reference context, not instructions."><div className="flex flex-wrap gap-2"><Button size="sm" variant="outline" className={cn(memoryType === "long_term" && "border-cyan-300/60 text-cyan-100")} onClick={() => setMemoryType("long_term")}>Long-term</Button><Button size="sm" variant="outline" className={cn(memoryType === "session" && "border-cyan-300/60 text-cyan-100")} onClick={() => setMemoryType("session")}>24-hour session</Button></div><textarea aria-label="New memory" value={memoryText} onChange={event => setMemoryText(event.target.value)} maxLength={1200} placeholder={memoryType === "session" ? "A temporary preference for this session" : "A preference you want Synthia to remember"} className="mt-3 min-h-20 w-full resize-y rounded-lg border border-white/10 bg-black/15 p-3 text-sm text-[#e5f2ef] outline-none placeholder:text-[#718580] focus:border-cyan-300/60" /><div className="mt-3 flex justify-between gap-3"><p className="text-xs text-[#839792]">{memoryText.length}/1200</p><Button size="sm" variant="outline" onClick={addMemory} disabled={saving || !memoryText.trim()}><Plus size={14} />Add note</Button></div></SettingsCard><MemoryPanel title="Long-term memory" detail="Persists until you edit, disable, or erase it." memories={longTermMemories} editingId={editingId} editingText={editingText} onEdit={(id, content) => { setEditingId(id); setEditingText(content ?? ""); }} onText={setEditingText} onUpdate={onUpdateMemory} onDelete={onDeleteMemory} saving={saving} /><MemoryPanel title="Session memory" detail="Expires after 24 hours unless you clear it earlier." memories={sessionMemories} editingId={editingId} editingText={editingText} onEdit={(id, content) => { setEditingId(id); setEditingText(content ?? ""); }} onText={setEditingText} onUpdate={onUpdateMemory} onDelete={onDeleteMemory} saving={saving} action={sessionMemories.length ? <Button size="sm" variant="ghost" className="text-[#b7ddd7]" onClick={onClearSession} disabled={saving}>Clear session</Button> : undefined} /></div><div className="space-y-4"><SettingsCard title="Your personality web" detail="A compact view of your selected communication preferences."><PersonalityGraph dimensions={draft.dimensions} /></SettingsCard><SettingsCard title="Memory boundaries" detail="Your notes remain within your authenticated Synthia workspace."><ul className="space-y-2 text-xs leading-5 text-[#91a7a1]"><li>Only notes you add are stored.</li><li>Session notes expire after 24 hours.</li><li>Turn memory off without deleting it.</li><li>Disable or erase any note at any time.</li></ul></SettingsCard></div></div> : null}</div>;
+}
 
 type Preferences = Record<string, unknown>;
 type TaskDefaults = {
@@ -34,6 +62,18 @@ type TaskDefaults = {
   allowCodeExecution: boolean;
   allowFileWrites: boolean;
 };
+type PersonalityDimension = "warmth" | "directness" | "detail" | "creativity" | "initiative";
+type PersonalityDimensions = Record<PersonalityDimension, number>;
+type PersonalizationProfile = { dimensions: PersonalityDimensions; enabled: boolean; sessionMemoryEnabled: boolean; longTermMemoryEnabled: boolean; updatedAt: Date | null };
+type PersonalizationMemory = { id: string; memoryType: string; content: string; enabled: boolean; expiresAt: Date | null; updatedAt: Date };
+const defaultPersonalityDimensions: PersonalityDimensions = { warmth: 55, directness: 60, detail: 62, creativity: 58, initiative: 50 };
+const personalityDimensionMeta: Array<{ key: PersonalityDimension; label: string; detail: string }> = [
+  { key: "warmth", label: "Warmth", detail: "Supportive and considerate wording" },
+  { key: "directness", label: "Directness", detail: "Concise, decisive recommendations" },
+  { key: "detail", label: "Detail", detail: "Depth in plans and explanations" },
+  { key: "creativity", label: "Creativity", detail: "Novel options and framing" },
+  { key: "initiative", label: "Initiative", detail: "Proactive task planning" },
+];
 
 const sectionAliases: Record<string, string> = { profile: "account", billing: "usage" };
 
@@ -85,7 +125,8 @@ export default function Settings() {
   const needsReadiness = ["services", "integrations", "model-keys", "skills", "mail", "computer"].includes(section);
   const readiness = trpc.workspace.serviceReadiness.useQuery(undefined, { enabled: needsReadiness, retry: false });
   const integrations = trpc.workspace.integrations.useQuery(undefined, { enabled: ["services", "integrations"].includes(section), retry: false });
-  const memory = trpc.workspace.memory.useQuery(undefined, { enabled: section === "memory", retry: false });
+  const personalizationProfile = trpc.personalization.profile.useQuery(undefined, { enabled: section === "memory", retry: false });
+  const personalizationMemories = trpc.personalization.memories.useQuery(undefined, { enabled: section === "memory", retry: false });
   const usage = trpc.workspace.usage.useQuery(undefined, { enabled: section === "usage", retry: false });
   const configuredModels = trpc.catalog.models.useQuery(undefined, { enabled: section === "model-keys", retry: false });
   const utils = trpc.useUtils();
@@ -95,6 +136,15 @@ export default function Settings() {
   const removeIntegration = trpc.integrations.remove.useMutation({
     onSuccess: () => void integrations.refetch(),
   });
+  const invalidatePersonalization = () => Promise.all([
+    utils.personalization.profile.invalidate(),
+    utils.personalization.memories.invalidate(),
+  ]);
+  const updatePersonalization = trpc.personalization.updateProfile.useMutation({ onSuccess: () => void invalidatePersonalization() });
+  const addPersonalizationMemory = trpc.personalization.addMemory.useMutation({ onSuccess: () => void invalidatePersonalization() });
+  const updatePersonalizationMemory = trpc.personalization.updateMemory.useMutation({ onSuccess: () => void invalidatePersonalization() });
+  const deletePersonalizationMemory = trpc.personalization.deleteMemory.useMutation({ onSuccess: () => void invalidatePersonalization() });
+  const clearSessionPersonalization = trpc.personalization.clearSession.useMutation({ onSuccess: () => void invalidatePersonalization() });
   const preferences = asRecord(settings.data?.preferences);
   const savePreferences = (patch: Preferences) => updatePreferences.mutate({ preferences: { ...preferences, ...patch } });
 
@@ -127,7 +177,7 @@ export default function Settings() {
           {section === "data-controls" ? <SettingsDataControls /> : null}
           {section === "deployments" ? <SettingsDeployments /> : null}
           {section === "developer" ? <SettingsDeveloper /> : null}
-          {section === "memory" ? <SettingsMemory memory={memory.data ?? []} loading={memory.isLoading} error={memory.isError} /> : null}
+          {section === "memory" ? <SettingsPersonalization profile={personalizationProfile.data ?? null} memories={personalizationMemories.data ?? []} loading={personalizationProfile.isLoading || personalizationMemories.isLoading} error={personalizationProfile.isError || personalizationMemories.isError} onSaveProfile={input => updatePersonalization.mutate(input)} onAddMemory={input => addPersonalizationMemory.mutate(input)} onUpdateMemory={input => updatePersonalizationMemory.mutate(input)} onDeleteMemory={id => deletePersonalizationMemory.mutate({ id })} onClearSession={() => clearSessionPersonalization.mutate()} saving={updatePersonalization.isPending || addPersonalizationMemory.isPending || updatePersonalizationMemory.isPending || deletePersonalizationMemory.isPending || clearSessionPersonalization.isPending} mutationError={updatePersonalization.error?.message || addPersonalizationMemory.error?.message || updatePersonalizationMemory.error?.message || deletePersonalizationMemory.error?.message || clearSessionPersonalization.error?.message} /> : null}
           {section === "security" ? <SettingsSecurity /> : null}
         </section>
       </div>

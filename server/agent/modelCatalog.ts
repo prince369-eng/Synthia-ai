@@ -1,5 +1,7 @@
 import type { LlmProviderName } from "./llm";
 
+import { ENV } from "../_core/env";
+
 const PROVIDERS = ["groq", "agnes", "aihubmix", "openrouter", "gemini", "deepseek"] as const satisfies readonly LlmProviderName[];
 
 export type ComposerModel = {
@@ -58,5 +60,28 @@ export function configuredComposerModels(input: ComposerModelCatalogInput): Comp
       label: entry.label,
       capabilities: ["text", ...(input.visionModels.includes(id) ? ["vision" as const] : [])],
     }];
+  });
+}
+
+/**
+ * Returns the same credential-gated model catalog for the UI and task worker.
+ * Only provider readiness is inspected; credentials themselves never leave ENV.
+ */
+export function runtimeConfiguredComposerModels() {
+  return configuredComposerModels({
+    orchestratorProvider: ENV.orchestratorProvider,
+    orchestratorModel: ENV.orchestratorModel,
+    subtaskProvider: ENV.subtaskProvider,
+    subtaskModel: ENV.subtaskModel,
+    availableModels: ENV.availableModels,
+    visionModels: ENV.visionModels,
+    configuredProviders: {
+      groq: Boolean(ENV.groqApiKey),
+      agnes: Boolean(ENV.agnesApiKey),
+      aihubmix: Boolean(ENV.aihubmixApiKey),
+      openrouter: Boolean(ENV.openRouterApiKey),
+      gemini: Boolean(ENV.geminiApiKey),
+      deepseek: Boolean(ENV.deepseekApiKey),
+    },
   });
 }
