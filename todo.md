@@ -188,7 +188,15 @@
 - [x] Determine a scope-aligned provider contract for AIHubMix text, coding, reasoning, image, video, and audio models; Agnes AI capabilities only where official API support is documented; and Hyperbrowser agent-browser operations.
 - [x] Add credential-gated adapters, model capability metadata, secure readiness reporting, and configuration documentation without exposing provider credentials; AIHubMix image/video artifact retrieval additionally requires an explicit output-host allowlist.
 - [x] Add non-billable unit coverage and separately opt-in connectivity checks that do not invoke text, coding, reasoning, image, video, audio, or browser-automation workloads; routine test runs skip all live-provider calls.
-- [ ] Securely accept user-provided provider keys, verify configured readiness, and checkpoint without consuming free-generation quota unless the user explicitly authorizes a narrowly scoped live test.
+- [x] Securely accept the user-provided AIHubMix, Agnes AI, Pixazo, HopX, and Hyperbrowser keys plus one HopX template ID; validate AIHubMix model discovery, HopX template listing, and Hyperbrowser active-session count through explicit read-only checks without creating any model, media, sandbox, or browser workload.
+- [ ] Collect optional Pixazo model allowlists and an explicit media-enable decision before showing Pixazo image/video controls as available; no Pixazo generation test may run without separate approval.
+- [ ] Collect an explicit Hyperbrowser domain allowlist before enabling agent navigation; no Hyperbrowser browser session may be created without it.
+
+## User-approved provider credential configuration
+
+- [x] Securely configure the user-provided AIHubMix, Hyperbrowser, Agnes AI, Pixazo, and Bunnyshell HopX credential values plus one HopX template ID; optional model allowlists, media switches, and Hyperbrowser navigation domains remain deliberately unset.
+- [x] Verify configuration-only readiness without submitting model, image, video, audio, sandbox, or browser-automation work; the read-only AIHubMix, HopX, and Hyperbrowser checks pass without provisioning or task execution.
+- [x] Update the authenticated Settings provider catalog, preserve exact configuration boundaries, and checkpoint the verified configured state.
 - [x] Redesign the central task composer with compact workspace summary, attachment controls, lower control bar, suggestions, and recent-task hierarchy.
 - [x] Add a persisted user-owned task-attachment schema and reviewed PostgreSQL migration for local uploads and selected Library artifacts.
 - [x] Add a rate-limited authenticated attachment-upload contract with strict filename, MIME, and 10 MB file validation through secure object storage.
