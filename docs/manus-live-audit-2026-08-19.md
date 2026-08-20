@@ -18,3 +18,7 @@ Observed location: https://manus.im/app
 ## Center composer recheck
 
 The live reference continues to use a narrow, centered composer framed by a minimal dark shell. Its lower toolbar keeps the attachment affordance, compact auxiliary controls, and send action on one visual line. Suggested prompts appear immediately below, followed by a small row of capability chips such as slide, website, design, games, and **More**. Synthia retains this proportional hierarchy with its task-first controls: attachments, project and autonomy selection, model routing, voice transcription, Media readiness, suggestion prompts, and a compact **More** capability menu. Any Synthia entry that lacks a durable server contract remains explicitly unavailable rather than being presented as a simulated action.
+
+## Follow-up browser confirmation
+
+The live center confirms the hierarchy used by Synthia: a concise identity/status band, a dominant outcome question, one compact composer, an optional desktop-device affordance, three larger suggested task cards, and five compact capability starters. Synthia maps only the starters with real task goals and keeps media, scheduling, sharing, and provider actions truthful about their availability.
