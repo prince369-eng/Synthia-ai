@@ -20,10 +20,11 @@ describe("compact workspace layout contract", () => {
     expect(isSidebarCollapsed(null)).toBe(false);
   });
 
-  it("keeps a concise set of task-entry suggestions for the chat-first composer", () => {
+  it("keeps concise, user-visible capability starters with real task goals for the chat-first composer", () => {
     expect(TASK_ENTRY_SUGGESTIONS).toHaveLength(4);
-    expect(new Set(TASK_ENTRY_SUGGESTIONS).size).toBe(TASK_ENTRY_SUGGESTIONS.length);
-    expect(TASK_ENTRY_SUGGESTIONS.every(item => item.length > 20)).toBe(true);
+    expect(new Set(TASK_ENTRY_SUGGESTIONS.map(item => item.label)).size).toBe(TASK_ENTRY_SUGGESTIONS.length);
+    expect(TASK_ENTRY_SUGGESTIONS.map(item => item.label)).toEqual(["Create slides", "Build website", "Design", "Create games"]);
+    expect(TASK_ENTRY_SUGGESTIONS.every(item => item.goal.length > 20)).toBe(true);
   });
 
   it("does not delay the unavailable state when the external task store is absent", () => {

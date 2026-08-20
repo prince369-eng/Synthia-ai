@@ -2856,3 +2856,7 @@
 - [ ] User supplies credentials through secure project configuration when the key collection request is opened.
 - [ ] User publishes the verified application before live scheduler and media end-to-end tests.
 - [ ] GitHub push remains last and requires explicit confirmation.
+
+## Latest center refinement
+
+- [x] Replace generic center prompt chips with compact, real task starters aligned to the observed Create slides, Build website, Design, and Create games hierarchy.

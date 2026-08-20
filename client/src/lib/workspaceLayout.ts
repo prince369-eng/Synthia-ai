@@ -1,10 +1,10 @@
 export const SIDEBAR_COLLAPSE_STORAGE_KEY = "synthia-sidebar-collapsed";
 
 export const TASK_ENTRY_SUGGESTIONS = [
-  "Research a topic and produce a cited brief",
-  "Plan and build a web application",
-  "Analyze a document or data set",
-  "Create an execution plan for a project",
+  { label: "Create slides", goal: "Create a concise, well-structured presentation for this objective:" },
+  { label: "Build website", goal: "Plan and build a production-ready website for this objective:" },
+  { label: "Design", goal: "Create a polished visual design deliverable for this objective:" },
+  { label: "Create games", goal: "Design and build a playable browser game for this objective:" },
 ] as const;
 
 export const TASK_HISTORY_QUERY_OPTIONS = { retry: false } as const;

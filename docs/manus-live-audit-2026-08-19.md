@@ -14,3 +14,7 @@ Reference URL: https://manus.im/app
 The live center More menu groups capability starters rather than exposing a dense dashboard. Observed entries include Develop apps, Video, Scheduled task, Wide Research, Spreadsheet, Visualization, Audio, Chat mode, and Playbook. The same surface also exposes compact suggested cards such as Design my cover art, Bring my image to life as video, and Help me edit my video. For Synthia, these map only to existing task creation, research/search, spreadsheet/artifact, audio transcription, image/media readiness, and scheduled-work boundaries. Any item without a real Synthia route must remain disabled or be represented by a truthful readiness state rather than a simulated action.
 
 Observed location: https://manus.im/app
+
+## Center composer recheck
+
+The live reference continues to use a narrow, centered composer framed by a minimal dark shell. Its lower toolbar keeps the attachment affordance, compact auxiliary controls, and send action on one visual line. Suggested prompts appear immediately below, followed by a small row of capability chips such as slide, website, design, games, and **More**. Synthia retains this proportional hierarchy with its task-first controls: attachments, project and autonomy selection, model routing, voice transcription, Media readiness, suggestion prompts, and a compact **More** capability menu. Any Synthia entry that lacks a durable server contract remains explicitly unavailable rather than being presented as a simulated action.
