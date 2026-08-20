@@ -1,14 +1,15 @@
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { ArrowUp, ArrowUpRight, AudioLines, BarChart3, BookOpen, Bot, CalendarClock, Code2, FileText, FolderOpen, Gauge, ImageIcon, Loader2, MessageSquare, Mic, MoreHorizontal, Play, Plus, Search, Share2, SlidersHorizontal, Sparkles, Table2, Upload, Video } from "lucide-react";
-import React, { FormEvent, useEffect, useRef, useState } from "react";
+import React, { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
-import { TASK_ENTRY_SUGGESTIONS, TASK_HISTORY_QUERY_OPTIONS } from "@/lib/workspaceLayout";
+import { TASK_ENTRY_SUGGESTIONS, TASK_HISTORY_QUERY_OPTIONS, workspaceWelcome } from "@/lib/workspaceLayout";
 import { LibraryPicker, type LibraryAttachmentSelection } from "@/components/LibraryPicker";
 import { TaskComposerAttachments, type ComposerAttachment } from "@/components/TaskComposerAttachments";
+import { resolveAutomaticTaskRoute, type AutomaticTaskRoute } from "@shared/automaticTaskRouting";
 
 export function buildTaskAttachmentRefs(attachments: ComposerAttachment[]) {
   return attachments.map(attachment => attachment.sourceType === "library"
@@ -41,9 +42,19 @@ export function composerMediaCapabilityLabel(capability: { models?: string[]; co
   return capability.models?.length ? `${capability.models.join(", ")} is not enabled yet.` : `${kind} generation is unavailable.`;
 }
 
+export function automaticRoutePreview(route: AutomaticTaskRoute, hasManualModel: boolean) {
+  if (hasManualModel) return "Manual model selection is active for task orchestration.";
+  if (route.reason === "natural_language_media" && route.provider && route.model) {
+    return `Automatic: this request will use ${route.model} for ${route.kind} generation after you start the task.`;
+  }
+  if (route.reason === "media_unavailable") return `Automatic: ${route.requestedKind} generation is requested, but no ready route is configured.`;
+  if (route.reason === "vision_input") return "Automatic: a vision-capable model will analyze the attached image.";
+  return "Automatic: Synthia will choose the best available text or code route for this task.";
+}
+
 export default function TaskDashboard() {
   const [, setLocation] = useLocation();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const [goal, setGoal] = useState("");
   const [involvesCode, setInvolvesCode] = useState(false);
   const [mode, setMode] = useState<"ask_before_risky" | "supervised">("ask_before_risky");
@@ -85,6 +96,16 @@ export default function TaskDashboard() {
   const includesVisualAttachment = attachments.some(attachment => attachment.fileType.startsWith("image/"));
   const selectedModelSupportsVision = !selectedModel || selectedModel.capabilities.includes("vision");
   const visualInputBlocked = includesVisualAttachment && !selectedModelSupportsVision;
+  const automaticRoute = useMemo(() => resolveAutomaticTaskRoute({
+    goal,
+    attachments,
+    media: mediaCapabilities.data ?? {
+      image: { configured: false, provider: null, models: [] },
+      video: { configured: false, provider: null, models: [] },
+      audio: { configured: false, provider: null, models: [] },
+    },
+  }), [attachments, goal, mediaCapabilities.data]);
+  const welcome = useMemo(() => workspaceWelcome(user?.name), [user?.name]);
 
   useEffect(() => {
     if (preferencesApplied || !settings.data) return;
@@ -254,9 +275,9 @@ export default function TaskDashboard() {
       </header>
 
       <section className="synthia-chat-stage" aria-labelledby="task-composer-title">
-        <p className="synthia-workspace-kicker"><Sparkles size={13} /> Synthia workspace</p>
-        <h1 id="task-composer-title">What would you like to do?</h1>
-        <p className="synthia-chat-intro">Describe the outcome. Synthia will plan the work and keep you in control.</p>
+        <p className="synthia-workspace-kicker"><Sparkles size={13} /> {welcome.greeting}</p>
+        <h1 id="task-composer-title">{welcome.lead}</h1>
+        <p className="synthia-chat-intro">{welcome.detail}</p>
         <form onSubmit={submit} className="synthia-chat-composer">
           <label className="sr-only" htmlFor="task-goal">Task goal</label>
           <Textarea ref={composerRef} id="task-goal" value={goal} onChange={event => setGoal(event.target.value)} placeholder="Ask Synthia anything — no task runs until you start it" className="synthia-chat-input" />
@@ -284,12 +305,13 @@ export default function TaskDashboard() {
               </div>
               <div className="relative">
                 <button type="button" className={cn("synthia-composer-toggle synthia-model-trigger", modelMenuOpen && "active")} aria-label="Choose model" aria-expanded={modelMenuOpen} onClick={() => setModelMenuOpen(value => !value)}><Bot size={13} /><span>{selectedModel?.model ?? "Automatic"}</span></button>
-                {modelMenuOpen ? <div className="synthia-model-menu" data-testid="composer-model-menu" data-scrollable="true"><button type="button" className={cn(!selectedModelId && "active")} onClick={() => { setSelectedModelId(""); setModelMenuOpen(false); }}><b>Automatic</b><small>Uses vision for images and code-focused models for development. Media generation stays explicit.</small></button>{availableModels.data?.models.map(model => <button key={model.id} type="button" className={cn(model.id === selectedModelId && "active")} onClick={() => { setSelectedModelId(model.id); setModelMenuOpen(false); }}><b>{model.model}</b><small>{composerModelCapabilityLabel(model)}</small></button>)}{availableModels.data?.models.length ? null : <p>Automatic selection is active.</p>}</div> : null}
+                {modelMenuOpen ? <div className="synthia-model-menu" data-testid="composer-model-menu" data-scrollable="true"><button type="button" className={cn(!selectedModelId && "active")} onClick={() => { setSelectedModelId(""); setModelMenuOpen(false); }}><b>Automatic</b><small>Understands requested media, image inputs, and development tasks. Generation runs only after Start.</small></button>{availableModels.data?.models.map(model => <button key={model.id} type="button" className={cn(model.id === selectedModelId && "active")} onClick={() => { setSelectedModelId(model.id); setModelMenuOpen(false); }}><b>{model.model}</b><small>{composerModelCapabilityLabel(model)}</small></button>)}{availableModels.data?.models.length ? null : <p>Automatic selection is active.</p>}</div> : null}
               </div>
               <button type="button" className={cn("synthia-composer-toggle synthia-mic-button", voiceState !== "idle" && "active")} aria-label={voiceState === "recording" ? "Stop recording voice instruction" : "Start voice instruction"} title={voiceState === "transcribing" ? "Transcribing voice instruction" : voiceState === "recording" ? "Stop recording" : "Add voice instruction"} onClick={() => void toggleVoiceCapture()} disabled={voiceState === "transcribing"}><Mic size={14} /><span className="sr-only">Voice input</span>{voiceState === "recording" ? <span className="synthia-recording-dot" /> : null}</button>
               <Button type="submit" size="icon" aria-label="Start task" title="Start task" disabled={goal.trim().length < 8 || createTask.isPending || visualInputBlocked} className="synthia-send-button">{createTask.isPending ? <Loader2 className="animate-spin" size={17} /> : <ArrowUp size={18} />}</Button>
             </div>
           </div>
+          {goal.trim().length >= 8 ? <p className="synthia-route-preview" data-testid="automatic-route-preview"><Sparkles size={12} />{automaticRoutePreview(automaticRoute, Boolean(selectedModel))}</p> : null}
           {estimate.data ? <p className="synthia-estimate">Estimated: <span>{estimate.data.estimatedCreditsMin}–{estimate.data.estimatedCreditsMax} credits</span></p> : null}
           {visualInputBlocked ? <p role="alert" className="mt-2 px-1 text-xs text-amber-200">This task includes an image. Select a vision-capable model or return to Automatic routing before starting.</p> : null}
           {attachmentError ? <div role="alert" className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 px-1 text-xs text-rose-300"><span>{attachmentError}</span>{voicePermissionBlocked ? <><button type="button" className="font-medium text-cyan-200 underline decoration-cyan-300/50 underline-offset-2 transition-colors hover:text-cyan-100" onClick={() => void toggleVoiceCapture()}>Try microphone again</button><button type="button" className="font-medium text-[#c4b8a6] underline decoration-white/20 underline-offset-2 transition-colors hover:text-[#f5eadb]" aria-label="Dismiss microphone warning" onClick={dismissVoiceWarning}>Dismiss</button></> : null}</div> : null}

@@ -29,6 +29,7 @@ import { storageGetSignedUrl } from "../storage";
 import { personalizationInstruction } from "./personalizationContext";
 import { resolveAutomaticTaskModel } from "./automaticRouting";
 import { runtimeConfiguredComposerModels } from "./modelCatalog";
+import { executeTaskMedia } from "../media/taskMedia";
 
 type ModelDecision = {
   narration: string;
@@ -212,6 +213,26 @@ export async function runTaskCycle(taskId: string) {
     await updateTaskForWorker(task.id, { status: "planning", currentStepSummary: "Analyzing task state and selecting one action.", startedAt: task.startedAt ?? new Date() });
     await appendTaskEvent(task.id, { type: "status_change", payload: { status: "planning", summary: "Analyzing task state and selecting one action." } });
     const autonomySettings = task.autonomySettings as AutonomySettings;
+    const automaticRoute = autonomySettings.automaticRoute;
+    if (automaticRoute?.reason === "natural_language_media" && (automaticRoute.kind === "image" || automaticRoute.kind === "video" || automaticRoute.kind === "audio") && automaticRoute.provider && automaticRoute.model) {
+      const label = automaticRoute.kind === "image" ? "image" : automaticRoute.kind === "video" ? "video" : "audio";
+      await updateTaskForWorker(task.id, { status: "running", currentStepSummary: `Creating the requested ${label} artifact.` });
+      const generated = await executeTaskMedia({
+        taskId: task.id,
+        userId: task.userId,
+        kind: automaticRoute.kind,
+        prompt: task.goal,
+        provider: automaticRoute.provider,
+        model: automaticRoute.model,
+      });
+      const summary = `Created ${generated.filename}.`;
+      await recordAgentMessage(task.id, summary);
+      await updateTaskForWorker(task.id, { status: "completed", currentStepSummary: summary, completedAt: new Date() });
+      await appendTaskEvent(task.id, { type: "status_change", payload: { status: "completed", summary } });
+      const user = await getUserById(task.userId);
+      await notifyTask({ recipient: user?.email, title: task.title, taskId: task.id, kind: "completed", summary });
+      return;
+    }
     const routing = resolveAutomaticTaskModel({
       selectedModel: autonomySettings.selectedModel,
       involvesCode: task.involvesCode,

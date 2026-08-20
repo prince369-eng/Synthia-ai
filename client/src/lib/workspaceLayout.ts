@@ -7,6 +7,21 @@ export const TASK_ENTRY_SUGGESTIONS = [
   { label: "Create games", goal: "Design and build a playable browser game for this objective:" },
 ] as const;
 
+const WORKSPACE_WELCOMES = [
+  { lead: "What would you like to do?", detail: "Describe the outcome. Synthia will plan the work and keep you in control." },
+  { lead: "What can we move forward today?", detail: "Start with an outcome, and Synthia will select the appropriate available route." },
+  { lead: "Ready to make progress?", detail: "Give Synthia the goal. It will plan the work and ask before sensitive actions." },
+  { lead: "Where should Synthia begin?", detail: "Write the result you want. Synthia will coordinate the right tools after you start." },
+] as const;
+
+export function workspaceWelcome(displayName: string | null | undefined, now = new Date()) {
+  const firstName = displayName?.trim().split(/\s+/, 1)[0] || "there";
+  const dayKey = `${now.getUTCFullYear()}-${now.getUTCMonth() + 1}-${now.getUTCDate()}`;
+  const index = Array.from(`${firstName}-${dayKey}`).reduce((total, character) => total + character.charCodeAt(0), 0) % WORKSPACE_WELCOMES.length;
+  const welcome = WORKSPACE_WELCOMES[index];
+  return { greeting: `Hi ${firstName}`, ...welcome };
+}
+
 export const TASK_HISTORY_QUERY_OPTIONS = { retry: false } as const;
 
 export const PROFILE_MENU_DESTINATIONS = [

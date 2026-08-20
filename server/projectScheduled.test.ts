@@ -72,6 +72,7 @@ describe("projects and scheduled router procedures", () => {
     const taskId = "33333333-3333-4333-8333-333333333333";
     const createdTask = { id: taskId, userId: 7, status: "queued", title: "Prepare a secured implementation brief" };
     vi.spyOn(db, "createTaskForUser").mockResolvedValue(createdTask as never);
+    vi.spyOn(db, "appendTaskEvent").mockResolvedValue({ id: "event-automatic-route", sequenceNumber: 1 } as never);
     vi.spyOn(queue, "enqueueTaskCycle").mockResolvedValue(true);
 
     const result = await appRouter.createCaller(createContext()).tasks.create({
@@ -103,6 +104,10 @@ describe("projects and scheduled router procedures", () => {
         storageKey: "task-inputs/7/operating-notes.txt",
         storageUrl: "/manus-storage/task-inputs/7/operating-notes.txt",
       }],
+    }));
+    expect(db.appendTaskEvent).toHaveBeenCalledWith(taskId, expect.objectContaining({
+      type: "task_metadata",
+      payload: expect.objectContaining({ action: "automatic_route_selected", route: "text" }),
     }));
     expect(queue.enqueueTaskCycle).toHaveBeenCalledWith(taskId);
     expect(result).toEqual({ task: createdTask, executionQueued: true });

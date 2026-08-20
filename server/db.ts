@@ -2,6 +2,7 @@ import { and, asc, desc, eq, gt, isNull, sql } from "drizzle-orm";
 import { drizzle, type NodePgDatabase } from "drizzle-orm/node-postgres";
 import { randomUUID } from "node:crypto";
 import * as schema from "../drizzle/schema";
+import type { AutomaticTaskRoute } from "@shared/automaticTaskRouting";
 import {
   approvalRequests,
   deliverables,
@@ -40,6 +41,7 @@ export type AutonomySettings = {
   allowCodeExecution: boolean;
   allowFileWrites: boolean;
   selectedModel?: { provider: "groq" | "agnes" | "aihubmix" | "openrouter" | "gemini" | "deepseek"; model: string };
+  automaticRoute?: AutomaticTaskRoute;
 };
 
 export type TaskAttachmentInput = {

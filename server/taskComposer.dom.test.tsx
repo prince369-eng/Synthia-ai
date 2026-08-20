@@ -154,11 +154,15 @@ describe("task composer attachments", () => {
     Object.defineProperty(globalThis, "MediaRecorder", { configurable: true, value: mediaRecorder });
   });
 
-  it("explains capability-aware Automatic routing without claiming that media generation starts itself", async () => {
+  it("explains capability-aware Automatic routing and keeps media execution behind the Start action", async () => {
     const user = userEvent.setup();
     render(<TaskDashboard />);
     await user.click(screen.getByRole("button", { name: "Choose model" }));
-    expect(screen.getByText("Uses vision for images and code-focused models for development. Media generation stays explicit.")).toBeTruthy();
+    expect(screen.getByText("Understands requested media, image inputs, and development tasks. Generation runs only after Start.")).toBeTruthy();
+    await user.click(screen.getByRole("button", { name: "Choose model" }));
+    await user.type(screen.getByLabelText("Task goal"), "Create a short launch video for the product.");
+    expect(screen.getByTestId("automatic-route-preview").textContent).toContain("no ready route is configured");
+    expect(screen.getByRole("button", { name: "Start task" })).toBeTruthy();
   });
 
   it("loads task history only for an authenticated workspace and renders a calm empty state", () => {

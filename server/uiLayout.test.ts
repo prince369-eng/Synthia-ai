@@ -145,17 +145,23 @@ describe("compact workspace layout contract", () => {
     expect(dashboard).not.toContain("{model.provider} · {model.model}");
   });
 
-  it("keeps the center workspace calm by progressively disclosing secondary task controls", () => {
+  it("keeps the center workspace calm with a dynamic welcome and progressively disclosed secondary controls", () => {
     const dashboard = readFileSync(new URL("../client/src/pages/TaskDashboard.tsx", import.meta.url), "utf8");
+    const workspaceLayout = readFileSync(new URL("../client/src/lib/workspaceLayout.ts", import.meta.url), "utf8");
     const css = readFileSync(new URL("../client/src/index.css", import.meta.url), "utf8");
 
-    expect(dashboard).toContain("What would you like to do?");
+    expect(workspaceLayout).toContain("WORKSPACE_WELCOMES");
+    expect(workspaceLayout).toContain("Hi ${firstName}");
+    expect(dashboard).toContain("workspaceWelcome(user?.name)");
     expect(dashboard).toContain("synthia-workspace-kicker");
     expect(dashboard).toContain("synthia-task-controls-menu");
+    expect(dashboard).toContain('data-testid="automatic-route-preview"');
     expect(dashboard).toContain("Task controls");
     expect(dashboard).not.toContain("Agent workspace");
     expect(css).toContain(".synthia-task-controls-menu { @apply absolute bottom-[calc(100%+.4rem)] left-0");
     expect(css).toContain(".synthia-workspace-kicker");
+    expect(css).toContain(".synthia-capability-menu { @apply absolute bottom-[calc(100%+.45rem)] right-0 z-30 grid w-[min(32rem,calc(100vw-2.5rem))] max-h-[min(19rem,calc(100dvh-9rem))] grid-cols-2");
+    expect(css).toContain(".synthia-capability-menu::-webkit-scrollbar-thumb");
     expect(css).toContain(".synthia-mobile-nav { @apply sticky top-0 z-40 flex h-13 gap-1 overflow-x-auto");
   });
 

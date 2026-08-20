@@ -21,6 +21,7 @@ const queue = { enqueueTaskCycle: vi.fn() };
 const provider = { restore: vi.fn(), execute: vi.fn(), readFile: vi.fn(), writeFile: vi.fn(), openUrl: vi.fn(), screenshot: vi.fn(), checkpoint: vi.fn() };
 const llm = { generateWithFallback: vi.fn() };
 const modelCatalog = { runtimeConfiguredComposerModels: vi.fn() };
+const taskMedia = { executeTaskMedia: vi.fn() };
 
 vi.mock("../db", () => db);
 vi.mock("./queue", () => queue);
@@ -30,6 +31,7 @@ vi.mock("./llm", async importOriginal => {
   return { ...actual, generateWithFallback: llm.generateWithFallback };
 });
 vi.mock("./modelCatalog", () => modelCatalog);
+vi.mock("../media/taskMedia", () => taskMedia);
 const artifacts = { getTaskArtifactUrl: vi.fn(), putTaskArtifact: vi.fn() };
 vi.mock("./artifactStorage", () => artifacts);
 vi.mock("./notifications", () => ({ notifyTask: vi.fn() }));
@@ -62,6 +64,7 @@ beforeEach(() => {
     { id: "agnes:agnes-2.0-flash", provider: "agnes", model: "agnes-2.0-flash", label: "Configured", capabilities: ["text", "vision"] },
     { id: "aihubmix:coding-glm-5.2-free", provider: "aihubmix", model: "coding-glm-5.2-free", label: "Configured", capabilities: ["text"] },
   ]);
+  taskMedia.executeTaskMedia.mockResolvedValue({ filename: "synthia-video-1.mp4", fileType: "video/mp4", provider: "pixazo", model: "ltx", deliverableId: "deliverable-1" });
   artifacts.getTaskArtifactUrl.mockResolvedValue("https://storage.example/task-input.png");
   queue.enqueueTaskCycle.mockResolvedValue(true);
 });
@@ -154,5 +157,22 @@ describe("Synthia task worker recovery", () => {
     await runTaskCycle(baseTask.id);
 
     expect(llm.generateWithFallback).toHaveBeenCalledWith(expect.objectContaining({ selectedModel: { provider: "aihubmix", model: "coding-glm-5.2-free" } }));
+  });
+
+  it("uses the configured Automatic video route after the user starts a natural-language media task without invoking the text-model adapter", async () => {
+    db.getTaskById.mockResolvedValue({
+      ...baseTask,
+      autonomySettings: {
+        ...baseTask.autonomySettings,
+        automaticRoute: { kind: "video", reason: "natural_language_media", requestedKind: "video", provider: "pixazo", model: "ltx" },
+      },
+    });
+    const { runTaskCycle } = await import("./taskRunner");
+
+    await runTaskCycle(baseTask.id);
+
+    expect(taskMedia.executeTaskMedia).toHaveBeenCalledWith(expect.objectContaining({ taskId: "task-1", userId: 7, kind: "video", provider: "pixazo", model: "ltx", prompt: baseTask.goal }));
+    expect(llm.generateWithFallback).not.toHaveBeenCalled();
+    expect(db.updateTaskForWorker).toHaveBeenLastCalledWith("task-1", expect.objectContaining({ status: "completed", currentStepSummary: "Created synthia-video-1.mp4." }));
   });
 });
