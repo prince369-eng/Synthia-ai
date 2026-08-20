@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { serviceConnectionStatus, serviceReadinessForUser } from "./catalog";
+import { serviceConnectionStatus, serviceReadinessForUser, systemServiceReadiness } from "./catalog";
 
 describe("serviceConnectionStatus", () => {
   it("separates active providers from configured but inactive providers", () => {
@@ -22,5 +22,16 @@ describe("serviceConnectionStatus", () => {
     expect(google?.active).toBe(true);
     expect(slack?.status).toBe(slack?.configured ? "ready_to_connect" : "missing_credentials");
     expect(slack?.active).toBe(false);
+  });
+
+  it("includes Redis as a credential-safe queue readiness service", () => {
+    const redis = systemServiceReadiness().find(service => service.id === "redis");
+
+    expect(redis).toMatchObject({
+      label: "Redis",
+      category: "queue",
+      requiredEnvironment: ["REDIS_URL"],
+    });
+    expect(redis).not.toHaveProperty("value");
   });
 });

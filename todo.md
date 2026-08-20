@@ -150,6 +150,12 @@
 - [x] Add the user-provided Tavily, Serper, and Redis values through secure project configuration without exposing them in chat or logs.
 - [x] Add an opt-in live integration regression that validates configured credentials without printing their values or consuming quota during normal tests.
 - [x] Confirm non-mutating Redis ping plus lightweight Tavily and Serper requests succeed; run the full TypeScript, test-suite, and production-build verification with routine live checks skipped.
+
+## Configured-provider readiness display
+
+- [x] Verify that authenticated Settings and the provider catalog reflect Tavily, Serper, and Redis readiness without exposing credentials; the initial service-connections route correctly shows a credential-safe loading state while its readiness query resolves, including after a rebuilt preview bundle.
+- [x] Correct the verified Redis-readiness visibility gap by adding a Queue section backed by the existing server environment contract, without hardcoding or leaking configuration values.
+- [x] Add a non-secret catalog regression and visually confirm Tavily, Serper, and Redis states in authenticated Settings before checkpointing.
 - [x] Redesign the central task composer with compact workspace summary, attachment controls, lower control bar, suggestions, and recent-task hierarchy.
 - [x] Add a persisted user-owned task-attachment schema and reviewed PostgreSQL migration for local uploads and selected Library artifacts.
 - [x] Add a rate-limited authenticated attachment-upload contract with strict filename, MIME, and 10 MB file validation through secure object storage.
