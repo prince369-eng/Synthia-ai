@@ -18,7 +18,7 @@
 - [x] Complete general artifact retrieval from both task workspaces and Library, then verify the event stream, approval enforcement, queue retry, and provider readiness with focused tests. Sandbox file publication, model parsing, terminal policy, action policy, credits, worker recovery, and retries are covered.
 - [x] Add authenticated on-demand artifact URL refresh for task deliverables and cover ownership enforcement.
 - [x] Add authenticated on-demand artifact URL refresh for task deliverables and cover ownership enforcement.
-- [ ] Validate PostgreSQL event-sequence allocation under concurrent writer conditions after applying the migration to the external database.
+- [x] Validate PostgreSQL event-sequence allocation under concurrent writer conditions after applying the migration to the external database.
 - [x] Add focused worker-recovery tests proving checkpoint restoration, task resumption, usage-ledger preservation, and server-side credit-estimate enforcement during retries.
 - [x] Add queue exhausted-retry regression coverage so unrecoverable worker jobs transition the task into a durable failed state.
 - [x] Implement the radiant-orange Synthia AI design system and responsive desktop application shell.
