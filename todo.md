@@ -156,6 +156,19 @@
 - [x] Verify that authenticated Settings and the provider catalog reflect Tavily, Serper, and Redis readiness without exposing credentials; the initial service-connections route correctly shows a credential-safe loading state while its readiness query resolves, including after a rebuilt preview bundle.
 - [x] Correct the verified Redis-readiness visibility gap by adding a Queue section backed by the existing server environment contract, without hardcoding or leaking configuration values.
 - [x] Add a non-secret catalog regression and visually confirm Tavily, Serper, and Redis states in authenticated Settings before checkpointing.
+
+## Queue runtime readiness display
+
+- [x] Verify that the authenticated Agent page identifies the configured Redis execution queue as ready without exposing its connection value.
+- [x] Confirm no queue-readiness display mismatch was present; the Agent surface still truthfully reports zero configured LLM providers and sandbox credentials required.
+- [x] Record the verified runtime boundary: a real autonomous task next requires at least one LLM provider key and E2B sandbox credentials; optional storage and email providers remain separately gated.
+
+## Quota-safe provider expansion
+
+- [x] Research Bunnyshell’s supported HopX sandbox integration boundary and Pixazo’s supported media-provider integration boundary without calling generation endpoints.
+- [x] Add Bunnyshell HopX alongside E2B and Pixazo alongside Gemini through secure environment contracts, provider abstractions, a persisted HopX sandbox-provider migration, and truthful readiness states only.
+- [x] Keep Pixazo media generation and all live provider calls explicit opt-in; no free-tier quota was consumed during implementation or routine tests.
+- [x] Add non-secret adapter and readiness regressions and verify the authenticated Connectors surface lists Pixazo and Bunnyshell HopX as credentials-required without displaying keys or running billable generation.
 - [x] Redesign the central task composer with compact workspace summary, attachment controls, lower control bar, suggestions, and recent-task hierarchy.
 - [x] Add a persisted user-owned task-attachment schema and reviewed PostgreSQL migration for local uploads and selected Library artifacts.
 - [x] Add a rate-limited authenticated attachment-upload contract with strict filename, MIME, and 10 MB file validation through secure object storage.

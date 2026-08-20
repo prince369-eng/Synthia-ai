@@ -7,6 +7,8 @@ export type MediaProviderEnvironment = {
   videoProvider?: string;
   videoModels?: string[];
   videoApiKey?: string;
+  pixazoApiKey?: string;
+  pixazoGenerationEnabled?: boolean;
 };
 
 export type MediaCapability = {
@@ -20,6 +22,7 @@ export type MediaCapability = {
 function credentialFor(provider: string, environment: MediaProviderEnvironment): string {
   if (provider === "gemini" || provider === "gemini-omni-flash") return environment.geminiApiKey ?? "";
   if (provider === "forge") return environment.forgeApiKey ?? "";
+  if (provider === "pixazo") return environment.pixazoGenerationEnabled ? environment.pixazoApiKey ?? "" : "";
   return environment.videoApiKey ?? "";
 }
 
@@ -48,7 +51,7 @@ export function mediaReadiness(environment: MediaProviderEnvironment): {
       provider: imageProvider,
       models: imageModels,
       configured: imageConfigured,
-      route: imageProvider === "gemini" ? "server/media/gemini.ts" : "server/_core/imageGeneration.ts",
+      route: imageProvider === "gemini" ? "server/media/gemini.ts" : imageProvider === "pixazo" ? "server/media/pixazo.ts" : "server/_core/imageGeneration.ts",
       reason: imageConfigured
         ? undefined
         : "Add a real image provider credential and at least one configured image model before enabling generation.",
@@ -57,7 +60,7 @@ export function mediaReadiness(environment: MediaProviderEnvironment): {
       provider: videoProvider,
       models: videoModels,
       configured: videoConfigured,
-      route: videoProvider === "gemini-omni-flash" ? "server/media/gemini.ts" : "server/media/video.ts",
+      route: videoProvider === "gemini-omni-flash" ? "server/media/gemini.ts" : videoProvider === "pixazo" ? "server/media/pixazo.ts" : "server/media/video.ts",
       reason: videoConfigured
         ? undefined
         : "Add a real video provider credential and at least one configured video model before enabling generation.",

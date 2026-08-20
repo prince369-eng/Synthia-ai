@@ -36,6 +36,13 @@
       "when": 1787145270066,
       "tag": "0004_tidy_manta",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1787205194406,
+      "tag": "0005_add_hopx_sandbox_provider",
+      "breakpoints": true
     }
   ]
 }

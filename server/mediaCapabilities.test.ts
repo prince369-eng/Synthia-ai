@@ -57,4 +57,22 @@ describe("mediaReadiness", () => {
     expect(withoutEndpoint.image.configured).toBe(false);
     expect(withEndpoint.image.configured).toBe(true);
   });
+
+  it("keeps Pixazo unavailable until its explicit generation switch is enabled", () => {
+    const disabled = mediaReadiness({
+      imageProvider: "pixazo",
+      imageModels: ["flux"],
+      pixazoApiKey: "pixazo-test-key",
+      pixazoGenerationEnabled: false,
+    });
+    const enabled = mediaReadiness({
+      imageProvider: "pixazo",
+      imageModels: ["flux"],
+      pixazoApiKey: "pixazo-test-key",
+      pixazoGenerationEnabled: true,
+    });
+
+    expect(disabled.image).toMatchObject({ provider: "pixazo", configured: false, route: "server/media/pixazo.ts" });
+    expect(enabled.image).toMatchObject({ provider: "pixazo", configured: true, route: "server/media/pixazo.ts" });
+  });
 });

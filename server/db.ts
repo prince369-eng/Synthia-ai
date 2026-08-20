@@ -438,7 +438,7 @@ export async function updateTaskForWorker(
 
 export async function createSandboxForTask(input: {
   taskId: string;
-  provider: "docker" | "e2b";
+  provider: "docker" | "e2b" | "hopx";
   region: string;
   providerSandboxId: string;
   maxSessionSeconds: number;

@@ -1,11 +1,12 @@
 import { Sandbox as E2BDesktopSandbox } from "@e2b/desktop";
+import { Sandbox as HopxSandbox } from "@hopx-ai/sdk";
 import { execFile as execFileCallback } from "node:child_process";
 import { promisify } from "node:util";
 import { ENV } from "../_core/env";
 
 const execFile = promisify(execFileCallback);
 
-export type SandboxProviderName = "e2b" | "docker";
+export type SandboxProviderName = "e2b" | "hopx" | "docker";
 
 export type SandboxDescriptor = {
   provider: SandboxProviderName;
@@ -45,11 +46,12 @@ export interface SandboxProvider {
 
 function configuredProvider(): SandboxProviderName {
   if (ENV.sandboxProvider === "e2b") return "e2b";
+  if (ENV.sandboxProvider === "hopx") return "hopx";
   if (ENV.sandboxProvider === "docker") return "docker";
   if (ENV.sandboxProvider !== "auto") {
-    throw new Error("SYNTHIA_SANDBOX_PROVIDER must be auto, e2b, or docker.");
+    throw new Error("SYNTHIA_SANDBOX_PROVIDER must be auto, e2b, hopx, or docker.");
   }
-  return ENV.e2bApiKey ? "e2b" : "docker";
+  return ENV.e2bApiKey ? "e2b" : ENV.hopxApiKey ? "hopx" : "docker";
 }
 
 function dockerContainerName(taskId: string) {
@@ -156,6 +158,89 @@ export class E2BSandboxProvider implements SandboxProvider {
   }
 }
 
+export class HopxSandboxProvider implements SandboxProvider {
+  readonly name = "hopx" as const;
+
+  private assertConfigured() {
+    if (!ENV.hopxApiKey || !ENV.hopxTemplateId) {
+      throw new Error("HOPX_API_KEY and HOPX_TEMPLATE_ID are required for the HopX sandbox provider.");
+    }
+  }
+
+  private async connect(descriptor: SandboxDescriptor) {
+    this.assertConfigured();
+    return HopxSandbox.connect(descriptor.providerSandboxId, ENV.hopxApiKey, ENV.hopxBaseUrl);
+  }
+
+  async create(taskId: string): Promise<SandboxDescriptor> {
+    this.assertConfigured();
+    if (ENV.sandboxAllowedHosts.length > 0) {
+      throw new Error("HopX cannot enforce SYNTHIA_SANDBOX_ALLOWED_HOSTS; use E2B when outbound host allowlisting is required.");
+    }
+    const sandbox = await HopxSandbox.create({
+      apiKey: ENV.hopxApiKey,
+      baseURL: ENV.hopxBaseUrl,
+      templateId: ENV.hopxTemplateId,
+      region: ENV.sandboxRegion,
+      timeoutSeconds: ENV.hopxSandboxTimeoutSeconds,
+      internetAccess: false,
+      envVars: { SYNTHIA_TASK_ID: taskId },
+    });
+    return {
+      provider: "hopx",
+      providerSandboxId: sandbox.sandboxId,
+      region: ENV.sandboxRegion,
+      maxSessionSeconds: ENV.hopxSandboxTimeoutSeconds,
+    };
+  }
+
+  async execute(descriptor: SandboxDescriptor, command: string, timeoutMs = 120_000): Promise<CommandResult> {
+    const sandbox = await this.connect(descriptor);
+    const result = await sandbox.commands.run(command, { timeout: timeoutMs });
+    return { exitCode: result.exit_code, stdout: result.stdout, stderr: result.stderr };
+  }
+
+  async readFile(descriptor: SandboxDescriptor, path: string): Promise<string> {
+    requireSafePath(path);
+    return (await this.connect(descriptor)).files.read(path);
+  }
+
+  async writeFile(descriptor: SandboxDescriptor, file: SandboxFile): Promise<void> {
+    requireSafePath(file.path);
+    const sandbox = await this.connect(descriptor);
+    if (typeof file.content === "string") await sandbox.files.write(file.path, file.content);
+    else await sandbox.files.writeBytes(file.path, Buffer.from(file.content));
+  }
+
+  async openUrl(descriptor: SandboxDescriptor, url: string): Promise<void> {
+    const parsed = new URL(url);
+    if (parsed.protocol !== "https:" && parsed.protocol !== "http:") {
+      throw new Error("Only HTTP(S) URLs may be opened in the sandbox browser.");
+    }
+    const encodedUrl = Buffer.from(parsed.toString(), "utf8").toString("base64");
+    const result = await this.execute(descriptor, `url=$(printf %s '${encodedUrl}' | base64 -d); xdg-open "$url"`, 30_000);
+    if (result.exitCode !== 0) throw new Error(result.stderr || "The HopX desktop browser could not open the URL.");
+  }
+
+  async screenshot(descriptor: SandboxDescriptor): Promise<SandboxScreenshot> {
+    const response = await (await this.connect(descriptor)).desktop.screenshot();
+    const base64 = response.image.replace(/^data:image\/[^;]+;base64,/, "");
+    return { contentType: "image/png", bytes: new Uint8Array(Buffer.from(base64, "base64")) };
+  }
+
+  async checkpoint(): Promise<string> {
+    throw new Error("HopX does not expose a documented sandbox snapshot API. Use E2B when checkpoint and restore are required.");
+  }
+
+  async restore(): Promise<SandboxDescriptor> {
+    throw new Error("HopX does not expose a documented sandbox restore API. Use E2B when checkpoint and restore are required.");
+  }
+
+  async destroy(descriptor: SandboxDescriptor): Promise<void> {
+    await (await this.connect(descriptor)).kill();
+  }
+}
+
 export class DockerSandboxProvider implements SandboxProvider {
   readonly name = "docker" as const;
 
@@ -255,11 +340,12 @@ export class DockerSandboxProvider implements SandboxProvider {
 }
 
 export function createSandboxProvider(): SandboxProvider {
-  return configuredProvider() === "e2b" ? new E2BSandboxProvider() : new DockerSandboxProvider();
+  const provider = configuredProvider();
+  return provider === "e2b" ? new E2BSandboxProvider() : provider === "hopx" ? new HopxSandboxProvider() : new DockerSandboxProvider();
 }
 
 export function sandboxProviderFor(provider: SandboxProviderName): SandboxProvider {
-  return provider === "e2b" ? new E2BSandboxProvider() : new DockerSandboxProvider();
+  return provider === "e2b" ? new E2BSandboxProvider() : provider === "hopx" ? new HopxSandboxProvider() : new DockerSandboxProvider();
 }
 
 const SHELL_CONTROL_CHARACTERS = /[;&|`$<>()\r\n\\]/;

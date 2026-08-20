@@ -50,6 +50,7 @@ import { storageGetSignedUrl, storagePut } from "./storage";
 import { ENV } from "./_core/env";
 import { mediaReadiness } from "./mediaCapabilities";
 import { generateGeminiImage, generateGeminiVideo, GeminiMediaError, type GeminiMediaReference } from "./media/gemini";
+import { generatePixazoImage, generatePixazoVideo, PixazoMediaError } from "./media/pixazo";
 import { logger } from "./security/logger";
 import { transcribeAudio } from "./_core/voiceTranscription";
 
@@ -87,6 +88,7 @@ const selectedModelSchema = z.object({
 const voiceMimeSchema = z.enum(["audio/webm", "audio/ogg", "audio/wav", "audio/mpeg", "audio/mp4", "audio/x-m4a"]);
 const mediaGenerationSchema = taskIdSchema.extend({
   kind: z.enum(["image", "video"]),
+  provider: z.enum(["gemini", "pixazo"]).optional(),
   prompt: z.string().trim().min(3).max(4_000),
   model: z.string().trim().min(1).max(180).optional(),
   aspectRatio: z.enum(["1:1", "16:9", "9:16", "4:3", "3:4"]).optional(),
@@ -307,31 +309,26 @@ export const appRouter = router({
       const task = await requireOwnedTask(input.taskId, ctx.user.id);
       await enforceUserMutationLimit(ctx.user.id, `media-generation-${input.kind}`, input.kind === "image" ? 8 : 3, 600);
       const reference = await imageReferenceForTask(task.id, input.referenceAttachmentId);
+      const provider = input.provider ?? ((input.kind === "image" ? ENV.imageProvider : ENV.videoProvider) === "pixazo" ? "pixazo" : "gemini");
       await appendTaskEvent(task.id, {
         type: "tool_call",
-        payload: { tool: "gemini_media_generation", kind: input.kind, model: input.model ?? null, referenceAttachmentId: input.referenceAttachmentId ?? null },
+        payload: { tool: `${provider}_media_generation`, provider, kind: input.kind, model: input.model ?? null, referenceAttachmentId: input.referenceAttachmentId ?? null },
       });
       try {
-        const generated = input.kind === "image"
-          ? await generateGeminiImage({
-              prompt: input.prompt,
-              model: input.model,
-              aspectRatio: input.aspectRatio as "1:1" | "16:9" | "9:16" | "4:3" | "3:4" | undefined,
-              reference,
-            })
-          : await generateGeminiVideo({
-              prompt: input.prompt,
-              model: input.model,
-              aspectRatio: input.aspectRatio === "9:16" ? "9:16" : "16:9",
-              reference,
-            });
+        const generated = provider === "pixazo"
+          ? input.kind === "image"
+            ? await generatePixazoImage({ prompt: input.prompt, model: input.model, aspectRatio: input.aspectRatio as "1:1" | "16:9" | "9:16" | "4:3" | "3:4" | undefined, referenceAttached: Boolean(reference) })
+            : await generatePixazoVideo({ prompt: input.prompt, model: input.model, aspectRatio: input.aspectRatio === "9:16" ? "9:16" : "16:9", referenceAttached: Boolean(reference) })
+          : input.kind === "image"
+            ? await generateGeminiImage({ prompt: input.prompt, model: input.model, aspectRatio: input.aspectRatio as "1:1" | "16:9" | "9:16" | "4:3" | "3:4" | undefined, reference })
+            : await generateGeminiVideo({ prompt: input.prompt, model: input.model, aspectRatio: input.aspectRatio === "9:16" ? "9:16" : "16:9", reference });
         const extension = generated.mimeType === "image/jpeg" ? "jpg" : generated.mimeType === "image/webp" ? "webp" : generated.kind === "video" ? "mp4" : "png";
         const filename = `synthia-${generated.kind}-${Date.now()}.${extension}`;
         const artifact = await putTaskArtifact({ taskId: task.id, filename, body: generated.bytes, contentType: generated.mimeType });
         const event = await appendTaskEvent(task.id, {
           type: "tool_result",
           payload: {
-            tool: "gemini_media_generation",
+            tool: `${provider}_media_generation`,
             kind: generated.kind,
             provider: generated.provider,
             model: generated.model,
@@ -348,18 +345,19 @@ export const appRouter = router({
           storageUrl: artifact.url,
           isFinal: false,
         });
-        logger.info({ event: "gemini_media_generation_completed", taskId: task.id, userId: ctx.user.id, kind: generated.kind, model: generated.model, deliverableId }, "Gemini media generation completed");
+        logger.info({ event: "media_generation_completed", provider, taskId: task.id, userId: ctx.user.id, kind: generated.kind, model: generated.model, deliverableId }, "Media generation completed");
         return { deliverableId, filename, fileType: generated.mimeType, provider: generated.provider, model: generated.model };
       } catch (error) {
         const message = error instanceof Error ? error.message : "Media generation failed.";
-        await appendTaskEvent(task.id, { type: "error", payload: { code: error instanceof GeminiMediaError ? error.code : "MEDIA_GENERATION_FAILED", message } });
-        if (error instanceof GeminiMediaError && error.code === "CONFIGURATION_REQUIRED") {
+        const mediaError = error instanceof GeminiMediaError || error instanceof PixazoMediaError ? error : null;
+        await appendTaskEvent(task.id, { type: "error", payload: { code: mediaError?.code ?? "MEDIA_GENERATION_FAILED", message } });
+        if (mediaError?.code === "CONFIGURATION_REQUIRED") {
           throw new TRPCError({ code: "PRECONDITION_FAILED", message });
         }
-        if (error instanceof GeminiMediaError && error.code === "INVALID_REQUEST") {
+        if (mediaError?.code === "INVALID_REQUEST") {
           throw new TRPCError({ code: "BAD_REQUEST", message });
         }
-        logger.error({ event: "gemini_media_generation_failed", taskId: task.id, userId: ctx.user.id, kind: input.kind, error: message }, "Gemini media generation failed");
+        logger.error({ event: "media_generation_failed", provider, taskId: task.id, userId: ctx.user.id, kind: input.kind, error: message }, "Media generation failed");
         throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Media generation could not be completed. Please retry shortly." });
       }
     }),
