@@ -68,6 +68,7 @@ describe("compact workspace layout contract", () => {
     expect(settings).toContain('label: "Workspace"');
     expect(settings).toContain('label: "Agent capabilities"');
     expect(settings).toContain('label: "Data & delivery"');
+    expect(settings).toContain('grid items-start gap-4 xl:grid-cols-[184px_minmax(0,960px)]');
     expect(workspace).toContain("synthia-workspace-return-nav");
     expect(workspace).toContain("WORKSPACE_RETURN_ROUTES.dashboard");
     expect(workspace).toContain("WORKSPACE_RETURN_ROUTES.library");
@@ -132,5 +133,39 @@ describe("compact workspace layout contract", () => {
 
     expect(css).toContain(".synthia-attachment-menu { @apply absolute bottom-full left-0");
     expect(css).not.toContain(".synthia-attachment-menu { @apply absolute bottom-[calc(100%+.4rem)]");
+  });
+
+  it("keeps the center workspace calm by progressively disclosing secondary task controls", () => {
+    const dashboard = readFileSync(new URL("../client/src/pages/TaskDashboard.tsx", import.meta.url), "utf8");
+    const css = readFileSync(new URL("../client/src/index.css", import.meta.url), "utf8");
+
+    expect(dashboard).toContain("What would you like to do?");
+    expect(dashboard).toContain("synthia-workspace-kicker");
+    expect(dashboard).toContain("synthia-task-controls-menu");
+    expect(dashboard).toContain("Task controls");
+    expect(dashboard).not.toContain("Agent workspace");
+    expect(css).toContain(".synthia-task-controls-menu { @apply absolute bottom-[calc(100%+.4rem)] left-0");
+    expect(css).toContain(".synthia-workspace-kicker");
+    expect(css).toContain(".synthia-mobile-nav { @apply sticky top-0 z-40 flex h-13 gap-1 overflow-x-auto");
+  });
+
+  it("uses a calm teal and cyan signal palette instead of orange-heavy primary interface states", () => {
+    const css = readFileSync(new URL("../client/src/index.css", import.meta.url), "utf8");
+
+    expect(css).toContain("--primary: oklch(.69 .12 184);");
+    expect(css).toContain(".synthia-logo-mark { @apply inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-teal-400 via-teal-500 to-cyan-400");
+    expect(css).toContain(".synthia-send-button { @apply h-8 w-8 shrink-0 rounded-full bg-gradient-to-br from-teal-300 to-cyan-400");
+    expect(css).toContain(".synthia-settings-nav button.active { @apply bg-teal-400/10 text-cyan-200; }");
+    expect(css).not.toContain("from-orange-200 to-orange-500");
+  });
+
+  it("limits amber to deliberate approval and visual-input decision points while neutralizing legacy orange utilities", () => {
+    const css = readFileSync(new URL("../client/src/index.css", import.meta.url), "utf8");
+
+    expect(css).toContain("Palette bridge: legacy task-workspace utilities inherit Synthia's calm signal colors");
+    expect(css).toContain('[class~="text-orange-300"] { color: #67e8f9 !important; }');
+    expect(css).toContain('[class~="bg-orange-400"] { background-color: #14b8a6 !important; }');
+    expect(css).toContain(".synthia-workspace article:has(.text-amber-100)");
+    expect(css).toContain('p[role="alert"].text-amber-200');
   });
 });

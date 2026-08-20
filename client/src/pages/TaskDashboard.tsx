@@ -1,5 +1,5 @@
 import { trpc } from "@/lib/trpc";
-import { ArrowUp, ArrowUpRight, AudioLines, BarChart3, BookOpen, Bot, CalendarClock, Code2, FileText, FolderOpen, Gauge, ImageIcon, Loader2, MessageSquare, Mic, MoreHorizontal, Play, Plus, Search, Share2, Sparkles, Table2, Upload, Video } from "lucide-react";
+import { ArrowUp, ArrowUpRight, AudioLines, BarChart3, BookOpen, Bot, CalendarClock, Code2, FileText, FolderOpen, Gauge, ImageIcon, Loader2, MessageSquare, Mic, MoreHorizontal, Play, Plus, Search, Share2, SlidersHorizontal, Sparkles, Table2, Upload, Video } from "lucide-react";
 import React, { FormEvent, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
@@ -41,6 +41,7 @@ export default function TaskDashboard() {
   const [headerMenu, setHeaderMenu] = useState<"usage" | "more" | null>(null);
   const [mediaMenuOpen, setMediaMenuOpen] = useState(false);
   const [centerMoreOpen, setCenterMoreOpen] = useState(false);
+  const [taskControlsOpen, setTaskControlsOpen] = useState(false);
   const [modelMenuOpen, setModelMenuOpen] = useState(false);
   const [selectedModelId, setSelectedModelId] = useState("");
   const [voiceState, setVoiceState] = useState<"idle" | "recording" | "transcribing">("idle");
@@ -208,7 +209,7 @@ export default function TaskDashboard() {
   return (
     <div className="synthia-dashboard">
       <header className="synthia-dashboard-header">
-        <div className="flex items-center gap-2"><span className="text-sm font-semibold text-[#f5eadb]">Synthia AI</span><span className="hidden h-4 w-px bg-white/10 sm:block" /><span className="hidden text-xs text-[#8d7e70] sm:inline">Autonomous workspace</span></div>
+        <div className="flex items-center gap-2"><span className="text-sm font-semibold text-[#f5eadb]">Synthia AI</span><span className="hidden h-4 w-px bg-white/10 sm:block" /><span className="hidden text-xs text-[#8d7e70] sm:inline">Workspace</span></div>
         <div className="synthia-dashboard-header-actions">
           <div className="relative">
             <button type="button" className="synthia-header-action" aria-label="Usage summary" title="Usage" onClick={() => setHeaderMenu(value => value === "usage" ? null : "usage")}><Gauge size={15} /></button>
@@ -220,15 +221,14 @@ export default function TaskDashboard() {
             <button type="button" className="synthia-header-action" aria-label="More workspace actions" title="More" onClick={() => setHeaderMenu(value => value === "more" ? null : "more")}><MoreHorizontal size={16} /></button>
             {headerMenu === "more" ? <div className="synthia-header-popover"><button type="button" onClick={() => setLocation("/docs")}>Documentation</button><button type="button" onClick={() => setLocation("/settings")}>Workspace settings</button></div> : null}
           </div>
-          <span className="synthia-control-plane"><span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />Control plane online</span>
+          <span className="synthia-control-plane" title="Synthia control plane is online"><span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />Online</span>
         </div>
       </header>
 
       <section className="synthia-chat-stage" aria-labelledby="task-composer-title">
-        <div className="synthia-plan-chip"><span>Agent workspace</span><span className="h-3 w-px bg-white/10" /><span className="text-orange-300">{tasks.data?.length ?? 0} tasks</span></div>
-        <p className="synthia-eyebrow justify-center"><Sparkles size={13} /> New autonomous task</p>
-        <h1 id="task-composer-title">What should Synthia accomplish?</h1>
-        <p className="synthia-chat-intro">Describe the outcome. Synthia will plan, execute, and show every decision.</p>
+        <p className="synthia-workspace-kicker"><Sparkles size={13} /> Synthia workspace</p>
+        <h1 id="task-composer-title">What would you like to do?</h1>
+        <p className="synthia-chat-intro">Describe the outcome. Synthia will plan the work and keep you in control.</p>
         <form onSubmit={submit} className="synthia-chat-composer">
           <label className="sr-only" htmlFor="task-goal">Task goal</label>
           <Textarea ref={composerRef} id="task-goal" value={goal} onChange={event => setGoal(event.target.value)} placeholder="Ask Synthia anything — no task runs until you start it" className="synthia-chat-input" />
@@ -239,11 +239,17 @@ export default function TaskDashboard() {
                 <button type="button" className={cn("synthia-composer-plus", attachmentMenuOpen && "active")} aria-label="Add a task attachment" aria-expanded={attachmentMenuOpen} aria-controls="attachment-menu" onClick={() => setAttachmentMenuOpen(value => !value)}><Plus size={15} /></button>
                 {attachmentMenuOpen ? <div id="attachment-menu" className="synthia-attachment-menu"><button type="button" onClick={() => fileInputRef.current?.click()}><Upload size={14} /><span>Add from local files</span></button><button type="button" onClick={() => { setAttachmentMenuOpen(false); setLibraryOpen(true); }}><FolderOpen size={14} /><span>From Library</span></button></div> : null}
               </div>
-              <button type="button" onClick={() => setInvolvesCode(value => !value)} className={cn("synthia-composer-toggle", involvesCode && "active")}><Code2 size={14} /><span>Code</span></button>
-              {(Object.keys(modeLabels) as Array<keyof typeof modeLabels>).map(value => <button key={value} type="button" onClick={() => setMode(value)} className={cn("synthia-composer-toggle", mode === value && "active")}><span>{value === "ask_before_risky" ? "Ask first" : "Supervised"}</span></button>)}
+              <div className="relative">
+                <button type="button" className={cn("synthia-composer-toggle", taskControlsOpen && "active")} aria-label="Open task controls" aria-expanded={taskControlsOpen} onClick={() => setTaskControlsOpen(value => !value)}><SlidersHorizontal size={14} /><span>Controls</span></button>
+                {taskControlsOpen ? <div className="synthia-task-controls-menu">
+                  <p>Task controls</p>
+                  <button type="button" onClick={() => setInvolvesCode(value => !value)} className={cn(involvesCode && "active")}><Code2 size={14} /><span><b>Code execution</b><small>{involvesCode ? "Included for this task" : "Off for this task"}</small></span></button>
+                  <div className="synthia-control-choice-group"><span>Autonomy</span>{(Object.keys(modeLabels) as Array<keyof typeof modeLabels>).map(value => <button key={value} type="button" onClick={() => setMode(value)} className={cn(mode === value && "active")}>{value === "ask_before_risky" ? "Ask first" : "Supervised"}</button>)}</div>
+                  <label>Project<select aria-label="Project for task" value={projectId} onChange={event => setProjectId(event.target.value)}><option value="">No project</option>{projects.data?.map(project => <option key={project.id} value={project.id}>{project.name}</option>)}</select></label>
+                </div> : null}
+              </div>
             </div>
             <div className="synthia-composer-control-group synthia-composer-control-group-end">
-              <select aria-label="Project for task" value={projectId} onChange={event => setProjectId(event.target.value)} className="synthia-project-select"><option value="">No project</option>{projects.data?.map(project => <option key={project.id} value={project.id}>{project.name}</option>)}</select>
               <div className="relative">
                 <button type="button" className={cn("synthia-composer-toggle", mediaMenuOpen && "active")} aria-label="View media capabilities" aria-expanded={mediaMenuOpen} onClick={() => setMediaMenuOpen(value => !value)}><Sparkles size={13} /><span>Media</span></button>
                 {mediaMenuOpen ? <div className="synthia-model-menu synthia-media-menu" data-testid="media-capability-menu"><div className="synthia-media-capability"><ImageIcon size={14} /><span><b>Image generation</b><small>{mediaCapabilities.data?.image.configured ? `Ready · ${mediaCapabilities.data.image.provider}` : "Unavailable · configure image provider"}</small></span><em className={mediaCapabilities.data?.image.configured ? "ready" : "pending"}>{mediaCapabilities.data?.image.configured ? "Ready" : "Unavailable"}</em></div><div className="synthia-media-capability"><Video size={14} /><span><b>Video generation</b><small>{mediaCapabilities.data?.video.reason ?? "Checking provider adapter…"}</small></span><em className="pending">Unavailable</em></div><p>Generation jobs will appear here only after a verified provider adapter, storage path, and task route are configured.</p></div> : null}
@@ -269,7 +275,7 @@ export default function TaskDashboard() {
           {!tasks.isError && tasks.isLoading ? <div className="synthia-loading-row"><Loader2 className="animate-spin" size={14} /> Loading your tasks…</div> : null}
           {tasks.isError ? <div className="synthia-unavailable-note"><Bot size={15} /> Task history will connect after the external Synthia data store is configured.</div> : null}
           {!tasks.isLoading && !tasks.isError && tasks.data?.length === 0 ? <div className="synthia-empty-tasks"><Bot size={17} /><span>Tasks you create will appear here with their live execution state.</span></div> : null}
-          <div className="grid gap-1.5">{tasks.data?.map(task => <button key={task.id} onClick={() => setLocation(`/tasks/${task.id}`)} className="synthia-task-row"><span className={cn("grid h-7 w-7 place-items-center rounded-md", task.status === "completed" ? "bg-emerald-400/10 text-emerald-300" : "bg-orange-400/10 text-orange-300")}><Play size={13} /></span><span className="min-w-0 flex-1"><b>{task.title}</b><small>{task.currentStepSummary ?? task.goal}</small></span><span className="hidden text-[11px] text-[#88786a] sm:block">{task.status.replace(/_/g, " ")}</span><ArrowUpRight className="text-[#77695d]" size={14} /></button>)}</div>
+          <div className="grid gap-1.5">{tasks.data?.map(task => <button key={task.id} onClick={() => setLocation(`/tasks/${task.id}`)} className="synthia-task-row"><span className={cn("grid h-7 w-7 place-items-center rounded-md", task.status === "completed" ? "bg-emerald-400/10 text-emerald-300" : "bg-teal-400/10 text-cyan-300")}><Play size={13} /></span><span className="min-w-0 flex-1"><b>{task.title}</b><small>{task.currentStepSummary ?? task.goal}</small></span><span className="hidden text-[11px] text-[#778985] sm:block">{task.status.replace(/_/g, " ")}</span><ArrowUpRight className="text-[#637773]" size={14} /></button>)}</div>
         </section>
       </section>
       <LibraryPicker open={libraryOpen} onOpenChange={setLibraryOpen} selectedDeliverableIds={attachments.flatMap(attachment => attachment.sourceDeliverableId ? [attachment.sourceDeliverableId] : [])} onSelect={addLibraryAttachment} />

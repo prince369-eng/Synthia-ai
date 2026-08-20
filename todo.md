@@ -103,6 +103,15 @@
 - [x] Fix the General Settings capability-row grid so each switch stays inside its own content column at 1920px desktop width and responsive widths.
 - [x] Capture and retain a final post-fix desktop screenshot of the General Settings capability controls through the project screenshot service, alongside the completed repeatable layout assertion.
 - [x] Capture a retained post-cache-refresh desktop Settings screenshot and assert the static preview always revisions its rebuilt browser bundle.
+
+## Teal and cyan visual-system refresh
+
+- [x] Audit the current radiant-orange token usage and replace harsh attention states with calm teal/cyan hierarchy.
+- [x] Apply a balanced `#14b8a6` and `#22d3ee` signal palette across active navigation, primary controls, selected states, composer feedback, and Settings.
+- [x] Retain only restrained amber highlights where they clarify a high-priority action, without returning to an orange-heavy interface.
+- [x] Validate readable contrast, desktop/mobile visual balance, and complete token regression coverage before checkpointing.
+- [x] Audit remaining amber/orange tokens and document the limited high-priority surfaces permitted to retain them.
+- [x] Add focused source regressions that enforce the approved teal/cyan palette and permitted amber-highlight surfaces.
 - [x] Redesign the central task composer with compact workspace summary, attachment controls, lower control bar, suggestions, and recent-task hierarchy.
 - [x] Add a persisted user-owned task-attachment schema and reviewed PostgreSQL migration for local uploads and selected Library artifacts.
 - [x] Add a rate-limited authenticated attachment-upload contract with strict filename, MIME, and 10 MB file validation through secure object storage.
@@ -2860,3 +2869,12 @@
 ## Latest center refinement
 
 - [x] Replace generic center prompt chips with compact, real task starters aligned to the observed Create slides, Build website, Design, and Create games hierarchy.
+
+## Calm interface reorganization
+
+- [ ] Audit the current center, sidebar, header, composer, suggestions, task list, Settings rail, and mobile layout for visual clutter, hierarchy conflicts, and disproportionate spacing.
+- [ ] Reorganize the center workspace around a quiet outcome prompt, a reduced-control composer, and progressively disclosed secondary actions.
+- [ ] Reduce sidebar and header visual noise while retaining direct access to real Synthia routes and status states.
+- [ ] Refine typography, neutral surfaces, borders, shadows, orange emphasis, and motion to create a calm, readable, dynamic interface.
+- [ ] Rebalance desktop, tablet, and mobile spacing so controls do not crowd or compete for attention.
+- [ ] Add deterministic layout regressions and visually verify the reorganized experience before checkpointing.

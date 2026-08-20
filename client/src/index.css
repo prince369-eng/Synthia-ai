@@ -31,25 +31,25 @@
 
 :root {
   --radius: .85rem;
-  --primary: oklch(.72 .19 49);
-  --primary-foreground: oklch(.17 .025 45);
-  --background: oklch(.16 .016 62);
-  --foreground: oklch(.93 .014 82);
-  --card: oklch(.21 .018 59);
-  --card-foreground: oklch(.93 .014 82);
-  --popover: oklch(.22 .018 59);
-  --popover-foreground: oklch(.93 .014 82);
-  --secondary: oklch(.26 .021 58);
-  --secondary-foreground: oklch(.78 .018 76);
-  --muted: oklch(.27 .019 58);
-  --muted-foreground: oklch(.67 .019 74);
-  --accent: oklch(.29 .027 56);
-  --accent-foreground: oklch(.96 .015 80);
+  --primary: oklch(.69 .12 184);
+  --primary-foreground: oklch(.14 .022 188);
+  --background: oklch(.15 .018 190);
+  --foreground: oklch(.93 .012 185);
+  --card: oklch(.20 .019 190);
+  --card-foreground: oklch(.93 .012 185);
+  --popover: oklch(.21 .021 190);
+  --popover-foreground: oklch(.93 .012 185);
+  --secondary: oklch(.25 .022 190);
+  --secondary-foreground: oklch(.79 .017 185);
+  --muted: oklch(.26 .019 190);
+  --muted-foreground: oklch(.67 .017 185);
+  --accent: oklch(.28 .028 190);
+  --accent-foreground: oklch(.96 .012 185);
   --destructive: oklch(.68 .2 26);
   --destructive-foreground: oklch(.985 0 0);
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 15%);
-  --ring: oklch(.72 .19 49);
+  --ring: oklch(.69 .12 184);
 }
 
 * { @apply border-border outline-ring/50; }
@@ -58,183 +58,198 @@ button:not(:disabled), [role="button"]:not([aria-disabled="true"]), [type="butto
 button:not(:disabled):active { transform: scale(.97); }
 
 @layer components {
-  .synthia-shell { @apply min-h-screen bg-[#171410] text-[#f5eee2]; }
-  .synthia-nav { @apply fixed inset-y-0 left-0 z-30 hidden w-58 flex-col border-r border-white/8 bg-[#1b1917] px-2.5 py-3 lg:flex; transition: width 180ms cubic-bezier(.23,1,.32,1), padding 180ms cubic-bezier(.23,1,.32,1); }
+  .synthia-shell { @apply min-h-screen bg-[#101716] text-[#effaf8]; }
+  .synthia-nav { @apply fixed inset-y-0 left-0 z-30 hidden w-56 flex-col border-r border-white/[.06] bg-[#121b1a] px-2.5 py-3 lg:flex; transition: width 180ms cubic-bezier(.23,1,.32,1), padding 180ms cubic-bezier(.23,1,.32,1); }
   .synthia-nav.collapsed { @apply w-16 px-2; }
-  .synthia-main { @apply min-h-screen lg:pl-58; transition: padding 180ms cubic-bezier(.23,1,.32,1); }
+  .synthia-main { @apply min-h-screen lg:pl-56; transition: padding 180ms cubic-bezier(.23,1,.32,1); }
   .synthia-shell-collapsed .synthia-main { @apply lg:pl-16; }
-  .synthia-mobile-nav { @apply sticky top-0 z-40 flex h-14 items-center justify-around border-b border-white/8 bg-[#1b1510]/95 px-2 backdrop-blur lg:hidden; }
-  .synthia-mobile-nav button { @apply flex h-10 min-w-18 flex-col items-center justify-center gap-0.5 rounded-lg px-3 text-[10px] text-[#a8998a]; }
-  .synthia-mobile-nav button.active { @apply bg-orange-400/10 text-orange-200; }
+  .synthia-mobile-nav { @apply sticky top-0 z-40 flex h-13 gap-1 overflow-x-auto border-b border-white/[.06] bg-[#121b1a]/95 px-2 backdrop-blur lg:hidden; scrollbar-width: none; }
+  .synthia-mobile-nav::-webkit-scrollbar { display: none; }
+  .synthia-mobile-nav button { @apply flex h-10 min-w-15 shrink-0 flex-col items-center justify-center gap-0.5 rounded-md px-2 text-[9px] text-[#a8998a]; }
+  .synthia-mobile-nav button.active { @apply bg-teal-400/10 text-cyan-200; }
   .synthia-nav-topline { @apply flex h-9 items-center justify-between px-1; }
   .synthia-brand { @apply flex min-w-0 items-center gap-2 px-1 text-sm font-semibold tracking-tight text-[#fff7eb]; }
-  .synthia-brand b { @apply text-orange-400; }
-  .synthia-logo-mark { @apply inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-orange-300 via-orange-500 to-rose-500 text-[#25130c] shadow-[0_0_20px_rgba(251,146,60,.2)]; }
+  .synthia-brand b { @apply text-cyan-300; }
+  .synthia-logo-mark { @apply inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-teal-400 via-teal-500 to-cyan-400 text-[#061615] shadow-[0_0_20px_rgba(34,211,238,.16)]; }
   .synthia-collapse-button { @apply grid h-7 w-7 shrink-0 place-items-center rounded-md text-[#897b6e] hover:bg-white/6 hover:text-[#f5eadb]; }
-  .synthia-new-task { @apply mt-5 h-9 w-full justify-start gap-2 rounded-lg border border-orange-300/25 bg-gradient-to-r from-orange-200 to-orange-500 px-3 text-xs font-semibold text-[#2c160c] shadow-[0_5px_18px_rgba(249,115,22,.16)] hover:from-orange-100 hover:to-orange-400; }
+  .synthia-new-task { @apply mt-5 h-9 w-full justify-start gap-2 rounded-lg border border-teal-300/20 bg-teal-400/[.1] px-3 text-xs font-semibold text-cyan-50 shadow-none hover:border-cyan-300/35 hover:bg-teal-400/[.16]; }
   .synthia-nav-links { @apply mt-5 space-y-0.5; }
-  .synthia-nav-item { @apply flex h-9 w-full items-center gap-2.5 rounded-md px-2.5 text-xs text-[#bdb1a3] transition-colors hover:bg-white/5 hover:text-[#fff7eb]; }
-  .synthia-nav-item.active { @apply bg-orange-400/10 text-orange-300; }
-  .synthia-task-rail { @apply mt-6 min-h-0 flex-1 overflow-y-auto; }
+  .synthia-nav-item { @apply flex h-8.5 w-full items-center gap-2.5 rounded-md px-2.5 text-xs text-[#aea295] transition-colors hover:bg-white/[.035] hover:text-[#fff7eb]; }
+  .synthia-nav-item.active { @apply bg-teal-400/10 text-cyan-200; }
+  .synthia-task-rail { @apply mt-7 min-h-0 flex-1 overflow-y-auto border-t border-white/[.05] pt-4; }
   .synthia-task-rail > p { @apply px-2.5 text-[9px] font-semibold uppercase tracking-[.16em] text-[#766a5f]; }
-  .synthia-task-rail-item { @apply mt-1 flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-left text-[11px] text-[#bdb1a3] transition-colors hover:bg-white/5 hover:text-white; }
-  .synthia-task-rail-item.active { @apply bg-white/7 text-orange-200; }
+  .synthia-task-rail-item { @apply mt-1 flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-left text-[11px] text-[#aaa094] transition-colors hover:bg-white/[.035] hover:text-white; }
+  .synthia-task-rail-item.active { @apply bg-teal-400/[.08] text-cyan-100; }
   .synthia-task-rail-item span:last-child { @apply truncate; }
   .synthia-state-dot { @apply h-1.5 w-1.5 shrink-0 rounded-full; }
   .synthia-mini-status { @apply mt-3 block px-2.5 text-[11px] text-[#766a5f]; }
   .synthia-mini-status.error { @apply text-rose-300; }
   .synthia-account-trigger { @apply mt-3 flex w-full items-center gap-2 rounded-md border-t border-white/8 px-2 pt-3 text-left hover:bg-white/[.035]; }
-  .synthia-avatar { @apply flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-orange-400/15 text-[11px] font-bold text-orange-300; }
+  .synthia-avatar { @apply flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-teal-400/15 text-[11px] font-bold text-cyan-200; }
   .synthia-account-trigger .synthia-account-copy { @apply min-w-0 flex-1; }
   .synthia-account-trigger .synthia-account-copy b { @apply block max-w-40 truncate text-xs font-medium text-[#eee3d5]; }
   .synthia-account-trigger .synthia-account-copy small { @apply block max-w-40 truncate text-[10px] text-[#766a5f]; }
-  .synthia-account-menu { @apply w-58 border-white/10 bg-[#24201c] p-1.5 text-[#eee3d5] shadow-2xl; }
+  .synthia-account-menu { @apply w-58 border-white/10 bg-[#1b2826] p-1.5 text-[#e6f4f1] shadow-2xl; }
   .synthia-account-menu-label { @apply flex flex-col gap-0.5 px-2 py-2; }
   .synthia-account-menu-label b { @apply truncate text-xs text-[#f6ecdf]; }
   .synthia-account-menu-label span { @apply truncate text-[10px] font-normal text-[#8b7c6e]; }
-  .synthia-account-menu-label small { @apply mt-1 text-[10px] font-normal text-orange-200/80; }
-  .synthia-account-menu-item { @apply h-8 cursor-pointer text-[11px] text-[#cfc1b2] focus:bg-orange-400/10 focus:text-orange-100; }
+  .synthia-account-menu-label small { @apply mt-1 text-[10px] font-normal text-cyan-200/80; }
+  .synthia-account-menu-item { @apply h-8 cursor-pointer text-[11px] text-[#c7d8d4] focus:bg-teal-400/10 focus:text-cyan-100; }
   .synthia-account-menu-signout { @apply text-rose-300 focus:bg-rose-400/10 focus:text-rose-200; }
   .synthia-page { @apply min-h-screen px-5 py-6 sm:px-8 sm:py-7; }
   .synthia-page-head { @apply mb-6 flex items-start justify-between gap-4 border-b border-white/8 pb-4; }
   .synthia-page-head h1 { @apply mt-1 text-xl font-semibold tracking-tight text-[#fff7eb]; }
   .synthia-page-head p:not(.synthia-eyebrow) { @apply mt-1.5 max-w-xl text-xs leading-5 text-[#a9998a]; }
-  .synthia-page-stat { @apply hidden shrink-0 rounded-md border border-orange-300/15 bg-orange-400/[.06] px-3 py-2 text-right sm:block; }
-  .synthia-page-stat b { @apply block text-sm font-semibold text-orange-200; }
+  .synthia-page-stat { @apply hidden shrink-0 rounded-md border border-teal-300/15 bg-teal-400/[.06] px-3 py-2 text-right sm:block; }
+  .synthia-page-stat b { @apply block text-sm font-semibold text-cyan-200; }
   .synthia-page-stat span { @apply block text-[10px] text-[#9d8d7d]; }
-  .synthia-page-link { @apply inline-flex h-8 shrink-0 items-center rounded-md border border-orange-300/20 bg-orange-400/[.08] px-2.5 text-[11px] font-medium text-orange-100 hover:bg-orange-400/[.15]; }
-  .synthia-inline-link { @apply inline-flex items-center gap-1 text-[11px] text-orange-200 hover:text-orange-100; }
-  .synthia-compact-action { @apply inline-flex h-8 shrink-0 items-center gap-1.5 rounded-md bg-orange-400 px-2.5 text-[11px] font-semibold text-[#2b160d] hover:bg-orange-300; }
+  .synthia-page-link { @apply inline-flex h-8 shrink-0 items-center rounded-md border border-teal-300/20 bg-teal-400/[.08] px-2.5 text-[11px] font-medium text-cyan-100 hover:bg-teal-400/[.15]; }
+  .synthia-inline-link { @apply inline-flex items-center gap-1 text-[11px] text-cyan-200 hover:text-cyan-100; }
+  .synthia-compact-action { @apply inline-flex h-8 shrink-0 items-center gap-1.5 rounded-md bg-teal-400 px-2.5 text-[11px] font-semibold text-[#061615] hover:bg-cyan-300; }
   .synthia-inline-form { @apply mb-4 grid gap-2 rounded-lg border border-white/8 bg-white/[.02] p-3 sm:grid-cols-[1fr_1.5fr_auto]; }
-  .synthia-inline-form input { @apply h-8 min-w-0 rounded-md border border-white/10 bg-[#181512] px-2.5 text-xs text-[#f5eadb] placeholder:text-[#75685d]; }
-  .synthia-inline-form button { @apply h-8 rounded-md bg-orange-400 px-3 text-[11px] font-semibold text-[#2b160d] disabled:opacity-60; }
+  .synthia-inline-form input { @apply h-8 min-w-0 rounded-md border border-white/10 bg-[#111a19] px-2.5 text-xs text-[#effaf8] placeholder:text-[#6c817c]; }
+  .synthia-inline-form button { @apply h-8 rounded-md bg-teal-400 px-3 text-[11px] font-semibold text-[#061615] disabled:opacity-60; }
   .synthia-empty-state { @apply flex min-h-28 flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-white/10 bg-white/[.015] px-4 py-6 text-center text-xs text-[#9a8b7e]; }
   .synthia-empty-state b { @apply text-[#eadfd2]; }
   .synthia-empty-state span { @apply max-w-md leading-5; }
   .synthia-compact-grid { @apply grid gap-2 lg:grid-cols-2; }
-  .synthia-compact-card { @apply flex min-h-18 items-center gap-3 rounded-lg border border-white/8 bg-[#1d1a17] px-3 py-2.5 text-left; }
+  .synthia-compact-card { @apply flex min-h-18 items-center gap-3 rounded-lg border border-white/8 bg-[#17201f] px-3 py-2.5 text-left; }
   .synthia-compact-card > div { @apply min-w-0 flex-1; }
   .synthia-compact-card b { @apply block truncate text-xs font-semibold text-[#eee3d7]; }
   .synthia-compact-card p { @apply mt-1 text-[11px] leading-4 text-[#938477]; }
-  .synthia-compact-card > button, .synthia-compact-card > a { @apply inline-flex h-7 shrink-0 items-center rounded-md px-2 text-[10px] text-orange-200 hover:bg-orange-400/10; }
+  .synthia-compact-card > button, .synthia-compact-card > a { @apply inline-flex h-7 shrink-0 items-center rounded-md px-2 text-[10px] text-cyan-200 hover:bg-teal-400/10; }
   .synthia-compact-card small { @apply mt-1 block text-[10px] uppercase tracking-[.12em] text-[#75685d]; }
   .synthia-schedule-card { @apply flex-col items-stretch gap-2.5; }
   .synthia-schedule-detail { @apply flex items-center gap-1.5 text-[10px] text-[#9a8b7d]; }
   .synthia-schedule-card > small { @apply border-t border-white/7 pt-2 text-[10px] normal-case tracking-normal text-[#7f7063]; }
-  .synthia-auth-shell { @apply flex min-h-screen items-center justify-center bg-[#15110d] px-5; background-image: radial-gradient(circle at 50% 0%, rgba(249,115,22,.22), transparent 40%); }
-  .synthia-auth-card { @apply w-full max-w-md rounded-[1.75rem] border border-white/10 bg-[#211913] p-8 shadow-2xl; }
+  .synthia-auth-shell { @apply flex min-h-screen items-center justify-center bg-[#0e1716] px-5; background-image: radial-gradient(circle at 50% 0%, rgba(20,184,166,.18), transparent 42%); }
+  .synthia-auth-card { @apply w-full max-w-md rounded-[1.75rem] border border-white/10 bg-[#17221f] p-8 shadow-2xl; }
   .synthia-auth-card h1 { @apply mt-5 text-3xl font-semibold tracking-tight text-[#fff7eb]; }
   .synthia-auth-card p { @apply mt-3 text-sm leading-6 text-[#ae9f91]; }
-  .synthia-eyebrow { @apply text-xs font-semibold uppercase tracking-[.18em] text-orange-300; }
-  .synthia-primary-button { @apply mt-7 gap-2 rounded-xl bg-gradient-to-r from-orange-300 to-orange-500 font-semibold text-[#2c160c] hover:from-orange-200 hover:to-orange-400; }
+  .synthia-eyebrow { @apply text-xs font-semibold uppercase tracking-[.18em] text-cyan-300; }
+  .synthia-primary-button { @apply mt-7 gap-2 rounded-xl bg-gradient-to-r from-teal-400 to-cyan-400 font-semibold text-[#061615] hover:from-teal-300 hover:to-cyan-300; }
   .synthia-auth-actions { @apply mt-7; }
   .synthia-auth-actions .synthia-primary-button { @apply mt-0; }
   .synthia-google-button { @apply mt-2.5 h-10 gap-2 rounded-xl border-white/12 bg-white/[.025] text-xs font-medium text-[#efe5d8] hover:border-white/20 hover:bg-white/[.06]; }
   .synthia-google-glyph { @apply grid h-5 w-5 place-items-center rounded-full bg-white text-[11px] font-bold text-[#3c4043]; }
   .synthia-auth-create { @apply mt-5! text-center text-xs!; }
-  .synthia-auth-create button { @apply font-semibold text-orange-300 hover:text-orange-200; }
+  .synthia-auth-create button { @apply font-semibold text-cyan-300 hover:text-cyan-200; }
   .synthia-auth-actions > small { @apply mt-3 block text-center text-[10px] leading-4 text-[#776a5e]; }
   .synthia-nav.collapsed .synthia-brand-copy, .synthia-nav.collapsed .synthia-new-task span, .synthia-nav.collapsed .synthia-nav-item span, .synthia-nav.collapsed .synthia-task-rail, .synthia-nav.collapsed .synthia-account-copy { @apply sr-only; }
   .synthia-nav.collapsed .synthia-nav-topline { @apply justify-center; }
   .synthia-nav.collapsed .synthia-brand { @apply px-0; }
   .synthia-nav.collapsed .synthia-collapse-button { @apply absolute -right-3 top-4 z-40 border border-white/10 bg-[#24201d] shadow-lg; }
   .synthia-nav.collapsed .synthia-new-task, .synthia-nav.collapsed .synthia-nav-item { @apply justify-center px-0; }
-  .synthia-dashboard { @apply min-h-screen bg-[#171410]; }
-  .synthia-dashboard-header { @apply flex h-13 items-center justify-between gap-3 border-b border-white/7 px-5 sm:px-7; }
+  .synthia-dashboard { @apply min-h-screen bg-[#101716]; }
+  .synthia-dashboard-header { @apply flex h-13 items-center justify-between gap-3 border-b border-white/[.055] px-5 sm:px-7; }
   .synthia-dashboard-header-actions { @apply flex items-center gap-1.5 text-xs text-[#a99a8d]; }
-  .synthia-header-action { @apply grid h-7 w-7 place-items-center rounded-md text-[#887a6d] hover:bg-white/5 hover:text-orange-100 disabled:cursor-not-allowed disabled:opacity-40; }
-  .synthia-header-popover { @apply absolute right-0 top-[calc(100%+.45rem)] z-30 grid min-w-40 gap-1 rounded-lg border border-white/10 bg-[#28231f] p-1.5 shadow-xl; }
+  .synthia-header-action { @apply grid h-7 w-7 place-items-center rounded-md text-[#758985] hover:bg-white/5 hover:text-cyan-100 disabled:cursor-not-allowed disabled:opacity-40; }
+  .synthia-header-popover { @apply absolute right-0 top-[calc(100%+.45rem)] z-30 grid min-w-40 gap-1 rounded-lg border border-white/10 bg-[#1d2927] p-1.5 shadow-xl; }
   .synthia-header-popover b { @apply px-1.5 pt-0.5 text-[11px] font-medium text-[#ede2d5]; }
   .synthia-header-popover span { @apply px-1.5 pb-1 text-[10px] text-[#9b8b7d]; }
-  .synthia-header-popover button { @apply rounded-md px-1.5 py-1.5 text-left text-[11px] text-[#dacdbf] hover:bg-orange-400/10 hover:text-orange-100; }
-  .synthia-control-plane { @apply ml-1 hidden items-center gap-2 text-xs text-[#a99a8d] sm:inline-flex; }
-  .synthia-chat-stage { @apply mx-auto flex w-full max-w-[780px] flex-col items-center px-5 pb-12 pt-[clamp(3.5rem,10vh,7.5rem)] sm:px-8; }
-  .synthia-plan-chip { @apply mb-7 inline-flex items-center gap-2 rounded-full bg-white/[.035] px-3 py-1 text-[11px] text-[#897b6f]; }
-  .synthia-chat-stage .synthia-eyebrow { @apply mb-3 mt-0 flex items-center gap-1.5 text-[10px]; }
-  .synthia-chat-stage h1 { font-family: Georgia, "Times New Roman", serif; @apply text-center text-[clamp(2rem,4.2vw,3.25rem)] leading-[1.05] tracking-[-.04em] text-[#f6ecdf]; }
-  .synthia-chat-intro { @apply mt-3 text-center text-sm text-[#948578]; }
-  .synthia-chat-composer { @apply mt-8 w-full rounded-2xl border border-white/10 bg-[#201d1a] p-3 shadow-[0_18px_56px_rgba(0,0,0,.22)]; }
-  .synthia-chat-input { @apply min-h-24 w-full resize-none border-0 bg-transparent px-2 py-2 text-sm leading-6 text-[#f7ede0] placeholder:text-[#776a5e] focus-visible:ring-0; }
+  .synthia-header-popover button { @apply rounded-md px-1.5 py-1.5 text-left text-[11px] text-[#cce0db] hover:bg-teal-400/10 hover:text-cyan-100; }
+  .synthia-control-plane { @apply ml-1 hidden items-center gap-1.5 text-[11px] text-[#8d8175] sm:inline-flex; }
+  .synthia-chat-stage { @apply mx-auto flex w-full max-w-[736px] flex-col items-center px-5 pb-16 pt-[clamp(3.25rem,8vh,6.25rem)] sm:px-8; }
+  .synthia-workspace-kicker { @apply mb-4 flex items-center gap-1.5 text-[10px] font-medium tracking-[.08em] text-[#938477]; }
+  .synthia-workspace-kicker svg { @apply text-cyan-300; }
+  .synthia-chat-stage h1 { font-family: Georgia, "Times New Roman", serif; @apply text-center text-[clamp(2rem,4vw,3rem)] leading-[1.08] tracking-[-.035em] text-[#f6ecdf]; }
+  .synthia-chat-intro { @apply mt-3 max-w-md text-center text-[13px] leading-5 text-[#948578]; }
+  .synthia-chat-composer { @apply mt-8 w-full rounded-xl border border-white/[.09] bg-[#17201f] p-3 shadow-[0_12px_38px_rgba(0,0,0,.18)]; }
+  .synthia-chat-input { @apply min-h-26 w-full resize-none border-0 bg-transparent px-2 py-2 text-sm leading-6 text-[#eef9f6] placeholder:text-[#6e817d] focus-visible:ring-0; }
   .synthia-attachment-chips { @apply flex flex-wrap gap-1.5 px-2 pb-2; }
-  .synthia-attachment-chip { @apply inline-flex max-w-full items-center gap-1 rounded-md border border-orange-300/18 bg-orange-400/[.07] py-1 pl-1.5 pr-1 text-[10px] text-orange-100; }
+  .synthia-attachment-chip { @apply inline-flex max-w-full items-center gap-1 rounded-md border border-teal-300/18 bg-teal-400/[.07] py-1 pl-1.5 pr-1 text-[10px] text-cyan-100; }
   .synthia-attachment-chip > span { @apply max-w-45 truncate; }
-  .synthia-attachment-chip button { @apply grid h-4 w-4 place-items-center rounded text-orange-200 hover:bg-orange-300/15 hover:text-orange-50 focus-visible:ring-1 focus-visible:ring-orange-200; }
-  .synthia-composer-actions { @apply flex flex-wrap items-center justify-between gap-2 border-t border-white/7 pt-2; }
+  .synthia-attachment-chip button { @apply grid h-4 w-4 place-items-center rounded text-cyan-200 hover:bg-teal-300/15 hover:text-cyan-50 focus-visible:ring-1 focus-visible:ring-cyan-200; }
+  .synthia-composer-actions { @apply flex flex-wrap items-center justify-between gap-2 border-t border-white/[.06] pt-2; }
   .synthia-composer-control-group { @apply flex min-w-0 items-center gap-1; }
   .synthia-composer-control-group-end { @apply ml-auto; }
-  .synthia-composer-toggle { @apply inline-flex h-7 shrink-0 items-center gap-1.5 rounded-md border border-transparent px-2 text-[11px] text-[#8f8173] hover:bg-white/5 hover:text-[#e9ddcf]; }
-  .synthia-composer-toggle.active { @apply border-orange-300/25 bg-orange-400/10 text-orange-200; }
-  .synthia-composer-plus { @apply grid h-7 w-7 place-items-center rounded-md border border-white/9 bg-white/[.025] text-[#b9a99a] hover:border-orange-300/30 hover:bg-orange-400/10 hover:text-orange-100; }
-  .synthia-composer-plus.active { @apply border-orange-300/35 bg-orange-400/12 text-orange-100; }
-  .synthia-send-button { @apply h-8 w-8 shrink-0 rounded-full bg-gradient-to-br from-orange-200 to-orange-500 text-[#2b170d] hover:from-orange-100 hover:to-orange-400; }
-  .synthia-attachment-menu { @apply absolute bottom-full left-0 z-20 grid w-45 overflow-hidden rounded-lg border border-white/10 bg-[#28231f] p-1 shadow-xl; }
-  .synthia-attachment-menu button { @apply flex h-8 items-center gap-2 rounded-md px-2 text-left text-[11px] text-[#dacdbf] hover:bg-orange-400/10 hover:text-orange-100; }
-  .synthia-project-select { @apply h-7 max-w-32 rounded-md border border-white/8 bg-[#1a1714] px-2 text-[10px] text-[#a89788] outline-none hover:border-orange-300/25 focus:border-orange-300/40; }
+  .synthia-composer-toggle { @apply inline-flex h-7 shrink-0 items-center gap-1.5 rounded-md border border-transparent px-2 text-[11px] text-[#8f8173] hover:bg-white/[.045] hover:text-[#e9ddcf]; }
+  .synthia-composer-toggle.active { @apply border-teal-300/25 bg-teal-400/10 text-cyan-200; }
+  .synthia-composer-plus { @apply grid h-7 w-7 place-items-center rounded-md border border-white/9 bg-white/[.025] text-[#a7bbb7] hover:border-teal-300/30 hover:bg-teal-400/10 hover:text-cyan-100; }
+  .synthia-composer-plus.active { @apply border-teal-300/35 bg-teal-400/12 text-cyan-100; }
+  .synthia-send-button { @apply h-8 w-8 shrink-0 rounded-full bg-gradient-to-br from-teal-300 to-cyan-400 text-[#061615] hover:from-teal-200 hover:to-cyan-300; }
+  .synthia-attachment-menu { @apply absolute bottom-full left-0 z-20 grid w-45 overflow-hidden rounded-lg border border-white/10 bg-[#1d2927] p-1 shadow-xl; }
+  .synthia-attachment-menu button { @apply flex h-8 items-center gap-2 rounded-md px-2 text-left text-[11px] text-[#cce0db] hover:bg-teal-400/10 hover:text-cyan-100; }
+  .synthia-project-select { @apply h-7 max-w-32 rounded-md border border-white/8 bg-[#141c1b] px-2 text-[10px] text-[#9cb2ad] outline-none hover:border-teal-300/25 focus:border-cyan-300/40; }
+  .synthia-task-controls-menu { @apply absolute bottom-[calc(100%+.4rem)] left-0 z-30 grid w-64 gap-1 rounded-lg border border-white/10 bg-[#1d2927] p-1.5 shadow-xl; }
+  .synthia-task-controls-menu > p { @apply px-2 py-1 text-[9px] font-semibold uppercase tracking-[.14em] text-[#786b5e]; }
+  .synthia-task-controls-menu > button { @apply flex items-start gap-2 rounded-md px-2 py-2 text-left hover:bg-teal-400/10; }
+  .synthia-task-controls-menu > button svg { @apply mt-0.5 shrink-0 text-cyan-200; }
+  .synthia-task-controls-menu > button span { @apply min-w-0; }
+  .synthia-task-controls-menu > button b { @apply block text-[11px] font-medium text-[#eee2d3]; }
+  .synthia-task-controls-menu > button small { @apply mt-0.5 block text-[10px] text-[#8e8073]; }
+  .synthia-task-controls-menu > button.active { @apply bg-teal-400/10; }
+  .synthia-control-choice-group { @apply mx-2 mt-1 border-t border-white/[.07] py-2; }
+  .synthia-control-choice-group > span { @apply mb-1.5 block text-[10px] text-[#8e8073]; }
+  .synthia-control-choice-group button { @apply mr-1.5 rounded-md border border-white/[.08] px-2 py-1 text-[10px] text-[#9f9081] hover:text-[#eee2d3]; }
+  .synthia-control-choice-group button.active { @apply border-teal-300/25 bg-teal-400/10 text-cyan-100; }
+  .synthia-task-controls-menu label { @apply mx-2 mb-1 grid gap-1 border-t border-white/[.07] pt-2 text-[10px] text-[#8e8073]; }
+  .synthia-task-controls-menu select { @apply h-7 rounded-md border border-white/[.08] bg-[#141c1b] px-2 text-[10px] text-[#bed3ce] outline-none; }
   .synthia-model-trigger { @apply max-w-40; }
   .synthia-model-trigger span { @apply max-w-23 truncate; }
-  .synthia-model-menu { @apply absolute bottom-[calc(100%+.4rem)] right-0 z-20 grid w-57 overflow-hidden rounded-lg border border-white/10 bg-[#28231f] p-1 shadow-xl; }
-  .synthia-model-menu button { @apply grid gap-0.5 rounded-md px-2 py-1.5 text-left hover:bg-orange-400/10; }
-  .synthia-model-menu button.active { @apply bg-orange-400/10; }
+  .synthia-model-menu { @apply absolute bottom-[calc(100%+.4rem)] right-0 z-20 grid w-57 overflow-hidden rounded-lg border border-white/10 bg-[#1d2927] p-1 shadow-xl; }
+  .synthia-model-menu button { @apply grid gap-0.5 rounded-md px-2 py-1.5 text-left hover:bg-teal-400/10; }
+  .synthia-model-menu button.active { @apply bg-teal-400/10; }
   .synthia-model-menu b { @apply truncate text-[11px] font-medium text-[#eee2d3]; }
   .synthia-model-menu small, .synthia-model-menu p { @apply text-[10px] leading-4 text-[#8e8073]; }
   .synthia-model-menu p { @apply p-2; }
   .synthia-media-menu { @apply w-72 gap-1 p-1.5; }
   .synthia-media-capability { @apply flex items-start gap-2 rounded-md border border-white/6 bg-white/[.018] px-2 py-2; }
-  .synthia-media-capability > svg { @apply mt-0.5 shrink-0 text-orange-200; }
+  .synthia-media-capability > svg { @apply mt-0.5 shrink-0 text-cyan-200; }
   .synthia-media-capability > span { @apply min-w-0 flex-1; }
   .synthia-media-capability b { @apply block truncate text-[11px] font-medium text-[#eee2d3]; }
   .synthia-media-capability small { @apply mt-0.5 block leading-4 text-[#8e8073]; }
   .synthia-media-capability em { @apply shrink-0 rounded-full border px-1.5 py-0.5 text-[9px] not-italic; }
   .synthia-media-capability em.ready { @apply border-emerald-300/20 bg-emerald-400/[.08] text-emerald-200; }
-  .synthia-media-capability em.pending { @apply border-amber-300/20 bg-amber-400/[.08] text-amber-200; }
+  .synthia-media-capability em.pending { @apply border-teal-300/20 bg-teal-400/[.08] text-cyan-200; }
   .synthia-mic-button { @apply grid w-7 place-items-center px-0; }
   .synthia-recording-dot { @apply h-1.5 w-1.5 rounded-full bg-rose-300; }
   .synthia-estimate { @apply mt-2 px-1 text-[11px] text-[#7d6f62]; }
-  .synthia-estimate span { @apply text-orange-200; }
-  .synthia-prompt-chips { @apply mt-4 flex w-full flex-wrap justify-center gap-1.5; }
-  .synthia-prompt-chips button { @apply rounded-full border border-white/8 px-3 py-1.5 text-[11px] text-[#aaa094] hover:border-orange-300/25 hover:bg-orange-300/[.04] hover:text-orange-100; }
+  .synthia-estimate span { @apply text-cyan-200; }
+  .synthia-prompt-chips { @apply mt-5 flex w-full flex-wrap justify-center gap-1.5; }
+  .synthia-prompt-chips button { @apply rounded-full border border-white/[.075] px-3 py-1.5 text-[11px] text-[#a6b6b2] hover:border-teal-300/25 hover:bg-teal-300/[.04] hover:text-cyan-100; }
   .synthia-prompt-more { @apply inline-flex items-center gap-1.5; }
-  .synthia-prompt-more.active { @apply border-orange-300/30 bg-orange-300/[.06] text-orange-100; }
-  .synthia-capability-menu { @apply absolute bottom-[calc(100%+.45rem)] right-0 z-30 grid w-72 max-h-[min(29rem,calc(100vh-10rem))] overflow-y-auto rounded-xl border border-white/10 bg-[#28231f] p-1.5 text-left shadow-xl; }
-  .synthia-capability-menu button { @apply flex items-start gap-2 rounded-lg border border-transparent px-2.5 py-2 text-left hover:border-orange-300/15 hover:bg-orange-400/10; }
-  .synthia-capability-menu button > svg { @apply mt-0.5 shrink-0 text-orange-200; }
+  .synthia-prompt-more.active { @apply border-teal-300/30 bg-teal-300/[.06] text-cyan-100; }
+  .synthia-capability-menu { @apply absolute bottom-[calc(100%+.45rem)] right-0 z-30 grid w-72 max-h-[min(29rem,calc(100vh-10rem))] overflow-y-auto rounded-xl border border-white/10 bg-[#1d2927] p-1.5 text-left shadow-xl; }
+  .synthia-capability-menu button { @apply flex items-start gap-2 rounded-lg border border-transparent px-2.5 py-2 text-left hover:border-teal-300/15 hover:bg-teal-400/10; }
+  .synthia-capability-menu button > svg { @apply mt-0.5 shrink-0 text-cyan-200; }
   .synthia-capability-menu button > span { @apply min-w-0; }
   .synthia-capability-menu b { @apply block text-[11px] font-medium text-[#eee2d3]; }
   .synthia-capability-menu small { @apply mt-0.5 block text-[10px] leading-4 text-[#8e8073]; }
   .synthia-capability-menu p { @apply border-t border-white/7 px-2.5 pb-1 pt-2 text-[10px] leading-4 text-[#8e8073]; }
-  .synthia-dashboard-tasks { @apply mt-9 w-full; }
+  .synthia-dashboard-tasks { @apply mt-12 w-full border-t border-white/[.055] pt-5; }
   .synthia-section-heading { @apply mb-2 flex items-center justify-between px-1; }
   .synthia-section-heading h2 { @apply text-xs font-semibold text-[#eee3d7]; }
   .synthia-section-heading span { @apply text-[11px] text-[#75685d]; }
   .synthia-loading-row, .synthia-empty-tasks, .synthia-unavailable-note { @apply flex items-center gap-2 rounded-lg border border-white/7 bg-white/[.018] px-3 py-3 text-xs text-[#8e8073]; }
-  .synthia-unavailable-note { @apply border-amber-300/12 bg-amber-300/[.035] text-[#bfae97]; }
-  .synthia-task-row { @apply flex w-full items-center gap-3 rounded-lg border border-transparent px-2.5 py-2 text-left hover:border-white/8 hover:bg-white/[.025]; }
+  .synthia-unavailable-note { @apply border-teal-300/12 bg-teal-400/[.035] text-[#9ab5af]; }
+  .synthia-task-row { @apply flex w-full items-center gap-3 rounded-lg border border-transparent px-2.5 py-2.5 text-left hover:border-white/[.07] hover:bg-white/[.02]; }
   .synthia-task-row b { @apply block truncate text-xs font-medium text-[#eee3d7]; }
   .synthia-task-row small { @apply mt-0.5 block truncate text-[11px] text-[#817368]; }
-  .synthia-workspace { @apply min-h-screen overflow-hidden bg-[#171410]; }
+  .synthia-workspace { @apply min-h-screen overflow-hidden bg-[#101817]; }
   .synthia-workspace-header { @apply flex h-14 items-center justify-between gap-3 border-b border-white/8 px-4 sm:px-5; }
   .synthia-workspace-return-nav { @apply flex items-center gap-1; }
-  .synthia-workspace-return-nav button { @apply inline-flex h-6 items-center gap-1 rounded-md px-1.5 text-[10px] text-[#a69788] hover:bg-white/5 hover:text-orange-200; }
+  .synthia-workspace-return-nav button { @apply inline-flex h-6 items-center gap-1 rounded-md px-1.5 text-[10px] text-[#9db0ac] hover:bg-white/5 hover:text-cyan-200; }
   .synthia-utility-page { @apply min-h-screen px-4 py-4 sm:px-6 sm:py-5; }
   .synthia-utility-header { @apply border-b border-white/8 pb-4; }
   .synthia-settings-header { @apply flex items-start justify-between gap-5; }
-  .synthia-utility-header > p { @apply text-[10px] font-semibold uppercase tracking-[.18em] text-orange-300; }
+  .synthia-utility-header > p { @apply text-[10px] font-semibold uppercase tracking-[.18em] text-cyan-300; }
   .synthia-utility-header h1 { @apply mt-1 text-xl font-semibold tracking-tight text-[#fff7eb]; }
   .synthia-utility-header > span { @apply mt-1.5 block text-xs text-[#a9998a]; }
-  .synthia-settings-close { @apply grid h-8 w-8 shrink-0 place-items-center rounded-lg border border-white/10 bg-white/[.025] text-[#a9998a] hover:border-orange-300/30 hover:bg-orange-400/10 hover:text-orange-100 focus-visible:ring-2 focus-visible:ring-orange-300/70; }
-  .synthia-library-card { @apply flex min-h-[164px] flex-col rounded-lg border border-white/8 bg-[#1e1a17] p-3 text-left hover:border-orange-300/25; }
+  .synthia-settings-close { @apply grid h-8 w-8 shrink-0 place-items-center rounded-lg border border-white/10 bg-white/[.025] text-[#9aafaa] hover:border-teal-300/30 hover:bg-teal-400/10 hover:text-cyan-100 focus-visible:ring-2 focus-visible:ring-cyan-300/70; }
+  .synthia-library-card { @apply flex min-h-[164px] flex-col rounded-lg border border-white/8 bg-[#17211f] p-3 text-left hover:border-teal-300/25; }
   .synthia-library-workspace { @apply flex min-h-0 flex-1 flex-col text-left; }
   .synthia-library-card h2 { @apply mt-3 truncate text-xs font-semibold text-[#f4e8d9]; }
   .synthia-library-card p { @apply mt-1 line-clamp-2 text-[11px] leading-5 text-[#9e8f80]; }
-  .synthia-library-card span { @apply mt-3 block text-[11px] text-orange-200; }
+  .synthia-library-card span { @apply mt-3 block text-[11px] text-cyan-200; }
   .synthia-library-card small { @apply mt-1 block truncate text-[10px] text-[#75685d]; }
-  .synthia-library-filter { @apply h-9 shrink-0 rounded-md border border-white/9 px-2.5 text-[11px] text-[#a79687] hover:border-orange-300/25 hover:text-orange-100; }
-  .synthia-library-filter.active { @apply border-orange-300/30 bg-orange-400/[.09] text-orange-100; }
-  .synthia-library-open { @apply mt-3 flex h-7 items-center justify-center gap-1.5 rounded-md border border-orange-300/20 bg-orange-300/[.06] px-2 text-[11px] font-medium text-orange-200 transition-colors hover:border-orange-300/40 hover:bg-orange-300/[.12] disabled:cursor-not-allowed disabled:border-white/10 disabled:bg-white/[.03] disabled:text-[#8b7c6e]; }
+  .synthia-library-filter { @apply h-9 shrink-0 rounded-md border border-white/9 px-2.5 text-[11px] text-[#9bafaa] hover:border-teal-300/25 hover:text-cyan-100; }
+  .synthia-library-filter.active { @apply border-teal-300/30 bg-teal-400/[.09] text-cyan-100; }
+  .synthia-library-open { @apply mt-3 flex h-7 items-center justify-center gap-1.5 rounded-md border border-teal-300/20 bg-teal-300/[.06] px-2 text-[11px] font-medium text-cyan-200 transition-colors hover:border-cyan-300/40 hover:bg-teal-300/[.12] disabled:cursor-not-allowed disabled:border-white/10 disabled:bg-white/[.03] disabled:text-[#71837f]; }
   .synthia-library-final, .synthia-library-type { @apply mt-0! inline-flex! items-center gap-1 rounded-full border px-1.5 py-0.5 text-[9px]!; }
   .synthia-library-final { @apply border-emerald-300/20 bg-emerald-400/[.08] text-emerald-200!; }
   .synthia-library-type { @apply border-white/8 bg-white/[.025] text-[#a99888]!; }
-  .synthia-library-picker { @apply max-w-xl border-white/10 bg-[#211c18] p-4 text-[#eee3d7] sm:max-w-xl; }
+  .synthia-library-picker { @apply max-w-xl border-white/10 bg-[#192522] p-4 text-[#e6f4f1] sm:max-w-xl; }
   .synthia-library-picker [data-slot="dialog-title"] { @apply text-sm text-[#fff4e7]; }
   .synthia-library-picker [data-slot="dialog-description"] { @apply text-xs leading-5 text-[#9e8e7f]; }
   .synthia-library-picker-controls { @apply flex gap-2; }
@@ -243,24 +258,41 @@ button:not(:disabled):active { transform: scale(.97); }
   .synthia-library-picker-item b { @apply block truncate text-xs font-medium text-[#eee3d7]; }
   .synthia-library-picker-item p { @apply mt-0.5 truncate text-[11px] text-[#a69586]; }
   .synthia-library-picker-item small { @apply mt-1 block text-[10px] text-[#75685d]; }
-  .synthia-plugin-tabs { @apply flex h-9 shrink-0 items-center rounded-md border border-white/8 bg-[#1c1815] p-0.5; }
+  .synthia-plugin-tabs { @apply flex h-9 shrink-0 items-center rounded-md border border-white/8 bg-[#16201e] p-0.5; }
   .synthia-plugin-tabs button { @apply h-7 rounded px-2 text-[10px] text-[#9a8a7b] hover:text-[#eadfd2]; }
-  .synthia-plugin-tabs button[aria-selected="true"] { @apply bg-orange-400/12 text-orange-100; }
-  .synthia-connected-integration { @apply flex items-center justify-between gap-3 rounded-lg border border-white/8 bg-[#1d1a17] px-3 py-2.5; }
+  .synthia-plugin-tabs button[aria-selected="true"] { @apply bg-teal-400/12 text-cyan-100; }
+  .synthia-connected-integration { @apply flex items-center justify-between gap-3 rounded-lg border border-white/8 bg-[#17201f] px-3 py-2.5; }
   .synthia-connected-integration b { @apply block text-xs font-semibold text-[#eee3d7]; }
   .synthia-connected-integration p { @apply mt-1 text-[11px] text-[#938477]; }
-  .synthia-agent-task { @apply flex w-full items-center justify-between gap-3 rounded-lg border border-white/8 bg-[#1d1a17] px-3 py-2.5 text-left hover:border-orange-300/25; }
+  .synthia-agent-task { @apply flex w-full items-center justify-between gap-3 rounded-lg border border-white/8 bg-[#17201f] px-3 py-2.5 text-left hover:border-teal-300/25; }
   .synthia-agent-task b { @apply block truncate text-xs font-semibold text-[#eee3d7]; }
   .synthia-agent-task small { @apply mt-1 block truncate text-[11px] text-[#938477]; }
-  .synthia-status-pill { @apply shrink-0 rounded-full border border-orange-300/15 bg-orange-400/[.06] px-2 py-0.5 text-[9px] capitalize text-orange-100; }
+  .synthia-status-pill { @apply shrink-0 rounded-full border border-teal-300/15 bg-teal-400/[.06] px-2 py-0.5 text-[9px] capitalize text-cyan-100; }
   .synthia-settings-nav { @apply grid grid-cols-2 gap-1 lg:block; }
   .synthia-settings-group { @apply mb-3 last:mb-0; }
   .synthia-settings-group > p { @apply mb-1 px-2.5 text-[9px] font-semibold uppercase tracking-[.15em] text-[#75685d]; }
   .synthia-settings-nav button { @apply flex h-8 w-full items-center gap-2 rounded-md px-2.5 text-left text-[11px] text-[#a79687] hover:bg-white/5 hover:text-[#ece0d1]; }
-  .synthia-settings-nav button.active { @apply bg-orange-400/10 text-orange-200; }
-  .synthia-settings-panel { @apply min-w-0 rounded-xl border border-white/8 bg-[#1d1a17] p-4 shadow-[0_12px_32px_rgba(0,0,0,.12)] sm:p-5; }
+  .synthia-settings-nav button.active { @apply bg-teal-400/10 text-cyan-200; }
+  .synthia-settings-panel { @apply min-w-0 rounded-xl border border-white/[.07] bg-[#17211f] p-4 shadow-none sm:p-5; }
   .synthia-settings-panel h2 { @apply text-base font-semibold text-[#f6ebdc]; }
   .synthia-settings-panel p { @apply text-xs; }
 }
+
+/* Palette bridge: legacy task-workspace utilities inherit Synthia's calm signal colors.
+   Amber stays reserved for a recorded approval gate and the explicit visual-input blocker. */
+:where(.synthia-workspace, .synthia-utility-page) [class~="text-orange-100"] { color: #cffafe !important; }
+:where(.synthia-workspace, .synthia-utility-page) [class~="text-orange-200"],
+:where(.synthia-workspace, .synthia-utility-page) [class~="text-orange-300"] { color: #67e8f9 !important; }
+:where(.synthia-workspace, .synthia-utility-page) [class~="bg-orange-400"] { background-color: #14b8a6 !important; }
+:where(.synthia-workspace, .synthia-utility-page) [class~="hover:bg-orange-300"]:hover { background-color: #22d3ee !important; }
+:where(.synthia-workspace, .synthia-utility-page) [class~="border-orange-300/15"],
+:where(.synthia-workspace, .synthia-utility-page) [class~="hover:border-orange-300/25"]:hover { border-color: color-mix(in srgb, #22d3ee 26%, transparent) !important; }
+:where(.synthia-workspace, .synthia-utility-page) [class~="bg-orange-300/[.04]"] { background-color: color-mix(in srgb, #14b8a6 7%, transparent) !important; }
+:where(.synthia-workspace, .synthia-utility-page) [class~="accent-orange-400"] { accent-color: #14b8a6 !important; }
+:where(.synthia-workspace, .synthia-utility-page) [class~="bg-orange-400/15"] { background-color: color-mix(in srgb, #14b8a6 15%, transparent) !important; }
+
+/* Deliberate amber allowlist for high-attention decision points. */
+.synthia-workspace article:has(.text-amber-100),
+p[role="alert"].text-amber-200 { --synthia-amber-allowed: 1; }
 
 @media (prefers-reduced-motion: no-preference) { .synthia-nav-item, .synthia-task-rail-item, button { transition-duration: 160ms; transition-timing-function: cubic-bezier(.23,1,.32,1); } }

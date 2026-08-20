@@ -22,8 +22,8 @@ const navItems = [
 const stateDot: Record<string, string> = {
   queued: "bg-amber-500",
   booting: "bg-amber-500",
-  planning: "bg-orange-500",
-  running: "bg-orange-500 animate-pulse",
+  planning: "bg-teal-500",
+  running: "bg-teal-500 animate-pulse",
   needs_input: "bg-rose-500",
   paused: "bg-zinc-400",
   completed: "bg-emerald-500",
@@ -82,7 +82,7 @@ export function SynthiaAppShell({ children }: { children: ReactNode }) {
         <section className="synthia-auth-card text-center">
           <div className="synthia-logo-mark mx-auto"><Sparkles size={20} /></div>
           <h1>Opening your workspace</h1>
-          <p className="flex items-center justify-center gap-2"><Loader2 className="animate-spin text-orange-300" size={15} />Checking your authenticated session…</p>
+          <p className="flex items-center justify-center gap-2"><Loader2 className="animate-spin text-cyan-300" size={15} />Checking your authenticated session…</p>
         </section>
       </main>
     );
