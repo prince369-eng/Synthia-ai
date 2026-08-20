@@ -45,7 +45,7 @@ export function systemServiceReadiness(): ServiceReadiness[] {
     service("tavily", "Tavily", "search", Boolean(ENV.tavilyApiKey), ENV.searchPrimary === "tavily", ["TAVILY_API_KEY"]),
     service("serper", "Serper", "search", Boolean(ENV.serperApiKey), ENV.searchPrimary === "serper", ["SERPER_API_KEY"]),
     service("redis", "Redis", "queue", Boolean(ENV.redisUrl), Boolean(ENV.redisUrl), ["REDIS_URL"]),
-    service("e2b", "E2B", "sandbox", Boolean(ENV.e2bApiKey), ENV.sandboxProvider === "e2b" || (ENV.sandboxProvider === "auto" && Boolean(ENV.e2bApiKey)), ["E2B_API_KEY", "E2B_TEMPLATE_ID"]),
+    service("e2b", "E2B", "sandbox", Boolean(ENV.e2bApiKey && ENV.e2bTemplateId), ENV.sandboxProvider === "e2b" || (ENV.sandboxProvider === "auto" && Boolean(ENV.e2bApiKey && ENV.e2bTemplateId)), ["E2B_API_KEY", "E2B_TEMPLATE_ID"], !ENV.e2bApiKey || !ENV.e2bTemplateId ? "Disabled until a secure E2B key and one approved template are configured. Bunnyshell HopX remains a separate sandbox option." : undefined),
     service("hopx", "Bunnyshell HopX", "sandbox", Boolean(ENV.hopxApiKey && ENV.hopxTemplateId), ENV.sandboxProvider === "hopx" || (ENV.sandboxProvider === "auto" && !ENV.e2bApiKey && Boolean(ENV.hopxApiKey && ENV.hopxTemplateId)), ["HOPX_API_KEY", "HOPX_TEMPLATE_ID"]),
     service("hyperbrowser", "Hyperbrowser Agent Browser", "sandbox", Boolean(ENV.hyperbrowserApiKey), ENV.agentBrowserProvider === "hyperbrowser" && (ENV.hyperbrowserPublicWebAccess || ENV.hyperbrowserAllowedHosts.length > 0), ["HYPERBROWSER_API_KEY", "SYNTHIA_AGENT_BROWSER_PROVIDER", "SYNTHIA_HYPERBROWSER_TIMEOUT_MINUTES", "SYNTHIA_HYPERBROWSER_PUBLIC_WEB_ACCESS", "SYNTHIA_HYPERBROWSER_ALLOWED_HOSTS"], ENV.hyperbrowserApiKey && ENV.agentBrowserProvider === "hyperbrowser" && !ENV.hyperbrowserPublicWebAccess && ENV.hyperbrowserAllowedHosts.length === 0 ? "Credential stored. Enable guarded public-web research or add an explicit allowed-domain policy before Synthia can create a remote browser session." : undefined),
     service("pixazo", "Pixazo", "model", Boolean(ENV.pixazoApiKey), Boolean(ENV.pixazoApiKey && ENV.pixazoGenerationEnabled && (ENV.pixazoImageModels.length > 0 || ENV.pixazoVideoModels.length > 0 || ENV.pixazoAudioModels.length > 0)), ["PIXAZO_API_KEY", "PIXAZO_IMAGE_MODELS", "PIXAZO_VIDEO_MODELS", "PIXAZO_AUDIO_MODELS", "SYNTHIA_PIXAZO_GENERATION_ENABLED"], ENV.pixazoApiKey && !ENV.pixazoGenerationEnabled ? "Credential stored. Add a model allowlist and explicitly enable media generation before image, video, or audio requests can run." : undefined),
@@ -54,6 +54,7 @@ export function systemServiceReadiness(): ServiceReadiness[] {
     service("resend", "Resend", "notification", Boolean(ENV.resendApiKey && ENV.emailFrom), ENV.emailPrimary === "resend", ["RESEND_API_KEY", "SYNTHIA_EMAIL_FROM"]),
     service("postmark", "Postmark", "notification", Boolean(ENV.postmarkServerToken && ENV.emailFrom), ENV.emailPrimary === "postmark", ["POSTMARK_SERVER_TOKEN", "SYNTHIA_EMAIL_FROM"]),
     service("github", "GitHub", "integration", Boolean(process.env.GITHUB_OAUTH_CLIENT_ID && process.env.GITHUB_OAUTH_CLIENT_SECRET), false, ["GITHUB_OAUTH_CLIENT_ID", "GITHUB_OAUTH_CLIENT_SECRET"]),
+    service("supadata", "Public media understanding", "integration", Boolean(ENV.supadataApiKey), Boolean(ENV.supadataApiKey), ["SUPADATA_API_KEY"], ENV.supadataApiKey ? "Understand user-submitted public YouTube, TikTok, Instagram, Facebook, and X video links when a task starts." : "Add a Supadata key to understand eligible public video links after the user starts a task."),
     service("google", "Google", "integration", Boolean(process.env.GOOGLE_OAUTH_CLIENT_ID && process.env.GOOGLE_OAUTH_CLIENT_SECRET), false, ["GOOGLE_OAUTH_CLIENT_ID", "GOOGLE_OAUTH_CLIENT_SECRET"]),
     service("notion", "Notion", "integration", Boolean(process.env.NOTION_OAUTH_CLIENT_ID && process.env.NOTION_OAUTH_CLIENT_SECRET), false, ["NOTION_OAUTH_CLIENT_ID", "NOTION_OAUTH_CLIENT_SECRET"]),
     service("slack", "Slack", "integration", Boolean(process.env.SLACK_OAUTH_CLIENT_ID && process.env.SLACK_OAUTH_CLIENT_SECRET), false, ["SLACK_OAUTH_CLIENT_ID", "SLACK_OAUTH_CLIENT_SECRET"]),
@@ -62,7 +63,7 @@ export function systemServiceReadiness(): ServiceReadiness[] {
 
 export function serviceReadinessForUser(connections: UserServiceConnection[], now = new Date()): ServiceReadiness[] {
   return systemServiceReadiness().map(service => {
-    if (service.category !== "integration") return service;
+    if (service.category !== "integration" || service.id === "supadata") return service;
     const connected = connections.some(connection => connection.provider.toLowerCase() === service.id && (!connection.expiresAt || connection.expiresAt > now));
     const status = connected ? "connected" : service.configured ? "ready_to_connect" : "missing_credentials";
     return { ...service, active: connected, status };

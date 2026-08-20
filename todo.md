@@ -3026,10 +3026,16 @@
 - [ ] Apply the user-approved documented Pixazo, AIHubMix, Agnes AI, and safeguarded public-web values through the direct configuration workaround, then verify readiness without invoking a workload.
 
 ## Automatic modality routing and composer refinement
-
 - [x] Classify natural-language task intent into text, vision, image-generation, video-generation, audio-generation, or voice-input routes without invoking a provider during classification.
 - [x] Select only a configured and ready modality route automatically; retain manual model selection as an explicit override and preserve user-started confirmation before any quota-consuming media action.
 - [x] Connect the selected Automatic modality route to the task request and worker contract without routing unsupported or unavailable providers.
 - [x] Rebuild the expanded More menu as a compact two-column, bounded scroll region with cyan/teal scroll affordances and keyboard-accessible options.
 - [x] Replace the static workspace headline with a dynamic, user-name-aware greeting and varied helpful task prompt that remains deterministic enough for accessible testing.
 - [x] Add deterministic routing and composer UI regressions, then verify desktop and mobile presentation without invoking inference, media generation, or browser automation.
+
+## Supadata public-media understanding and sandbox availability
+- [x] Keep E2B unavailable until an `E2B_API_KEY` and a single approved template ID are securely configured; retain Bunnyshell HopX as the separately credential-gated alternate sandbox option.
+- [x] Review Supadata’s official API documentation and verify its supported URL, transcript, and content-understanding contracts before adding an adapter.
+- [x] Add a server-side, user-scoped Supadata integration for approved public social and video URLs with SSRF protections, input validation, rate limits, bounded payloads, and no secret exposure.
+- [x] Surface the capability as a truthful user-facing task tool with explicit unavailable state until `SUPADATA_API_KEY` is securely configured.
+- [x] Add quota-safe adapter, authorization, URL-policy, and interface regressions; do not call Supadata during routine verification.

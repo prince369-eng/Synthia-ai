@@ -411,6 +411,7 @@ export const appRouter = router({
           goal: input.goal,
           attachments,
           media: mediaReadiness(ENV),
+          publicMedia: { configured: Boolean(ENV.supadataApiKey) },
         });
         const autonomySettings = { ...input.autonomySettings, automaticRoute };
         const estimate = estimateTaskCredits({ goal: input.goal, planSteps: plan.length, involvesCode: input.involvesCode });
@@ -639,7 +640,10 @@ export const appRouter = router({
         vision: runtimeConfiguredComposerModels().some(model => model.capabilities.includes("vision")),
       },
     })),
-    media: protectedProcedure.query(() => mediaReadiness(ENV)),
+    media: protectedProcedure.query(() => ({
+      ...mediaReadiness(ENV),
+      publicMedia: { configured: Boolean(ENV.supadataApiKey) },
+    })),
     estimateTask: protectedProcedure
       .input(z.object({ goal: z.string().trim().min(8).max(12_000), planSteps: z.number().int().min(1).max(25), involvesCode: z.boolean() }))
       .query(({ input }) => estimateTaskCredits(input)),

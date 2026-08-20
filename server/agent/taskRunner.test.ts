@@ -22,6 +22,7 @@ const provider = { restore: vi.fn(), execute: vi.fn(), readFile: vi.fn(), writeF
 const llm = { generateWithFallback: vi.fn() };
 const modelCatalog = { runtimeConfiguredComposerModels: vi.fn() };
 const taskMedia = { executeTaskMedia: vi.fn() };
+const supadata = { executeSupadataPublicVideoUnderstanding: vi.fn() };
 
 vi.mock("../db", () => db);
 vi.mock("./queue", () => queue);
@@ -32,6 +33,7 @@ vi.mock("./llm", async importOriginal => {
 });
 vi.mock("./modelCatalog", () => modelCatalog);
 vi.mock("../media/taskMedia", () => taskMedia);
+vi.mock("../integrations/supadata", () => supadata);
 const artifacts = { getTaskArtifactUrl: vi.fn(), putTaskArtifact: vi.fn() };
 vi.mock("./artifactStorage", () => artifacts);
 vi.mock("./notifications", () => ({ notifyTask: vi.fn() }));
@@ -65,6 +67,7 @@ beforeEach(() => {
     { id: "aihubmix:coding-glm-5.2-free", provider: "aihubmix", model: "coding-glm-5.2-free", label: "Configured", capabilities: ["text"] },
   ]);
   taskMedia.executeTaskMedia.mockResolvedValue({ filename: "synthia-video-1.mp4", fileType: "video/mp4", provider: "pixazo", model: "ltx", deliverableId: "deliverable-1" });
+  supadata.executeSupadataPublicVideoUnderstanding.mockResolvedValue({ filename: "synthia-public-video-analysis-1.json", deliverableId: "deliverable-2" });
   artifacts.getTaskArtifactUrl.mockResolvedValue("https://storage.example/task-input.png");
   queue.enqueueTaskCycle.mockResolvedValue(true);
 });
@@ -174,5 +177,23 @@ describe("Synthia task worker recovery", () => {
     expect(taskMedia.executeTaskMedia).toHaveBeenCalledWith(expect.objectContaining({ taskId: "task-1", userId: 7, kind: "video", provider: "pixazo", model: "ltx", prompt: baseTask.goal }));
     expect(llm.generateWithFallback).not.toHaveBeenCalled();
     expect(db.updateTaskForWorker).toHaveBeenLastCalledWith("task-1", expect.objectContaining({ status: "completed", currentStepSummary: "Created synthia-video-1.mp4." }));
+  });
+
+  it("uses the configured Automatic public-video route after the user starts a supported social-video task without invoking the text-model adapter", async () => {
+    db.getTaskById.mockResolvedValue({
+      ...baseTask,
+      goal: "Analyze https://www.youtube.com/watch?v=abc123 and return product lessons.",
+      autonomySettings: {
+        ...baseTask.autonomySettings,
+        automaticRoute: { kind: "public_video", reason: "public_media", requestedKind: "public_video", provider: "supadata", sourceUrl: "https://www.youtube.com/watch?v=abc123" },
+      },
+    });
+    const { runTaskCycle } = await import("./taskRunner");
+
+    await runTaskCycle(baseTask.id);
+
+    expect(supadata.executeSupadataPublicVideoUnderstanding).toHaveBeenCalledWith(expect.objectContaining({ taskId: "task-1", userId: 7, sourceUrl: "https://www.youtube.com/watch?v=abc123" }));
+    expect(llm.generateWithFallback).not.toHaveBeenCalled();
+    expect(db.updateTaskForWorker).toHaveBeenLastCalledWith("task-1", expect.objectContaining({ status: "completed", currentStepSummary: "Created synthia-public-video-analysis-1.json." }));
   });
 });

@@ -11,7 +11,7 @@ const dashboardState = vi.hoisted(() => ({
   taskHistory: { data: [] as unknown[] | undefined, isLoading: false, isError: false },
   taskQueryOptions: undefined as { enabled?: boolean } | undefined,
   models: [] as Array<{ id: string; provider: string; model: string; label: string; capabilities: string[] }>,
-  media: { data: { image: { models: ["flux"], configured: true }, video: { models: ["ltx"], configured: true }, audio: { models: ["tracks"], configured: true } } as { image: { models: string[]; configured: boolean }; video: { models: string[]; configured: boolean }; audio: { models: string[]; configured: boolean } } | undefined, isLoading: false, isError: false },
+  media: { data: { image: { models: ["flux"], configured: true }, video: { models: ["ltx"], configured: true }, audio: { models: ["tracks"], configured: true }, publicMedia: { configured: false } } as { image: { models: string[]; configured: boolean }; video: { models: string[]; configured: boolean }; audio: { models: string[]; configured: boolean }; publicMedia: { configured: boolean } } | undefined, isLoading: false, isError: false },
 }));
 
 vi.mock("@/lib/trpc", () => ({
@@ -47,7 +47,7 @@ afterEach(() => {
   dashboardState.taskHistory = { data: [], isLoading: false, isError: false };
   dashboardState.taskQueryOptions = undefined;
   dashboardState.models = [];
-  dashboardState.media = { data: { image: { models: ["flux"], configured: true }, video: { models: ["ltx"], configured: true }, audio: { models: ["tracks"], configured: true } }, isLoading: false, isError: false };
+  dashboardState.media = { data: { image: { models: ["flux"], configured: true }, video: { models: ["ltx"], configured: true }, audio: { models: ["tracks"], configured: true }, publicMedia: { configured: false } }, isLoading: false, isError: false };
 });
 
 describe("task composer attachments", () => {
@@ -92,6 +92,7 @@ describe("task composer attachments", () => {
     expect(screen.getByText("Image generation")).toBeTruthy();
     expect(screen.getByText("Video generation")).toBeTruthy();
     expect(screen.getByText("Audio generation")).toBeTruthy();
+    expect(screen.getByText("Public video understanding")).toBeTruthy();
     expect(screen.getByText("Ready · flux")).toBeTruthy();
     expect(screen.getByText("Ready · ltx")).toBeTruthy();
     expect(screen.getByText("Ready · tracks")).toBeTruthy();
@@ -132,7 +133,7 @@ describe("task composer attachments", () => {
 
     await user.click(screen.getByRole("button", { name: "View media capabilities" }));
     expect(screen.getByText("Checking video availability…")).toBeTruthy();
-    expect(screen.getAllByText("Checking")).toHaveLength(3);
+    expect(screen.getAllByText("Checking")).toHaveLength(4);
     expect(screen.queryByText("Unavailable")).toBeNull();
   });
 
@@ -162,6 +163,14 @@ describe("task composer attachments", () => {
     await user.click(screen.getByRole("button", { name: "Choose model" }));
     await user.type(screen.getByLabelText("Task goal"), "Create a short launch video for the product.");
     expect(screen.getByTestId("automatic-route-preview").textContent).toContain("no ready route is configured");
+    expect(screen.getByRole("button", { name: "Start task" })).toBeTruthy();
+  });
+
+  it("shows that a public video link needs Supadata configuration before it can be understood", async () => {
+    const user = userEvent.setup();
+    render(<TaskDashboard />);
+    await user.type(screen.getByLabelText("Task goal"), "Summarize https://www.youtube.com/watch?v=abc123 for this project.");
+    expect(screen.getByTestId("automatic-route-preview").textContent).toContain("public-video understanding is requested, but this capability is not configured yet");
     expect(screen.getByRole("button", { name: "Start task" })).toBeTruthy();
   });
 

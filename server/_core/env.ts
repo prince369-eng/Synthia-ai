@@ -122,6 +122,7 @@ export const ENV = {
   hyperbrowserTimeoutMinutes: Number(process.env.SYNTHIA_HYPERBROWSER_TIMEOUT_MINUTES ?? 10),
   hyperbrowserAllowedHosts: list(process.env.SYNTHIA_HYPERBROWSER_ALLOWED_HOSTS),
   hyperbrowserPublicWebAccess: (process.env.SYNTHIA_HYPERBROWSER_PUBLIC_WEB_ACCESS ?? "true") === "true",
+  supadataApiKey: process.env.SUPADATA_API_KEY ?? "",
   searchPrimary: process.env.SYNTHIA_SEARCH_PRIMARY ?? "tavily",
   tavilyApiKey: process.env.TAVILY_API_KEY ?? "",
   serperApiKey: process.env.SERPER_API_KEY ?? "",

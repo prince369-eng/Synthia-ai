@@ -30,6 +30,7 @@ import { personalizationInstruction } from "./personalizationContext";
 import { resolveAutomaticTaskModel } from "./automaticRouting";
 import { runtimeConfiguredComposerModels } from "./modelCatalog";
 import { executeTaskMedia } from "../media/taskMedia";
+import { executeSupadataPublicVideoUnderstanding } from "../integrations/supadata";
 
 type ModelDecision = {
   narration: string;
@@ -214,7 +215,18 @@ export async function runTaskCycle(taskId: string) {
     await appendTaskEvent(task.id, { type: "status_change", payload: { status: "planning", summary: "Analyzing task state and selecting one action." } });
     const autonomySettings = task.autonomySettings as AutonomySettings;
     const automaticRoute = autonomySettings.automaticRoute;
-    if (automaticRoute?.reason === "natural_language_media" && (automaticRoute.kind === "image" || automaticRoute.kind === "video" || automaticRoute.kind === "audio") && automaticRoute.provider && automaticRoute.model) {
+    if (automaticRoute?.reason === "public_media" && automaticRoute.kind === "public_video" && automaticRoute.provider === "supadata" && automaticRoute.sourceUrl) {
+      await updateTaskForWorker(task.id, { status: "running", currentStepSummary: "Understanding the requested public video." });
+      const analysis = await executeSupadataPublicVideoUnderstanding({ taskId: task.id, userId: task.userId, sourceUrl: automaticRoute.sourceUrl, prompt: task.goal });
+      const summary = `Created ${analysis.filename}.`;
+      await recordAgentMessage(task.id, summary);
+      await updateTaskForWorker(task.id, { status: "completed", currentStepSummary: summary, completedAt: new Date() });
+      await appendTaskEvent(task.id, { type: "status_change", payload: { status: "completed", summary } });
+      const user = await getUserById(task.userId);
+      await notifyTask({ recipient: user?.email, title: task.title, taskId: task.id, kind: "completed", summary });
+      return;
+    }
+    if (automaticRoute?.reason === "natural_language_media" && (automaticRoute.kind === "image" || automaticRoute.kind === "video" || automaticRoute.kind === "audio") && automaticRoute.provider !== "supadata" && automaticRoute.provider && automaticRoute.model) {
       const label = automaticRoute.kind === "image" ? "image" : automaticRoute.kind === "video" ? "video" : "audio";
       await updateTaskForWorker(task.id, { status: "running", currentStepSummary: `Creating the requested ${label} artifact.` });
       const generated = await executeTaskMedia({
