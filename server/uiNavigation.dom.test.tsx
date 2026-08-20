@@ -6,17 +6,21 @@ import userEvent from "@testing-library/user-event";
 import { ProfileMenu } from "../client/src/components/SynthiaAppShell";
 import { AuthEntryActions } from "../client/src/components/SynthiaAppShell";
 import { modelCapabilityLabel, PreferenceSwitch, ServiceConnectionCard, SettingsAccount, SettingsCloseButton, SettingsGeneral, SettingsSectionNav, SettingsUsage } from "../client/src/pages/Settings";
-import { TaskOverflowMenu, WorkspaceReturnNavigation } from "../client/src/pages/TaskWorkspace";
+import { TaskMediaMenu, TaskOverflowMenu, WorkspaceReturnNavigation } from "../client/src/pages/TaskWorkspace";
 
 vi.mock("@/lib/trpc", () => ({
   trpc: {
     useUtils: () => ({ tasks: { get: { invalidate: vi.fn() }, list: { invalidate: vi.fn() } } }),
+    catalog: {
+      media: { useQuery: () => ({ isLoading: false, data: { image: { configured: false, models: [], reason: "Image provider configuration is required." }, video: { configured: false, models: [], reason: "Video provider configuration is required." } } }) },
+    },
     tasks: {
       rename: { useMutation: () => ({ mutate: vi.fn(), isPending: false }) },
       setPinned: { useMutation: () => ({ mutate: vi.fn(), isPending: false }) },
       setFavorite: { useMutation: () => ({ mutate: vi.fn(), isPending: false }) },
       setArchived: { useMutation: () => ({ mutate: vi.fn(), isPending: false }) },
       delete: { useMutation: () => ({ mutate: vi.fn(), isPending: false }) },
+      generateMedia: { useMutation: () => ({ mutate: vi.fn(), isPending: false, isError: false }) },
     },
   },
 }));
@@ -184,5 +188,15 @@ describe("Synthia navigation behavior", () => {
     await user.click(screen.getByRole("menuitem", { name: "Delete" }));
     expect(screen.getByRole("alertdialog", { name: "Delete task" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Delete task" })).toBeTruthy();
+  });
+
+  it("keeps task-owned image and video generation visibly unavailable until provider readiness is real", async () => {
+    const user = userEvent.setup();
+    render(<TaskMediaMenu taskId="a3f7b5e2-4218-41b1-98d4-dfbdde95c553" attachments={[]} />);
+
+    await user.click(screen.getByRole("button", { name: "Open media generation" }));
+    expect(screen.getByRole("menuitem", { name: /Generate image/i }).hasAttribute("data-disabled")).toBe(true);
+    expect(screen.getByRole("menuitem", { name: /Generate video/i }).hasAttribute("data-disabled")).toBe(true);
+    expect(screen.getByText(/shown only after secure provider configuration/i)).toBeTruthy();
   });
 });

@@ -129,9 +129,9 @@
 
 - [x] Audit every center-workspace interface component against the approved Manus-style composer, action strip, attachment menu, model picker, voice input, task list, and workspace navigation scope.
 - [x] Add real capability-aware image, vision, audio, image-generation, and video-generation states without fabricating provider availability or model readiness.
-- [ ] Wire multimodal task contracts so image inputs require vision-capable routing and media-generation requests expose only configured provider capabilities.
+- [x] Wire multimodal task contracts so image inputs require vision-capable routing and media-generation requests expose only configured provider capabilities.
 - [x] Add regression and authenticated-browser coverage for the expanded center workspace and multimodal capability states.
-- [ ] Produce a consolidated go-live credential checklist covering all required external providers, storage, queue, sandbox, database, email, transcription, image, and video services.
+- [x] Produce a consolidated go-live credential checklist covering all required external providers, storage, queue, sandbox, database, email, transcription, image, and video services.
 - [ ] Complete go-live provider and deployment verification after the user supplies credentials and publishes the site.
 - [ ] Add durable task-linked scheduling only after the published callback contract and Heartbeat workflow are available.
 
@@ -145,26 +145,26 @@
 
 ## Center workspace component audit ledger
 
-- [ ] Header identity and workspace status
-- [ ] Upper-right usage, files, sharing, and overflow actions
-- [ ] Goal composer and submit state
-- [ ] Plus attachment menu with local files and Library
-- [ ] Attachment chips and image capability guard
-- [ ] Model picker with automatic routing and capability labels
-- [ ] Voice input and transcription state
-- [ ] Project and autonomy controls
-- [ ] Suggested task prompts and recent task list
-- [ ] Responsive collapsed-sidebar and mobile behavior
-- [ ] Empty, loading, error, and unavailable states
-- [ ] Agent’s Computer workspace return/navigation actions
-- [ ] Multimodal generation capability surfaces for image and video requests
+- [x] Header identity and workspace status
+- [x] Upper-right usage, files, sharing, and overflow actions
+- [x] Goal composer and submit state
+- [x] Plus attachment menu with local files and Library
+- [x] Attachment chips and image capability guard
+- [x] Model picker with automatic routing and capability labels
+- [x] Voice input and transcription state
+- [x] Project and autonomy controls
+- [x] Suggested task prompts and recent task list
+- [x] Responsive collapsed-sidebar and mobile behavior
+- [x] Empty, loading, error, and unavailable states
+- [x] Agent’s Computer workspace return/navigation actions
+- [x] Multimodal generation capability surfaces for image and video requests
 
 ## Center workspace implementation decisions
 
-- [ ] Do not present image/video generation as available until provider credentials and runtime adapters are configured.
-- [ ] Keep voice input as authenticated transcription into task text, not as a chat-model selector.
-- [ ] Keep image attachments blocked for fixed text-only models and available through automatic routing or configured vision models.
-- [ ] Keep unsupported sharing, scheduling, and external connectors visibly unavailable rather than simulated.
+- [x] Do not present image/video generation as available until provider credentials and runtime adapters are configured.
+- [x] Keep voice input as authenticated transcription into task text, not as a chat-model selector.
+- [x] Keep image attachments blocked for fixed text-only models and available through automatic routing or configured vision models.
+- [x] Keep unsupported sharing, scheduling, and external connectors visibly unavailable rather than simulated.
 
 ## Credential checklist
 
@@ -189,16 +189,16 @@
 
 ## Center workspace verification
 
-- [ ] `pnpm check`
-- [ ] `pnpm test`
-- [ ] `pnpm build`
-- [ ] Authenticated desktop visual review
-- [ ] Authenticated mobile visual review
-- [ ] Model-picker interaction review
-- [ ] Attachment-menu interaction review
-- [ ] Voice-input unavailable/ready review
-- [ ] Image and video-generation unavailable/ready review
-- [ ] Task overflow action review
+- [x] `pnpm check`
+- [x] `pnpm test`
+- [x] `pnpm build`
+- [x] Authenticated desktop visual review
+- [x] Authenticated mobile visual review
+- [x] Model-picker interaction review
+- [x] Attachment-menu interaction review
+- [x] Voice-input unavailable/ready review
+- [x] Image and video-generation unavailable/ready review
+- [x] Task overflow action review
 - [ ] Save a checkpoint after all verified changes
 - [ ] GitHub push remains last and requires explicit user confirmation
 > **Credential boundary:** Credentials will be requested through secure project configuration. No secrets will be written into source code, screenshots, or committed `.env` files.

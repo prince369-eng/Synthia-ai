@@ -5,6 +5,7 @@ import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import {
   appendTaskEvent,
+  createDeliverable,
   createProjectForUser,
   createTaskForUser,
   completeOnboardingForUser,
@@ -43,10 +44,13 @@ import { enforceRateLimit, RateLimitError } from "./security/rateLimit";
 import { serviceReadinessForUser } from "./integrations/catalog";
 import { estimateTaskCredits } from "./agent/creditEstimate";
 import { encryptSecret } from "./security/encryption";
-import { getTaskArtifactUrl } from "./agent/artifactStorage";
+import { getTaskArtifactUrl, putTaskArtifact } from "./agent/artifactStorage";
 import { listHeartbeatJobs } from "./_core/heartbeat";
-import { storagePut } from "./storage";
+import { storageGetSignedUrl, storagePut } from "./storage";
 import { ENV } from "./_core/env";
+import { mediaReadiness } from "./mediaCapabilities";
+import { generateGeminiImage, generateGeminiVideo, GeminiMediaError, type GeminiMediaReference } from "./media/gemini";
+import { logger } from "./security/logger";
 import { transcribeAudio } from "./_core/voiceTranscription";
 
 const taskIdSchema = z.object({ taskId: z.string().uuid() });
@@ -81,6 +85,13 @@ const selectedModelSchema = z.object({
   model: z.string().trim().min(1).max(180),
 });
 const voiceMimeSchema = z.enum(["audio/webm", "audio/ogg", "audio/wav", "audio/mpeg", "audio/mp4", "audio/x-m4a"]);
+const mediaGenerationSchema = taskIdSchema.extend({
+  kind: z.enum(["image", "video"]),
+  prompt: z.string().trim().min(3).max(4_000),
+  model: z.string().trim().min(1).max(180).optional(),
+  aspectRatio: z.enum(["1:1", "16:9", "9:16", "4:3", "3:4"]).optional(),
+  referenceAttachmentId: z.string().uuid().optional(),
+});
 export const attachmentMimeSchema = z.string().trim().min(3).max(100).regex(
   /^(application\/(pdf|json|zip|x-7z-compressed|x-tar|vnd\.(openxmlformats-officedocument\.(wordprocessingml\.document|spreadsheetml\.sheet)|ms-excel|msword))|text\/(plain|csv|markdown)|image\/(png|jpeg|webp)|video\/(mp4|webm|quicktime))$/,
   "This file type is not supported.",
@@ -180,6 +191,28 @@ async function requireOwnedProject(projectId: string, userId: number) {
   return project;
 }
 
+async function imageReferenceForTask(taskId: string, attachmentId: string | undefined): Promise<GeminiMediaReference | undefined> {
+  if (!attachmentId) return undefined;
+  const attachment = (await listTaskAttachments(taskId)).find(item => item.id === attachmentId);
+  if (!attachment) throw new TRPCError({ code: "NOT_FOUND", message: "The selected task image was not found." });
+  if (!["image/png", "image/jpeg", "image/webp"].includes(attachment.fileType)) {
+    throw new TRPCError({ code: "BAD_REQUEST", message: "Only PNG, JPEG, and WebP task attachments can be used as generation references." });
+  }
+  let response: Response;
+  try {
+    response = await fetch(await storageGetSignedUrl(attachment.storageKey));
+  } catch (error) {
+    logger.warn({ event: "media_reference_download_failed", taskId, attachmentId, error: error instanceof Error ? error.message : "unknown" }, "Task image reference retrieval failed");
+    throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "The selected task image could not be retrieved securely." });
+  }
+  if (!response.ok) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "The selected task image could not be retrieved securely." });
+  const data = Buffer.from(await response.arrayBuffer());
+  if (data.length === 0 || data.length > 10 * 1024 * 1024) {
+    throw new TRPCError({ code: "BAD_REQUEST", message: "The selected task image is invalid or exceeds the 10 MB reference limit." });
+  }
+  return { data, mimeType: attachment.fileType as GeminiMediaReference["mimeType"] };
+}
+
 function titleFromGoal(goal: string) {
   const normalized = goal.replace(/\s+/g, " ").trim();
   return normalized.length > 72 ? `${normalized.slice(0, 69)}…` : normalized;
@@ -269,6 +302,66 @@ export const appRouter = router({
           fileType: deliverable.fileType,
           url: await getTaskArtifactUrl(deliverable.storageKey),
       };
+    }),
+    generateMedia: protectedProcedure.input(mediaGenerationSchema).mutation(async ({ ctx, input }) => {
+      const task = await requireOwnedTask(input.taskId, ctx.user.id);
+      await enforceUserMutationLimit(ctx.user.id, `media-generation-${input.kind}`, input.kind === "image" ? 8 : 3, 600);
+      const reference = await imageReferenceForTask(task.id, input.referenceAttachmentId);
+      await appendTaskEvent(task.id, {
+        type: "tool_call",
+        payload: { tool: "gemini_media_generation", kind: input.kind, model: input.model ?? null, referenceAttachmentId: input.referenceAttachmentId ?? null },
+      });
+      try {
+        const generated = input.kind === "image"
+          ? await generateGeminiImage({
+              prompt: input.prompt,
+              model: input.model,
+              aspectRatio: input.aspectRatio as "1:1" | "16:9" | "9:16" | "4:3" | "3:4" | undefined,
+              reference,
+            })
+          : await generateGeminiVideo({
+              prompt: input.prompt,
+              model: input.model,
+              aspectRatio: input.aspectRatio === "9:16" ? "9:16" : "16:9",
+              reference,
+            });
+        const extension = generated.mimeType === "image/jpeg" ? "jpg" : generated.mimeType === "image/webp" ? "webp" : generated.kind === "video" ? "mp4" : "png";
+        const filename = `synthia-${generated.kind}-${Date.now()}.${extension}`;
+        const artifact = await putTaskArtifact({ taskId: task.id, filename, body: generated.bytes, contentType: generated.mimeType });
+        const event = await appendTaskEvent(task.id, {
+          type: "tool_result",
+          payload: {
+            tool: "gemini_media_generation",
+            kind: generated.kind,
+            provider: generated.provider,
+            model: generated.model,
+            interactionId: generated.interactionId,
+            storageKey: artifact.key,
+          },
+        });
+        const deliverableId = await createDeliverable({
+          taskId: task.id,
+          eventId: event.id,
+          filename,
+          fileType: generated.mimeType,
+          storageKey: artifact.key,
+          storageUrl: artifact.url,
+          isFinal: false,
+        });
+        logger.info({ event: "gemini_media_generation_completed", taskId: task.id, userId: ctx.user.id, kind: generated.kind, model: generated.model, deliverableId }, "Gemini media generation completed");
+        return { deliverableId, filename, fileType: generated.mimeType, provider: generated.provider, model: generated.model };
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "Media generation failed.";
+        await appendTaskEvent(task.id, { type: "error", payload: { code: error instanceof GeminiMediaError ? error.code : "MEDIA_GENERATION_FAILED", message } });
+        if (error instanceof GeminiMediaError && error.code === "CONFIGURATION_REQUIRED") {
+          throw new TRPCError({ code: "PRECONDITION_FAILED", message });
+        }
+        if (error instanceof GeminiMediaError && error.code === "INVALID_REQUEST") {
+          throw new TRPCError({ code: "BAD_REQUEST", message });
+        }
+        logger.error({ event: "gemini_media_generation_failed", taskId: task.id, userId: ctx.user.id, kind: input.kind, error: message }, "Gemini media generation failed");
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Media generation could not be completed. Please retry shortly." });
+      }
     }),
     rename: protectedProcedure.input(taskIdSchema.extend({ title: taskTitleSchema })).mutation(async ({ ctx, input }) => {
       const updated = await updateTaskForUser(input.taskId, ctx.user.id, { title: input.title });
@@ -556,22 +649,7 @@ export const appRouter = router({
         vision: configuredComposerModels().some(model => model.capabilities.includes("vision")),
       },
     })),
-    media: protectedProcedure.query(() => ({
-      image: {
-        provider: ENV.imageProvider,
-        models: ENV.imageModels,
-        configured: Boolean(ENV.forgeApiUrl && ENV.forgeApiKey && ENV.imageProvider),
-        route: "server/_core/imageGeneration.ts",
-      },
-      video: {
-        provider: ENV.videoProvider || null,
-        models: ENV.videoModels,
-        configured: false,
-        reason: ENV.videoProvider && ENV.videoApiKey
-          ? "A provider-specific asynchronous video adapter must be verified before enabling generation."
-          : "Choose a video provider and add its credential before enabling generation.",
-      },
-    })),
+    media: protectedProcedure.query(() => mediaReadiness(ENV)),
     estimateTask: protectedProcedure
       .input(z.object({ goal: z.string().trim().min(8).max(12_000), planSteps: z.number().int().min(1).max(25), involvesCode: z.boolean() }))
       .query(({ input }) => estimateTaskCredits(input)),

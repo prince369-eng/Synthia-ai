@@ -4,7 +4,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { cn } from "@/lib/utils";
 import { trpc } from "@/lib/trpc";
 import { useTaskEventStream } from "@/hooks/useTaskEventStream";
-import { AlertTriangle, Archive, BookOpenText, Bot, CalendarClock, Check, ChevronLeft, CirclePause, Code2, ExternalLink, FileCode2, FileText, FolderTree, ListTree, Loader2, MoreHorizontal, MonitorDot, Pencil, Pin, Play, Send, Square, Star, TerminalSquare, Trash2, X } from "lucide-react";
+import { AlertTriangle, Archive, BookOpenText, Bot, CalendarClock, Check, ChevronLeft, CirclePause, Code2, ExternalLink, FileCode2, FileText, FolderTree, ImagePlus, ListTree, Loader2, MoreHorizontal, MonitorDot, Pencil, Pin, Play, Send, Square, Star, TerminalSquare, Trash2, Video, Wand2, X } from "lucide-react";
 import { WORKSPACE_RETURN_ROUTES } from "@/lib/workspaceLayout";
 import React, { FormEvent, useMemo, useState } from "react";
 import { Link, useLocation, useRoute } from "wouter";
@@ -43,7 +43,7 @@ export default function TaskWorkspace({ replayMode = false }: { replayMode?: boo
   const activeApprovals = data.approvals.filter(approval => approval.status === "pending");
 
   return <div className="synthia-workspace">
-    <header className="synthia-workspace-header"><div className="min-w-0"><WorkspaceReturnNavigation onNavigate={setLocation} /><h1 className="mt-1 truncate text-sm font-semibold text-[#f9eddf]">{task.title}</h1></div><div className="flex items-center gap-2"><span className={cn("hidden text-[11px] font-medium sm:inline", statusColor[task.status])}>{task.status.replace(/_/g, " ")}</span><span title={connected ? "Live task stream connected" : "Reconnecting task stream"} className={cn("h-1.5 w-1.5 rounded-full", connected ? "bg-emerald-400" : "bg-amber-400 animate-pulse")} />{task.status === "running" || task.status === "planning" || task.status === "booting" ? <Button size="sm" variant="outline" onClick={() => pause.mutate({ taskId })} disabled={pause.isPending} className="h-7 border-white/12 bg-transparent px-2 text-[11px] text-[#dfd1c1] hover:bg-white/5"><CirclePause size={13} />Pause</Button> : null}{task.status === "paused" || task.status === "needs_input" ? <Button size="sm" onClick={() => resume.mutate({ taskId })} disabled={resume.isPending} className="h-7 bg-orange-400 px-2 text-[11px] text-[#2b170c] hover:bg-orange-300"><Play size={13} />Resume</Button> : null}{!["completed", "failed", "cancelled"].includes(task.status) ? <Button size="sm" variant="ghost" onClick={() => cancel.mutate({ taskId })} disabled={cancel.isPending} className="h-7 px-2 text-[11px] text-[#a89889] hover:text-rose-300"><Square size={12} />Stop</Button> : null}<TaskOverflowMenu task={task} taskId={taskId} onDeleted={() => setLocation(WORKSPACE_RETURN_ROUTES.dashboard)} /></div></header>
+    <header className="synthia-workspace-header"><div className="min-w-0"><WorkspaceReturnNavigation onNavigate={setLocation} /><h1 className="mt-1 truncate text-sm font-semibold text-[#f9eddf]">{task.title}</h1></div><div className="flex items-center gap-2"><span className={cn("hidden text-[11px] font-medium sm:inline", statusColor[task.status])}>{task.status.replace(/_/g, " ")}</span><span title={connected ? "Live task stream connected" : "Reconnecting task stream"} className={cn("h-1.5 w-1.5 rounded-full", connected ? "bg-emerald-400" : "bg-amber-400 animate-pulse")} />{task.status === "running" || task.status === "planning" || task.status === "booting" ? <Button size="sm" variant="outline" onClick={() => pause.mutate({ taskId })} disabled={pause.isPending} className="h-7 border-white/12 bg-transparent px-2 text-[11px] text-[#dfd1c1] hover:bg-white/5"><CirclePause size={13} />Pause</Button> : null}{task.status === "paused" || task.status === "needs_input" ? <Button size="sm" onClick={() => resume.mutate({ taskId })} disabled={resume.isPending} className="h-7 bg-orange-400 px-2 text-[11px] text-[#2b170c] hover:bg-orange-300"><Play size={13} />Resume</Button> : null}{!["completed", "failed", "cancelled"].includes(task.status) ? <Button size="sm" variant="ghost" onClick={() => cancel.mutate({ taskId })} disabled={cancel.isPending} className="h-7 px-2 text-[11px] text-[#a89889] hover:text-rose-300"><Square size={12} />Stop</Button> : null}<TaskMediaMenu taskId={taskId} attachments={data.attachments} /><TaskOverflowMenu task={task} taskId={taskId} onDeleted={() => setLocation(WORKSPACE_RETURN_ROUTES.dashboard)} /></div></header>
     <div className="grid min-h-[calc(100vh-3.5rem)] lg:grid-cols-[minmax(320px,.9fr)_minmax(480px,1.2fr)]">
       <section className="flex min-h-0 flex-col border-r border-white/8">
         <div className="border-b border-white/8 px-4 py-4 sm:px-5"><p className="text-[9px] font-semibold uppercase tracking-[.16em] text-orange-300">Task objective</p><p className="mt-1.5 max-w-3xl text-xs leading-5 text-[#d6c8b8]">{task.goal}</p>{replayMode ? <div className="mt-3 rounded-md border border-orange-300/20 bg-orange-300/5 px-2.5 py-1.5 text-[11px] text-orange-100">Replay mode — move through the durable event record without changing task execution.</div> : null}</div>
@@ -72,6 +72,39 @@ export default function TaskWorkspace({ replayMode = false }: { replayMode?: boo
 
 export function WorkspaceReturnNavigation({ onNavigate }: { onNavigate: (path: string) => void }) {
   return <div className="synthia-workspace-return-nav" aria-label="Workspace return navigation"><button type="button" onClick={() => onNavigate(WORKSPACE_RETURN_ROUTES.dashboard)}><ChevronLeft size={13} />Dashboard</button><button type="button" onClick={() => onNavigate(WORKSPACE_RETURN_ROUTES.library)}><BookOpenText size={13} />Library</button></div>;
+}
+
+export function TaskMediaMenu({ taskId, attachments }: { taskId: string; attachments: Array<{ id: string; filename: string; fileType: string }> }) {
+  const utils = trpc.useUtils();
+  const media = trpc.catalog.media.useQuery();
+  const [kind, setKind] = useState<"image" | "video" | null>(null);
+  const [prompt, setPrompt] = useState("");
+  const [referenceAttachmentId, setReferenceAttachmentId] = useState<string>("");
+  const generate = trpc.tasks.generateMedia.useMutation({
+    onSuccess: () => {
+      setKind(null);
+      setPrompt("");
+      setReferenceAttachmentId("");
+      void utils.tasks.get.invalidate({ taskId });
+    },
+  });
+  const capability = kind ? media.data?.[kind] : undefined;
+  const imageAttachments = attachments.filter(attachment => ["image/png", "image/jpeg", "image/webp"].includes(attachment.fileType));
+  const unavailableLabel = (type: "image" | "video") => media.data?.[type]?.reason ?? `${type === "image" ? "Image" : "Video"} generation is unavailable until its provider is configured.`;
+  const open = (type: "image" | "video") => { if (media.data?.[type]?.configured) setKind(type); };
+
+  return <>
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild><Button size="icon" variant="ghost" aria-label="Open media generation" title="Media generation" className="h-7 w-7 text-[#a89889] hover:bg-white/5 hover:text-orange-200"><Wand2 size={15} /></Button></DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-64 border-white/10 bg-[#201913] text-[#eadbca]">
+        <DropdownMenuLabel className="text-[10px] uppercase tracking-[.14em] text-[#9c8c7d]">Task media</DropdownMenuLabel>
+        <DropdownMenuItem onSelect={() => open("image")} disabled={!media.data?.image.configured} title={unavailableLabel("image")} className="gap-2"><ImagePlus size={14} />Generate image <span className="ml-auto text-[9px] text-[#9c8c7d]">{media.data?.image.configured ? media.data.image.models[0] : "Unavailable"}</span></DropdownMenuItem>
+        <DropdownMenuItem onSelect={() => open("video")} disabled={!media.data?.video.configured} title={unavailableLabel("video")} className="gap-2"><Video size={14} />Generate video <span className="ml-auto text-[9px] text-[#9c8c7d]">{media.data?.video.configured ? media.data.video.models[0] : "Unavailable"}</span></DropdownMenuItem>
+        {!media.isLoading && !media.data?.image.configured && !media.data?.video.configured ? <p className="px-2 py-2 text-[10px] leading-4 text-[#8d7c6c]">Generation is shown only after secure provider configuration passes its readiness check.</p> : null}
+      </DropdownMenuContent>
+    </DropdownMenu>
+    {kind ? <div role="dialog" aria-modal="true" aria-label={`Generate ${kind}`} className="fixed inset-0 z-50 grid place-items-center bg-black/55 p-4"><form onSubmit={event => { event.preventDefault(); if (prompt.trim()) generate.mutate({ taskId, kind, prompt: prompt.trim(), referenceAttachmentId: referenceAttachmentId || undefined }); }} className="w-full max-w-md rounded-xl border border-white/10 bg-[#201913] p-4 shadow-2xl"><div className="flex items-start justify-between gap-3"><div><p className="text-sm font-semibold text-[#f5e9da]">Generate {kind}</p><p className="mt-1 text-[11px] leading-4 text-[#9f8e7e]">{capability?.provider} · {capability?.models[0]}</p></div><Button type="button" size="icon" variant="ghost" onClick={() => setKind(null)} className="h-7 w-7 text-[#a89889]"><X size={14} /></Button></div><label className="mt-4 block text-[11px] font-medium text-[#cdbdab]" htmlFor="media-prompt">Prompt</label><Input id="media-prompt" autoFocus value={prompt} onChange={event => setPrompt(event.target.value)} maxLength={4_000} placeholder={`Describe the ${kind} to generate…`} className="mt-1.5 border-white/10 bg-[#17120e] text-[#f5e9da]" />{imageAttachments.length ? <label className="mt-3 block text-[11px] font-medium text-[#cdbdab]" htmlFor="media-reference">Image reference <span className="font-normal text-[#89796b]">(optional)</span><select id="media-reference" value={referenceAttachmentId} onChange={event => setReferenceAttachmentId(event.target.value)} className="mt-1.5 h-8 w-full rounded-md border border-white/10 bg-[#17120e] px-2 text-xs text-[#f5e9da]"><option value="">No reference image</option>{imageAttachments.map(attachment => <option key={attachment.id} value={attachment.id}>{attachment.filename}</option>)}</select></label> : null}{generate.isError ? <p role="alert" className="mt-3 text-[11px] text-rose-300">{generate.error.message}</p> : null}<div className="mt-4 flex justify-end gap-2"><Button type="button" variant="ghost" onClick={() => setKind(null)}>Cancel</Button><Button type="submit" disabled={!prompt.trim() || generate.isPending} className="bg-orange-400 text-[#2b170c] hover:bg-orange-300">{generate.isPending ? <Loader2 size={13} className="animate-spin" /> : <Wand2 size={13} />}Generate</Button></div></form></div> : null}
+  </>;
 }
 
 export function TaskOverflowMenu({ task, taskId, onDeleted }: { task: { title: string; isPinned: boolean; isFavorite: boolean; isArchived: boolean }; taskId: string; onDeleted: () => void }) {

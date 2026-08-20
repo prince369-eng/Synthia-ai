@@ -17,10 +17,18 @@ Synthia currently has a real internal image-generation helper backed by the buil
 
 ## Gemini-native media option
 
-The official Gemini API documentation lists **gemini-3.1-flash-image** (Nano Banana 2) and related native image models for image generation/editing through the Interactions API. The official video guidance lists **Gemini Omni Flash** for conversational video generation/editing and **Veo 3.1** for video generation through the generateContent workflow. These are candidate models for Synthia because the project already supports `GEMINI_API_KEY`, but they remain unavailable in the product until provider-specific adapter behavior, asynchronous operation handling where required, artifact storage, rate-limit handling, and production credentials are verified.
+The official Gemini API documentation lists **gemini-3.1-flash-image** (Nano Banana 2) and related native image models for image generation/editing through the Interactions API. The official video guidance lists **Gemini Omni Flash** for conversational video generation/editing and **Veo 3.1** for video generation through the generateContent workflow. The user selected **Gemini image generation plus Gemini Omni Flash video** for Synthia. The shared readiness contract recognizes that choice only when a Gemini credential and each configured model list are present; no generation operation is exposed until provider-specific adapter behavior, artifact storage, rate-limit handling, and production credentials are verified.
 
 References:
 
 - https://ai.google.dev/gemini-api/docs/image-generation
 - https://ai.google.dev/gemini-api/docs/video
 - https://ai.google.dev/gemini-api/docs/models
+- https://ai.google.dev/gemini-api/docs/models/gemini-3.1-flash-image
+- https://ai.google.dev/gemini-api/docs/gemini-3
+
+### Adapter evidence recorded August 2026
+
+The official Gemini 3 guide documents the server-side **Interactions API** endpoint at `POST https://generativelanguage.googleapis.com/v1beta/interactions` using `x-goog-api-key`. The selected image model, `gemini-3.1-flash-image`, accepts text and image/PDF inputs and returns image plus text output. The official video guide identifies **Gemini Omni Flash** as the default option for rapid text-to-video and image-to-video generation/editing through the Interactions API. This confirms the client must never call Gemini directly; a Synthia server adapter must validate the request, submit an asynchronous-compatible provider operation, persist output to owned storage, and surface provider errors without exposing the key.
+
+The Gemini Omni guide specifies `gemini-omni-flash-preview` for the current API model identifier. The REST response returns completed media within a `steps` array: a `model_output` step contains an item with `type: "video"`, `mime_type: "video/mp4"`, and base64 `data`. The image-generation guide shows the same Interactions API accepting an input array with a text item and, optionally, image data; image output is returned as base64. Synthia’s server adapter should decode that data only after enforcing prompt, source-media, model, and user-ownership rules, then write the bytes to the selected artifact store.
