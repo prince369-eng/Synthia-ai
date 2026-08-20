@@ -11,6 +11,7 @@ const dashboardState = vi.hoisted(() => ({
   taskHistory: { data: [] as unknown[] | undefined, isLoading: false, isError: false },
   taskQueryOptions: undefined as { enabled?: boolean } | undefined,
   models: [] as Array<{ id: string; provider: string; model: string; label: string; capabilities: string[] }>,
+  media: { data: { image: { models: ["flux"], configured: true }, video: { models: ["ltx"], configured: true }, audio: { models: ["tracks"], configured: true } } as { image: { models: string[]; configured: boolean }; video: { models: string[]; configured: boolean }; audio: { models: string[]; configured: boolean } } | undefined, isLoading: false, isError: false },
 }));
 
 vi.mock("@/lib/trpc", () => ({
@@ -30,7 +31,7 @@ vi.mock("@/lib/trpc", () => ({
     catalog: {
       estimateTask: { useQuery: () => ({ data: undefined, isLoading: false, isError: false }) },
       models: { useQuery: () => ({ data: { models: dashboardState.models }, isLoading: false, isError: false }) },
-      media: { useQuery: () => ({ data: { image: { models: ["flux"], configured: true }, video: { models: ["ltx"], configured: true }, audio: { models: ["tracks"], configured: true } }, isLoading: false, isError: false }) },
+      media: { useQuery: () => dashboardState.media },
     },
     library: { list: { useQuery: () => ({ data: [], isLoading: false, isError: false }) } },
   },
@@ -46,6 +47,7 @@ afterEach(() => {
   dashboardState.taskHistory = { data: [], isLoading: false, isError: false };
   dashboardState.taskQueryOptions = undefined;
   dashboardState.models = [];
+  dashboardState.media = { data: { image: { models: ["flux"], configured: true }, video: { models: ["ltx"], configured: true }, audio: { models: ["tracks"], configured: true } }, isLoading: false, isError: false };
 });
 
 describe("task composer attachments", () => {
@@ -121,6 +123,33 @@ describe("task composer attachments", () => {
     expect(within(menu).getByText("Text · Vision")).toBeTruthy();
     expect(within(menu).getByText("Text · Audio")).toBeTruthy();
     expect(within(menu).queryByText(/AIHubMix|Agnes AI|Configured/)).toBeNull();
+  });
+
+  it("keeps media availability in a checking state until the capability catalog resolves", async () => {
+    const user = userEvent.setup();
+    dashboardState.media = { data: undefined, isLoading: true, isError: false };
+    render(<TaskDashboard />);
+
+    await user.click(screen.getByRole("button", { name: "View media capabilities" }));
+    expect(screen.getByText("Checking video availability…")).toBeTruthy();
+    expect(screen.getAllByText("Checking")).toHaveLength(3);
+    expect(screen.queryByText("Unavailable")).toBeNull();
+  });
+
+  it("explains blocked microphone permission and provides an explicit retry control", async () => {
+    const user = userEvent.setup();
+    const mediaDevices = navigator.mediaDevices;
+    const mediaRecorder = globalThis.MediaRecorder;
+    Object.defineProperty(navigator, "mediaDevices", { configurable: true, value: { getUserMedia: vi.fn().mockRejectedValue(Object.assign(new Error("blocked"), { name: "NotAllowedError" })) } });
+    Object.defineProperty(globalThis, "MediaRecorder", { configurable: true, value: class {} });
+    render(<TaskDashboard />);
+
+    await user.click(screen.getByRole("button", { name: "Start voice instruction" }));
+    expect(await screen.findByText("Microphone access is blocked. Allow it in this site’s browser settings, then try again.")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Try microphone again" })).toBeTruthy();
+
+    Object.defineProperty(navigator, "mediaDevices", { configurable: true, value: mediaDevices });
+    Object.defineProperty(globalThis, "MediaRecorder", { configurable: true, value: mediaRecorder });
   });
 
   it("loads task history only for an authenticated workspace and renders a calm empty state", () => {

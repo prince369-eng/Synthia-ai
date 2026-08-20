@@ -35,8 +35,8 @@ export function composerModelCapabilityLabel(model: { capabilities?: string[] })
   return labels.length ? labels.join(" · ") : "Text";
 }
 
-export function composerMediaCapabilityLabel(capability: { models?: string[]; configured?: boolean } | undefined, kind: string) {
-  if (!capability) return `${kind} capability is loading…`;
+export function composerMediaCapabilityLabel(capability: { models?: string[]; configured?: boolean } | undefined, kind: string, isLoading = false) {
+  if (isLoading || !capability) return `Checking ${kind.toLowerCase()} availability…`;
   if (capability.configured) return `Ready · ${capability.models?.join(", ") || kind}`;
   return capability.models?.length ? `${capability.models.join(", ")} is not enabled yet.` : `${kind} generation is unavailable.`;
 }
@@ -61,6 +61,7 @@ export default function TaskDashboard() {
   const [modelMenuOpen, setModelMenuOpen] = useState(false);
   const [selectedModelId, setSelectedModelId] = useState("");
   const [voiceState, setVoiceState] = useState<"idle" | "recording" | "transcribing">("idle");
+  const [voicePermissionBlocked, setVoicePermissionBlocked] = useState(false);
   const composerRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const recorderRef = useRef<MediaRecorder | null>(null);
@@ -171,6 +172,7 @@ export default function TaskDashboard() {
       return;
     }
     if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === "undefined") {
+      setVoicePermissionBlocked(false);
       setAttachmentError("Voice input is not supported in this browser.");
       return;
     }
@@ -215,10 +217,15 @@ export default function TaskDashboard() {
       };
       recorderRef.current = recorder;
       recorder.start();
+      setVoicePermissionBlocked(false);
       setAttachmentError(null);
       setVoiceState("recording");
-    } catch {
-      setAttachmentError("Microphone permission is required to add a voice instruction.");
+    } catch (error) {
+      const permissionBlocked = error instanceof Error && ["NotAllowedError", "SecurityError"].includes(error.name);
+      setVoicePermissionBlocked(permissionBlocked);
+      setAttachmentError(permissionBlocked
+        ? "Microphone access is blocked. Allow it in this site’s browser settings, then try again."
+        : "Synthia could not access your microphone. Check that it is connected and available, then try again.");
     }
   }
 
@@ -268,7 +275,7 @@ export default function TaskDashboard() {
             <div className="synthia-composer-control-group synthia-composer-control-group-end">
               <div className="relative">
                 <button type="button" className={cn("synthia-composer-toggle", mediaMenuOpen && "active")} aria-label="View media capabilities" aria-expanded={mediaMenuOpen} onClick={() => setMediaMenuOpen(value => !value)}><Sparkles size={13} /><span>Media</span></button>
-                {mediaMenuOpen ? <div className="synthia-model-menu synthia-media-menu" data-testid="media-capability-menu"><div className="synthia-media-capability"><ImageIcon size={14} /><span><b>Image generation</b><small>{composerMediaCapabilityLabel(mediaCapabilities.data?.image, "Image")}</small></span><em className={mediaCapabilities.data?.image.configured ? "ready" : "pending"}>{mediaCapabilities.data?.image.configured ? "Ready" : "Unavailable"}</em></div><div className="synthia-media-capability"><Video size={14} /><span><b>Video generation</b><small>{composerMediaCapabilityLabel(mediaCapabilities.data?.video, "Video")}</small></span><em className={mediaCapabilities.data?.video.configured ? "ready" : "pending"}>{mediaCapabilities.data?.video.configured ? "Ready" : "Unavailable"}</em></div><div className="synthia-media-capability"><AudioLines size={14} /><span><b>Audio generation</b><small>{composerMediaCapabilityLabel(mediaCapabilities.data?.audio, "Audio")}</small></span><em className={mediaCapabilities.data?.audio.configured ? "ready" : "pending"}>{mediaCapabilities.data?.audio.configured ? "Ready" : "Unavailable"}</em></div><p>Ready generation tools are used only within a task after you explicitly start it.</p></div> : null}
+                {mediaMenuOpen ? <div className="synthia-model-menu synthia-media-menu" data-testid="media-capability-menu"><div className="synthia-media-capability"><ImageIcon size={14} /><span><b>Image generation</b><small>{composerMediaCapabilityLabel(mediaCapabilities.data?.image, "Image", mediaCapabilities.isLoading)}</small></span><em className={mediaCapabilities.isLoading ? "pending" : mediaCapabilities.data?.image.configured ? "ready" : "pending"}>{mediaCapabilities.isLoading ? "Checking" : mediaCapabilities.data?.image.configured ? "Ready" : "Unavailable"}</em></div><div className="synthia-media-capability"><Video size={14} /><span><b>Video generation</b><small>{composerMediaCapabilityLabel(mediaCapabilities.data?.video, "Video", mediaCapabilities.isLoading)}</small></span><em className={mediaCapabilities.isLoading ? "pending" : mediaCapabilities.data?.video.configured ? "ready" : "pending"}>{mediaCapabilities.isLoading ? "Checking" : mediaCapabilities.data?.video.configured ? "Ready" : "Unavailable"}</em></div><div className="synthia-media-capability"><AudioLines size={14} /><span><b>Audio generation</b><small>{composerMediaCapabilityLabel(mediaCapabilities.data?.audio, "Audio", mediaCapabilities.isLoading)}</small></span><em className={mediaCapabilities.isLoading ? "pending" : mediaCapabilities.data?.audio.configured ? "ready" : "pending"}>{mediaCapabilities.isLoading ? "Checking" : mediaCapabilities.data?.audio.configured ? "Ready" : "Unavailable"}</em></div><p>Ready generation tools are used only within a task after you explicitly start it.</p></div> : null}
               </div>
               <div className="relative">
                 <button type="button" className={cn("synthia-composer-toggle synthia-model-trigger", modelMenuOpen && "active")} aria-label="Choose model" aria-expanded={modelMenuOpen} onClick={() => setModelMenuOpen(value => !value)}><Bot size={13} /><span>{selectedModel?.model ?? "Automatic"}</span></button>
@@ -280,7 +287,7 @@ export default function TaskDashboard() {
           </div>
           {estimate.data ? <p className="synthia-estimate">Estimated: <span>{estimate.data.estimatedCreditsMin}–{estimate.data.estimatedCreditsMax} credits</span></p> : null}
           {visualInputBlocked ? <p role="alert" className="mt-2 px-1 text-xs text-amber-200">This task includes an image. Select a vision-capable model or return to Automatic routing before starting.</p> : null}
-          {attachmentError ? <p role="alert" className="mt-2 px-1 text-xs text-rose-300">{attachmentError}</p> : null}
+          {attachmentError ? <div role="alert" className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 px-1 text-xs text-rose-300"><span>{attachmentError}</span>{voicePermissionBlocked ? <button type="button" className="font-medium text-cyan-200 underline decoration-cyan-300/50 underline-offset-2 transition-colors hover:text-cyan-100" onClick={() => void toggleVoiceCapture()}>Try microphone again</button> : null}</div> : null}
           {createTask.isError ? <p role="alert" className="mt-3 text-xs text-rose-300">{createTask.error.message}</p> : null}
           <input ref={fileInputRef} onChange={event => void chooseLocalFile(event)} className="sr-only" type="file" accept=".pdf,.txt,.md,.csv,.json,.doc,.docx,.xls,.xlsx,.zip,.7z,.tar,.png,.jpg,.jpeg,.webp,.mp4,.webm,.mov" />
         </form>

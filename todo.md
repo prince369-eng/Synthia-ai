@@ -270,6 +270,13 @@
 
 ## Go-live modality provider contract
 
+- [x] Correct the video-generation readiness mismatch so the configured LTX route is shown as ready only when its authenticated task route and artifact contract are genuinely available.
+- [x] Improve microphone permission recovery with an explicit retry action and browser-specific guidance while retaining the text-composer fallback when permission is unavailable.
+- [x] Add deterministic video-readiness and microphone-permission regressions, then verify the repaired composer without invoking video generation or speech transcription.
+- [ ] Securely configure the user-provided Groq credential, validate the non-generative runtime contract, and retain opt-in-only live discovery.
+- [ ] Securely configure the user-provided OpenRouter and Gemini credentials, then validate their documented non-generative provider endpoints without invoking inference or media generation.
+- [ ] Retrieve and present only provider-supported free-tier model catalog and usage information for Groq, OpenRouter, and Gemini, without exposing credentials or inventing quota availability.
+- [ ] Add opt-in-only provider-account regressions and user-facing status coverage for the three configured language-model services.
 - [ ] Confirm the selected image-generation provider and required API credential before enabling image generation.
 - [ ] Confirm the selected video-generation provider and required API credential before enabling video generation.
 - [ ] Confirm the selected vision-capable LLM models and `SYNTHIA_VISION_MODELS` configuration before enabling visual task execution.

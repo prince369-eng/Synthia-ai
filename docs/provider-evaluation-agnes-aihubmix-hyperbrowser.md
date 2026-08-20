@@ -84,6 +84,16 @@ After the managed preview restarted with the approved non-secret defaults, the a
 
 The authenticated Media menu then displayed **Image generation — Ready · flux**, **Video generation — Ready · ltx**, and **Audio generation — Ready · tracks**, along with a clear statement that ready tools run only inside an explicitly started task. The bounded model selector displayed `agnes-2.0-flash` with **Text · Vision**, while the curated AIHubMix entries remained labelled **Text**. Opening these menus did not select a model, create a task, or submit any provider workload.
 
+After secure Groq configuration, Synthia’s existing read-only `GET /openai/v1/models` connectivity regression passed against the stored server-side credential. No inference request was made. The managed preview was restarted and the authenticated Settings workspace recovered normally to its user-facing General section; no Settings mutation or provider request was performed during that presentation check.
+
+### LTX Readiness Mismatch Investigation (2026-08-20)
+
+After a user reported that the Media panel showed Flux ready while LTX was unavailable, a sanitized runtime inspection confirmed the approved Pixazo enablement switch, Flux and LTX model allowlists, and the presence of a Pixazo credential without printing any secret. The shared capability calculation then returned Flux image, LTX video, and Tracks audio as configured. A fresh authenticated workspace reload completed successfully, indicating that the reported state must be differentiated from an earlier client cache or an error-state rendering path before changing provider readiness rules. No image, video, audio, transcription, browser, or model workload was started during this investigation.
+
+After deploying the composer control repair, the first fresh authenticated workspace frame again showed the expected session-recovery shell. This state is intentionally distinct from an unavailable media capability and must settle before visual inspection of the Media panel. No task action, provider request, microphone recording, or transcription was started in that recovery frame.
+
+Once the authenticated workspace settled, the repaired Media panel consistently rendered **Image generation — Ready · flux**, **Video generation — Ready · ltx**, and **Audio generation — Ready · tracks**. The LTX availability is therefore confirmed as ready after a fresh client state recovery. Microphone capture was deliberately not started during this presentation review because it would request access to the user’s physical microphone; the repaired control now offers a retry only after the user has explicitly allowed that browser permission.
+
 ## References
 
 1. [Agnes AI API overview](https://agnes-ai.com/en/docs/overview)
