@@ -60,6 +60,7 @@ import { transcribeAudio } from "./_core/voiceTranscription";
 import { runtimeConfiguredComposerModels } from "./agent/modelCatalog";
 import { resolveAutomaticTaskRoute } from "@shared/automaticTaskRouting";
 import { executeTaskMedia, TaskMediaRequestError } from "./media/taskMedia";
+import { captureLiveComputerScreen, listLiveComputerFiles, liveComputerAvailability, readLiveComputerSource } from "./agent/liveComputer";
 
 const taskIdSchema = z.object({ taskId: z.string().uuid() });
 const taskTitleSchema = z.string().trim().min(1).max(180);
@@ -107,6 +108,9 @@ const mediaGenerationSchema = taskIdSchema.extend({
   model: z.string().trim().min(1).max(180).optional(),
   aspectRatio: z.enum(["1:1", "16:9", "9:16", "4:3", "3:4"]).optional(),
   referenceAttachmentId: z.string().uuid().optional(),
+});
+const liveComputerSourceSchema = taskIdSchema.extend({
+  path: z.string().trim().min(12).max(512),
 });
 export const attachmentMimeSchema = z.string().trim().min(3).max(100).regex(
   /^(application\/(pdf|json|zip|x-7z-compressed|x-tar|vnd\.(openxmlformats-officedocument\.(wordprocessingml\.document|spreadsheetml\.sheet)|ms-excel|msword))|text\/(plain|csv|markdown)|image\/(png|jpeg|webp)|video\/(mp4|webm|quicktime))$/,
@@ -270,6 +274,54 @@ export const appRouter = router({
           url: await getTaskArtifactUrl(deliverable.storageKey),
       };
     }),
+    liveComputer: protectedProcedure
+      .input(taskIdSchema)
+      .query(async ({ ctx, input }) => {
+        await requireOwnedTask(input.taskId, ctx.user.id);
+        return liveComputerAvailability((await listTaskSandboxes(input.taskId))[0]);
+      }),
+    liveComputerFiles: protectedProcedure
+      .input(taskIdSchema)
+      .query(async ({ ctx, input }) => {
+        await requireOwnedTask(input.taskId, ctx.user.id);
+        const sandbox = (await listTaskSandboxes(input.taskId))[0];
+        const availability = liveComputerAvailability(sandbox);
+        if (!sandbox || !availability.available) throw new TRPCError({ code: "PRECONDITION_FAILED", message: availability.reason });
+        try {
+          return { files: await listLiveComputerFiles({ sandbox }), availability };
+        } catch (error) {
+          console.error(JSON.stringify({ event: "live_computer_files_failed", taskId: input.taskId, userId: ctx.user.id, provider: sandbox.provider, message: error instanceof Error ? error.message : "unknown" }));
+          throw new TRPCError({ code: "PRECONDITION_FAILED", message: "The task workspace files are not available for inspection." });
+        }
+      }),
+    liveComputerSource: protectedProcedure
+      .input(liveComputerSourceSchema)
+      .query(async ({ ctx, input }) => {
+        await requireOwnedTask(input.taskId, ctx.user.id);
+        const sandbox = (await listTaskSandboxes(input.taskId))[0];
+        const availability = liveComputerAvailability(sandbox);
+        if (!sandbox || !availability.available) throw new TRPCError({ code: "PRECONDITION_FAILED", message: availability.reason });
+        try {
+          return await readLiveComputerSource({ sandbox, path: input.path });
+        } catch (error) {
+          console.error(JSON.stringify({ event: "live_computer_source_failed", taskId: input.taskId, userId: ctx.user.id, provider: sandbox.provider, message: error instanceof Error ? error.message : "unknown" }));
+          throw new TRPCError({ code: "BAD_REQUEST", message: "That task file cannot be opened in Live Computer." });
+        }
+      }),
+    liveComputerScreen: protectedProcedure
+      .input(taskIdSchema)
+      .query(async ({ ctx, input }) => {
+        await requireOwnedTask(input.taskId, ctx.user.id);
+        const sandbox = (await listTaskSandboxes(input.taskId))[0];
+        const availability = liveComputerAvailability(sandbox);
+        if (!sandbox || !availability.available || !availability.canCaptureScreen) throw new TRPCError({ code: "PRECONDITION_FAILED", message: availability.reason });
+        try {
+          return await captureLiveComputerScreen({ sandbox });
+        } catch (error) {
+          console.error(JSON.stringify({ event: "live_computer_screen_failed", taskId: input.taskId, userId: ctx.user.id, provider: sandbox.provider, message: error instanceof Error ? error.message : "unknown" }));
+          throw new TRPCError({ code: "PRECONDITION_FAILED", message: "The task screen is not available for capture." });
+        }
+      }),
     generateMedia: protectedProcedure.input(mediaGenerationSchema).mutation(async ({ ctx, input }) => {
       const task = await requireOwnedTask(input.taskId, ctx.user.id);
       try {

@@ -10,7 +10,7 @@ import {
 } from "../client/src/lib/workspaceLayout";
 import { filterLibraryItems } from "../client/src/pages/Library";
 import { normalizeScheduledJobs } from "../client/src/pages/Scheduled";
-import { isScreenCapture } from "../client/src/pages/TaskWorkspace";
+import { isScreenCapture, isWebsiteArtifact } from "../client/src/pages/TaskWorkspace";
 
 describe("compact workspace layout contract", () => {
   it("restores only an explicit collapsed navigation preference", () => {
@@ -99,6 +99,19 @@ describe("compact workspace layout contract", () => {
     expect(isScreenCapture({ mimeType: "image/png" })).toBe(false);
   });
 
+  it("recognizes only task-owned HTML deliverables for the Live Computer website preview", () => {
+    const workspace = readFileSync(new URL("../client/src/pages/TaskWorkspace.tsx", import.meta.url), "utf8");
+
+    expect(isWebsiteArtifact({ fileType: "text/html", filename: "index.html" })).toBe(true);
+    expect(isWebsiteArtifact({ fileType: "application/octet-stream", filename: "prototype.htm" })).toBe(true);
+    expect(isWebsiteArtifact({ fileType: "text/markdown", filename: "notes.md" })).toBe(false);
+    expect(workspace).toContain('label: "Website", icon: Globe2');
+    expect(workspace).toContain("<WebsitePanel taskId={taskId} deliverables={data.deliverables} />");
+    expect(workspace).toContain('sandbox="allow-forms allow-modals allow-popups allow-scripts"');
+    expect(workspace).toContain("Open website");
+    expect(workspace).toContain("No task website is available yet.");
+  });
+
   it("refreshes workspace artifact links through the owned task-artifact contract instead of persisting direct URLs", () => {
     const workspace = readFileSync(new URL("../client/src/pages/TaskWorkspace.tsx", import.meta.url), "utf8");
 
@@ -106,6 +119,21 @@ describe("compact workspace layout contract", () => {
     expect(workspace).toContain("<ArtifactOpenButton taskId={taskId} deliverable={item} />");
     expect(workspace).not.toContain("href={item.url}");
     expect(workspace).toContain("item.fileType");
+  });
+
+  it("keeps Live Computer task-scoped, read-only, and explicit about unavailable screens", () => {
+    const workspace = readFileSync(new URL("../client/src/pages/TaskWorkspace.tsx", import.meta.url), "utf8");
+    const router = readFileSync(new URL("../server/routers.ts", import.meta.url), "utf8");
+
+    expect(workspace).toContain("trpc.tasks.liveComputer.useQuery");
+    expect(workspace).toContain("trpc.tasks.liveComputerFiles.useQuery");
+    expect(workspace).toContain("trpc.tasks.liveComputerSource.useQuery");
+    expect(workspace).toContain("View live screen");
+    expect(workspace).toContain("Task-scoped source inspection");
+    expect(router).toContain("liveComputerFiles: protectedProcedure");
+    expect(router).toContain("liveComputerSource: protectedProcedure");
+    expect(router).toContain("liveComputerScreen: protectedProcedure");
+    expect(router).toContain("await requireOwnedTask(input.taskId, ctx.user.id)");
   });
 
   it("makes the same user-initiated secure artifact retrieval available from the Library", () => {
@@ -198,12 +226,13 @@ describe("compact workspace layout contract", () => {
     expect(workspace).not.toContain('border-orange-');
   });
 
-  it("describes both supported desktop sandbox providers without overstating local Docker capability", () => {
+  it("describes task-screen availability without overstating local Docker capability", () => {
     const workspace = readFileSync(new URL("../client/src/pages/TaskWorkspace.tsx", import.meta.url), "utf8");
+    const liveComputer = readFileSync(new URL("../server/agent/liveComputer.ts", import.meta.url), "utf8");
 
-    expect(workspace).toContain("configured E2B desktop or Bunnyshell HopX sandbox");
-    expect(workspace).toContain("Docker fallback is intentionally code-only");
-    expect(workspace).not.toContain("require an E2B desktop sandbox.");
+    expect(workspace).toContain("Task screen is available when the active sandbox supports capture.");
+    expect(workspace).toContain("View live screen");
+    expect(liveComputer).toContain("Docker does not provide a graphical task screen.");
   });
 
   it("presents Agent capabilities as user-facing task abilities rather than backend provider configuration", () => {

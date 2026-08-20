@@ -3039,3 +3039,15 @@
 - [x] Add a server-side, user-scoped Supadata integration for approved public social and video URLs with SSRF protections, input validation, rate limits, bounded payloads, and no secret exposure.
 - [x] Surface the capability as a truthful user-facing task tool with explicit unavailable state until `SUPADATA_API_KEY` is securely configured.
 - [x] Add quota-safe adapter, authorization, URL-policy, and interface regressions; do not call Supadata during routine verification.
+
+## Durable artifact-storage activation
+- [ ] Confirm whether AWS S3 or Cloudflare R2 will be Synthia’s primary S3-compatible artifact store.
+- [ ] Securely configure the selected provider’s endpoint, region, bucket, access key, and secret key without committing or exposing credentials.
+- [ ] Validate durable artifact storage non-destructively before enabling live Supadata or agent output delivery.
+
+## Live Computer task workspace
+- [x] Audit existing task events, sandbox artifacts, browser capability state, and workspace panels to identify real task-scoped Live Computer data sources.
+- [x] Define an authorized Live Computer contract for task activity replay, generated files, source inspection, and browser/website state without exposing server secrets or arbitrary local files.
+- [x] Build a Manus-style Live Computer panel with task timeline, task-owned file tree, source-code viewer, website preview, and explicit unavailable states for unconfigured browser or sandbox services.
+- [x] Add task ownership, path-traversal, and sensitive-file protections for all Live Computer file and source views.
+- [x] Add deterministic UI, authorization, and responsive-layout regressions; verify the page without launching sandbox, browser, model, or media workloads.
