@@ -34,4 +34,31 @@ describe("serviceConnectionStatus", () => {
     });
     expect(redis).not.toHaveProperty("value");
   });
+
+  it("exposes Groq readiness metadata without exposing a configured key", () => {
+    const groq = systemServiceReadiness().find(service => service.id === "groq");
+
+    expect(groq).toMatchObject({
+      label: "Groq",
+      category: "model",
+      requiredEnvironment: ["GROQ_API_KEY"],
+    });
+    expect(groq).not.toHaveProperty("value");
+    expect(groq).not.toHaveProperty("apiKey");
+  });
+
+  it("lists the additional model and remote-browser providers with only required environment names", () => {
+    const services = systemServiceReadiness();
+    const agnes = services.find(service => service.id === "agnes");
+    const aihubmix = services.find(service => service.id === "aihubmix");
+    const hyperbrowser = services.find(service => service.id === "hyperbrowser");
+
+    expect(agnes).toMatchObject({ label: "Agnes AI", category: "model", requiredEnvironment: ["AGNES_API_KEY", "AGNES_BASE_URL"] });
+    expect(aihubmix).toMatchObject({ label: "AIHubMix", category: "model", requiredEnvironment: ["AIHUBMIX_API_KEY", "AIHUBMIX_BASE_URL", "AIHUBMIX_FALLBACK_BASE_URL"] });
+    expect(hyperbrowser).toMatchObject({ label: "Hyperbrowser Agent Browser", category: "sandbox", requiredEnvironment: ["HYPERBROWSER_API_KEY", "SYNTHIA_AGENT_BROWSER_PROVIDER", "SYNTHIA_HYPERBROWSER_TIMEOUT_MINUTES", "SYNTHIA_HYPERBROWSER_ALLOWED_HOSTS"] });
+    for (const service of [agnes, aihubmix, hyperbrowser]) {
+      expect(service).not.toHaveProperty("value");
+      expect(service).not.toHaveProperty("apiKey");
+    }
+  });
 });

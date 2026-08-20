@@ -1,6 +1,6 @@
 import { ENV } from "../_core/env";
 
-export type LlmProviderName = "groq" | "openrouter" | "gemini" | "deepseek";
+export type LlmProviderName = "groq" | "agnes" | "aihubmix" | "openrouter" | "gemini" | "deepseek";
 
 export type LlmContentPart =
   | { type: "text"; text: string }
@@ -39,6 +39,8 @@ export class LlmProviderError extends Error {
 function keyForProvider(provider: LlmProviderName) {
   const keys: Record<LlmProviderName, string> = {
     groq: ENV.groqApiKey,
+    agnes: ENV.agnesApiKey,
+    aihubmix: ENV.aihubmixApiKey,
     openrouter: ENV.openRouterApiKey,
     gemini: ENV.geminiApiKey,
     deepseek: ENV.deepseekApiKey,
@@ -113,7 +115,7 @@ async function parseJsonResponse(provider: LlmProviderName, response: Response) 
 }
 
 async function requestOpenAiCompatible(input: {
-  provider: "groq" | "openrouter" | "deepseek";
+  provider: "groq" | "agnes" | "aihubmix" | "openrouter" | "deepseek";
   model: string;
   messages: LlmMessage[];
   temperature: number;
@@ -121,6 +123,8 @@ async function requestOpenAiCompatible(input: {
 }) {
   const urls = {
     groq: "https://api.groq.com/openai/v1/chat/completions",
+    agnes: `${ENV.agnesBaseUrl.replace(/\/$/, "")}/chat/completions`,
+    aihubmix: `${ENV.aihubmixBaseUrl.replace(/\/$/, "")}/chat/completions`,
     openrouter: "https://openrouter.ai/api/v1/chat/completions",
     deepseek: "https://api.deepseek.com/chat/completions",
   } as const;
@@ -216,7 +220,7 @@ export async function generateWithFallback(input: {
 }) {
   const preferred = (input.selectedModel?.provider ?? (input.purpose === "orchestrator" ? ENV.orchestratorProvider : ENV.subtaskProvider)) as LlmProviderName;
   const preferredModel = input.selectedModel?.model ?? (input.purpose === "orchestrator" ? ENV.orchestratorModel : ENV.subtaskModel);
-  const providerOrder = [preferred, "openrouter", "groq", "gemini", "deepseek"] as LlmProviderName[];
+  const providerOrder = [preferred, "openrouter", "groq", "gemini", "deepseek", "aihubmix", "agnes"] as LlmProviderName[];
   const attempted = new Set<LlmProviderName>();
   const errors: string[] = [];
   for (const provider of providerOrder) {

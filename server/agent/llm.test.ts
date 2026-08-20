@@ -4,6 +4,10 @@ import { generateWithFallback, isConfiguredVisionModel, parseStructuredModelOutp
 
 const environmentSnapshot = {
   groqApiKey: ENV.groqApiKey,
+  agnesApiKey: ENV.agnesApiKey,
+  aihubmixApiKey: ENV.aihubmixApiKey,
+  agnesBaseUrl: ENV.agnesBaseUrl,
+  aihubmixBaseUrl: ENV.aihubmixBaseUrl,
   openRouterApiKey: ENV.openRouterApiKey,
   orchestratorProvider: ENV.orchestratorProvider,
   orchestratorModel: ENV.orchestratorModel,
@@ -12,6 +16,10 @@ const environmentSnapshot = {
 
 afterEach(() => {
   ENV.groqApiKey = environmentSnapshot.groqApiKey;
+  ENV.agnesApiKey = environmentSnapshot.agnesApiKey;
+  ENV.aihubmixApiKey = environmentSnapshot.aihubmixApiKey;
+  ENV.agnesBaseUrl = environmentSnapshot.agnesBaseUrl;
+  ENV.aihubmixBaseUrl = environmentSnapshot.aihubmixBaseUrl;
   ENV.openRouterApiKey = environmentSnapshot.openRouterApiKey;
   ENV.orchestratorProvider = environmentSnapshot.orchestratorProvider;
   ENV.orchestratorModel = environmentSnapshot.orchestratorModel;
@@ -90,5 +98,36 @@ describe("structured model output parsing", () => {
         { type: "image_url", image_url: { url: "data:image/png;base64,aW1hZ2UtYnl0ZXM=" } },
       ] }],
     });
+  });
+
+  it("routes explicitly selected AIHubMix and Agnes models through their documented OpenAI-compatible endpoints", async () => {
+    ENV.aihubmixApiKey = "aihubmix-test-key";
+    ENV.agnesApiKey = "agnes-test-key";
+    ENV.aihubmixBaseUrl = "https://aihubmix.example.test/v1";
+    ENV.agnesBaseUrl = "https://agnes.example.test/v1";
+    const fetchMock = vi.fn().mockImplementation(() => new Response(JSON.stringify({
+      id: "provider-response",
+      choices: [{ message: { content: "{\"action\":{\"kind\":\"complete\"}}" } }],
+      usage: { prompt_tokens: 2, completion_tokens: 1, total_tokens: 3 },
+    }), { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    const aihubmix = await generateWithFallback({
+      purpose: "orchestrator",
+      selectedModel: { provider: "aihubmix", model: "free-text-model" },
+      messages: [{ role: "user", content: "Return one JSON action." }],
+    });
+    const agnes = await generateWithFallback({
+      purpose: "orchestrator",
+      selectedModel: { provider: "agnes", model: "agnes-2.0-flash" },
+      messages: [{ role: "user", content: "Return one JSON action." }],
+    });
+
+    expect(aihubmix.provider).toBe("aihubmix");
+    expect(agnes.provider).toBe("agnes");
+    expect(fetchMock.mock.calls[0]?.[0]).toBe("https://aihubmix.example.test/v1/chat/completions");
+    expect(fetchMock.mock.calls[1]?.[0]).toBe("https://agnes.example.test/v1/chat/completions");
+    expect(fetchMock.mock.calls[0]?.[1]?.headers).toMatchObject({ Authorization: "Bearer aihubmix-test-key" });
+    expect(fetchMock.mock.calls[1]?.[1]?.headers).toMatchObject({ Authorization: "Bearer agnes-test-key" });
   });
 });

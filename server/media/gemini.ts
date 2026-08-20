@@ -56,6 +56,9 @@ function configuredCapability(kind: GeminiMediaKind) {
     videoProvider: ENV.videoProvider,
     videoModels: ENV.videoModels,
     videoApiKey: ENV.videoApiKey,
+    aihubmixApiKey: ENV.aihubmixApiKey,
+    aihubmixGenerationEnabled: ENV.aihubmixGenerationEnabled,
+    aihubmixArtifactAllowedHosts: ENV.aihubmixArtifactAllowedHosts,
   });
   const capability = capabilities[kind];
   const expectedProvider = kind === "image" ? "gemini" : "gemini-omni-flash";

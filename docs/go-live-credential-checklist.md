@@ -8,7 +8,7 @@ Synthia’s PostgreSQL schema is already migrated and the application currently 
 
 | Capability | Selected production direction | Current state | Required before enabling |
 |---|---|---|---|
-| Text-agent execution | Groq, OpenRouter, Gemini, and/or DeepSeek | Implemented, not configured | At least one provider API key and model routing configuration |
+| Text-agent execution | Groq, OpenRouter, Gemini, DeepSeek, AIHubMix, and/or Agnes AI | Implemented, not configured | At least one provider API key and model routing configuration |
 | Vision understanding | Gemini or another configured vision model | Implemented, not configured | `GEMINI_API_KEY` and a `SYNTHIA_VISION_MODELS` entry |
 | Voice input | Authenticated transcription route | Implemented, provider-gated | Transcription service configuration available in the hosted runtime |
 | Image generation | Gemini `gemini-3.1-flash-image` | Implemented, unavailable by default | Gemini key, model selection, artifact storage, and live verification |
@@ -21,12 +21,15 @@ Synthia’s PostgreSQL schema is already migrated and the application currently 
 |---|---|---|---|
 | Synthia task state | `SYNTHIA_POSTGRES_URL` | Already configured/migrated; retain for production | Event-sourced tasks, task metadata, deliverables, attachments, and usage records |
 | Queue and realtime | `REDIS_URL`, `REDIS_TLS_ENABLED` | Required | BullMQ jobs, retry/recovery, rate-limit counters, and event fan-out |
-| Primary LLM routing | One or more of `GROQ_API_KEY`, `OPENROUTER_API_KEY`, `GEMINI_API_KEY`, `DEEPSEEK_API_KEY` | At least one required | Autonomous planning and task execution; additional keys provide fallback |
+| Primary LLM routing | One or more of `GROQ_API_KEY`, `OPENROUTER_API_KEY`, `GEMINI_API_KEY`, `DEEPSEEK_API_KEY`, `AIHUBMIX_API_KEY`, `AGNES_API_KEY` | At least one required | Autonomous planning and task execution; additional keys provide fallback |
+| AIHubMix text and reasoning | `AIHUBMIX_API_KEY`, optional `AIHUBMIX_BASE_URL`, optional `AIHUBMIX_FALLBACK_BASE_URL` | Implemented, not configured | Uses the documented OpenAI-compatible chat endpoint. Treat model availability and pricing as provider-controlled; configure explicit selected model IDs before use. |
+| Agnes AI text and reasoning | `AGNES_API_KEY`, optional `AGNES_BASE_URL` | Implemented, not configured | Uses the documented OpenAI-compatible chat endpoint. Configure explicit selected model IDs before use. |
 | Model configuration | `SYNTHIA_ORCHESTRATOR_PROVIDER`, `SYNTHIA_ORCHESTRATOR_MODEL`, `SYNTHIA_SUBTASK_PROVIDER`, `SYNTHIA_SUBTASK_MODEL`, `SYNTHIA_AVAILABLE_MODELS`, `SYNTHIA_VISION_MODELS` | Required for configured model selection | Defines the task model catalog and vision-capable choices; vision values use `provider:model` entries |
 | Gemini image generation | `GEMINI_API_KEY`, `SYNTHIA_IMAGE_PROVIDER=gemini`, `SYNTHIA_IMAGE_MODELS=gemini-3.1-flash-image` | Required for image generation | Enables the selected Gemini image adapter after readiness checks |
 | Gemini video generation | `GEMINI_API_KEY`, `SYNTHIA_VIDEO_PROVIDER=gemini-omni-flash`, `SYNTHIA_VIDEO_MODELS=gemini-omni-flash` | Required for video generation | Enables the selected Gemini Omni Flash video adapter after readiness checks |
 | Web research | `TAVILY_API_KEY`, `SERPER_API_KEY`, `SYNTHIA_SEARCH_PRIMARY` | At least one recommended; both recommended for failover | Search tools used by autonomous tasks |
 | Isolated execution | `SYNTHIA_SANDBOX_PROVIDER=e2b`, `E2B_API_KEY`, `E2B_TEMPLATE_ID`, `E2B_SANDBOX_TIMEOUT_SECONDS`, `SYNTHIA_SANDBOX_REGION` | Required for production computer execution | Secure browser, filesystem, terminal, and media processing in isolated sandboxes |
+| Remote agent browser | `HYPERBROWSER_API_KEY`, `SYNTHIA_AGENT_BROWSER_PROVIDER=hyperbrowser`, optional `HYPERBROWSER_BASE_URL`, `SYNTHIA_HYPERBROWSER_TIMEOUT_MINUTES`, `SYNTHIA_HYPERBROWSER_ALLOWED_HOSTS` | Implemented, not configured | Creates task-scoped remote-browser sessions only through the server adapter. Sessions use a bounded 5–30 minute timeout and require explicit cleanup. |
 | Artifact storage | Select S3 or R2 through `SYNTHIA_STORAGE_PROVIDER` | Required | Stores task inputs and generated artifacts outside the database |
 | AWS S3 option | `AWS_REGION`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_S3_BUCKET`, optional `AWS_S3_ENDPOINT` | Required only when S3 is selected | Durable task artifact storage |
 | Cloudflare R2 option | `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET`, `R2_PUBLIC_BASE_URL` | Required only when R2 is selected | Durable task artifact storage |

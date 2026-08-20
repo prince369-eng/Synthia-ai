@@ -175,6 +175,20 @@
 - [x] Audit Agent and workspace readiness text for legacy E2B-only assumptions after adding Bunnyshell HopX.
 - [x] Correct the verified Agent generic sandbox-requirement copy so it explicitly identifies E2B or Bunnyshell HopX without invoking either provider.
 - [x] Add non-secret coverage and visually verify the settled Agent state: Redis queue and both configured search providers are ready, while models and both sandbox options remain transparently credential-gated.
+
+## Groq activation
+
+- [ ] Add a Groq credential acceptance path using secure project secrets management.
+- [x] Add an independently opt-in, non-generative Groq connectivity check that never logs the credential or invokes a model; default test execution verifies it is skipped unless `SYNTHIA_RUN_LIVE_GROQ_CONNECTIVITY_CHECK=true` is deliberately supplied.
+- [ ] Verify the authenticated provider catalog reports Groq readiness after secure configuration, then checkpoint the validated state.
+
+## Additional provider evaluation and activation
+
+- [x] Review the official Agnes AI, AIHubMix, and Hyperbrowser documentation for supported APIs, authentication, capabilities, quotas, and applicable safety boundaries.
+- [x] Determine a scope-aligned provider contract for AIHubMix text, coding, reasoning, image, video, and audio models; Agnes AI capabilities only where official API support is documented; and Hyperbrowser agent-browser operations.
+- [x] Add credential-gated adapters, model capability metadata, secure readiness reporting, and configuration documentation without exposing provider credentials; AIHubMix image/video artifact retrieval additionally requires an explicit output-host allowlist.
+- [x] Add non-billable unit coverage and separately opt-in connectivity checks that do not invoke text, coding, reasoning, image, video, audio, or browser-automation workloads; routine test runs skip all live-provider calls.
+- [ ] Securely accept user-provided provider keys, verify configured readiness, and checkpoint without consuming free-generation quota unless the user explicitly authorizes a narrowly scoped live test.
 - [x] Redesign the central task composer with compact workspace summary, attachment controls, lower control bar, suggestions, and recent-task hierarchy.
 - [x] Add a persisted user-owned task-attachment schema and reviewed PostgreSQL migration for local uploads and selected Library artifacts.
 - [x] Add a rate-limited authenticated attachment-upload contract with strict filename, MIME, and 10 MB file validation through secure object storage.

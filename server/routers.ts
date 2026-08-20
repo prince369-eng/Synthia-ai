@@ -51,6 +51,7 @@ import { ENV } from "./_core/env";
 import { mediaReadiness } from "./mediaCapabilities";
 import { generateGeminiImage, generateGeminiVideo, GeminiMediaError, type GeminiMediaReference } from "./media/gemini";
 import { generatePixazoImage, generatePixazoVideo, PixazoMediaError } from "./media/pixazo";
+import { AIHubMixMediaError, generateAIHubMixAudio, generateAIHubMixImage, generateAIHubMixVideo } from "./media/aihubmix";
 import { logger } from "./security/logger";
 import { transcribeAudio } from "./_core/voiceTranscription";
 
@@ -87,8 +88,8 @@ const selectedModelSchema = z.object({
 });
 const voiceMimeSchema = z.enum(["audio/webm", "audio/ogg", "audio/wav", "audio/mpeg", "audio/mp4", "audio/x-m4a"]);
 const mediaGenerationSchema = taskIdSchema.extend({
-  kind: z.enum(["image", "video"]),
-  provider: z.enum(["gemini", "pixazo"]).optional(),
+  kind: z.enum(["image", "video", "audio"]),
+  provider: z.enum(["gemini", "pixazo", "aihubmix"]).optional(),
   prompt: z.string().trim().min(3).max(4_000),
   model: z.string().trim().min(1).max(180).optional(),
   aspectRatio: z.enum(["1:1", "16:9", "9:16", "4:3", "3:4"]).optional(),
@@ -308,21 +309,32 @@ export const appRouter = router({
     generateMedia: protectedProcedure.input(mediaGenerationSchema).mutation(async ({ ctx, input }) => {
       const task = await requireOwnedTask(input.taskId, ctx.user.id);
       await enforceUserMutationLimit(ctx.user.id, `media-generation-${input.kind}`, input.kind === "image" ? 8 : 3, 600);
-      const reference = await imageReferenceForTask(task.id, input.referenceAttachmentId);
-      const provider = input.provider ?? ((input.kind === "image" ? ENV.imageProvider : ENV.videoProvider) === "pixazo" ? "pixazo" : "gemini");
+      const reference = input.kind === "audio" ? undefined : await imageReferenceForTask(task.id, input.referenceAttachmentId);
+      const configuredProvider = input.kind === "image" ? ENV.imageProvider : input.kind === "video" ? ENV.videoProvider : ENV.audioProvider;
+      const provider = input.provider ?? (configuredProvider === "pixazo" || configuredProvider === "aihubmix" ? configuredProvider : "gemini");
       await appendTaskEvent(task.id, {
         type: "tool_call",
         payload: { tool: `${provider}_media_generation`, provider, kind: input.kind, model: input.model ?? null, referenceAttachmentId: input.referenceAttachmentId ?? null },
       });
       try {
-        const generated = provider === "pixazo"
+        const generated = provider === "aihubmix"
           ? input.kind === "image"
-            ? await generatePixazoImage({ prompt: input.prompt, model: input.model, aspectRatio: input.aspectRatio as "1:1" | "16:9" | "9:16" | "4:3" | "3:4" | undefined, referenceAttached: Boolean(reference) })
-            : await generatePixazoVideo({ prompt: input.prompt, model: input.model, aspectRatio: input.aspectRatio === "9:16" ? "9:16" : "16:9", referenceAttached: Boolean(reference) })
-          : input.kind === "image"
+            ? await generateAIHubMixImage({ prompt: input.prompt, model: input.model, aspectRatio: input.aspectRatio, referenceAttached: Boolean(reference) })
+            : input.kind === "video"
+              ? await generateAIHubMixVideo({ prompt: input.prompt, model: input.model, aspectRatio: input.aspectRatio === "9:16" ? "9:16" : "16:9", referenceAttached: Boolean(reference) })
+              : await generateAIHubMixAudio({ prompt: input.prompt, model: input.model })
+          : provider === "pixazo"
+          ? input.kind === "audio"
+            ? (() => { throw new PixazoMediaError("CONFIGURATION_REQUIRED", "Pixazo audio routing is not enabled. Select a configured AIHubMix audio provider."); })()
+            : input.kind === "image"
+              ? await generatePixazoImage({ prompt: input.prompt, model: input.model, aspectRatio: input.aspectRatio as "1:1" | "16:9" | "9:16" | "4:3" | "3:4" | undefined, referenceAttached: Boolean(reference) })
+              : await generatePixazoVideo({ prompt: input.prompt, model: input.model, aspectRatio: input.aspectRatio === "9:16" ? "9:16" : "16:9", referenceAttached: Boolean(reference) })
+          : input.kind === "audio"
+            ? (() => { throw new GeminiMediaError("CONFIGURATION_REQUIRED", "Configure AIHubMix audio generation before requesting a task audio artifact."); })()
+            : input.kind === "image"
             ? await generateGeminiImage({ prompt: input.prompt, model: input.model, aspectRatio: input.aspectRatio as "1:1" | "16:9" | "9:16" | "4:3" | "3:4" | undefined, reference })
             : await generateGeminiVideo({ prompt: input.prompt, model: input.model, aspectRatio: input.aspectRatio === "9:16" ? "9:16" : "16:9", reference });
-        const extension = generated.mimeType === "image/jpeg" ? "jpg" : generated.mimeType === "image/webp" ? "webp" : generated.kind === "video" ? "mp4" : "png";
+        const extension = generated.mimeType === "image/jpeg" ? "jpg" : generated.mimeType === "image/webp" ? "webp" : generated.mimeType === "audio/mpeg" ? "mp3" : generated.mimeType === "audio/wav" ? "wav" : generated.mimeType === "audio/ogg" ? "ogg" : generated.mimeType === "audio/aac" ? "aac" : generated.mimeType === "audio/flac" ? "flac" : generated.kind === "video" ? "mp4" : "png";
         const filename = `synthia-${generated.kind}-${Date.now()}.${extension}`;
         const artifact = await putTaskArtifact({ taskId: task.id, filename, body: generated.bytes, contentType: generated.mimeType });
         const event = await appendTaskEvent(task.id, {
@@ -349,7 +361,7 @@ export const appRouter = router({
         return { deliverableId, filename, fileType: generated.mimeType, provider: generated.provider, model: generated.model };
       } catch (error) {
         const message = error instanceof Error ? error.message : "Media generation failed.";
-        const mediaError = error instanceof GeminiMediaError || error instanceof PixazoMediaError ? error : null;
+        const mediaError = error instanceof GeminiMediaError || error instanceof PixazoMediaError || error instanceof AIHubMixMediaError ? error : null;
         await appendTaskEvent(task.id, { type: "error", payload: { code: mediaError?.code ?? "MEDIA_GENERATION_FAILED", message } });
         if (mediaError?.code === "CONFIGURATION_REQUIRED") {
           throw new TRPCError({ code: "PRECONDITION_FAILED", message });
