@@ -112,6 +112,12 @@
 - [x] Validate readable contrast, desktop/mobile visual balance, and complete token regression coverage before checkpointing.
 - [x] Audit remaining amber/orange tokens and document the limited high-priority surfaces permitted to retain them.
 - [x] Add focused source regressions that enforce the approved teal/cyan palette and permitted amber-highlight surfaces.
+
+## Dashboard task-history readiness
+
+- [x] Diagnose the dashboard task-history loading state observed during visual review without creating mock task data.
+- [x] Correct the state only if runtime evidence identifies a loading, empty, or unavailable-state defect.
+- [x] Add regression coverage and visually verify the final task-history state before checkpointing.
 - [x] Redesign the central task composer with compact workspace summary, attachment controls, lower control bar, suggestions, and recent-task hierarchy.
 - [x] Add a persisted user-owned task-attachment schema and reviewed PostgreSQL migration for local uploads and selected Library artifacts.
 - [x] Add a rate-limited authenticated attachment-upload contract with strict filename, MIME, and 10 MB file validation through secure object storage.

@@ -1,4 +1,5 @@
 import { trpc } from "@/lib/trpc";
+import { useAuth } from "@/_core/hooks/useAuth";
 import { ArrowUp, ArrowUpRight, AudioLines, BarChart3, BookOpen, Bot, CalendarClock, Code2, FileText, FolderOpen, Gauge, ImageIcon, Loader2, MessageSquare, Mic, MoreHorizontal, Play, Plus, Search, Share2, SlidersHorizontal, Sparkles, Table2, Upload, Video } from "lucide-react";
 import React, { FormEvent, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
@@ -28,6 +29,7 @@ export function composerModelCapabilityLabel(model: { capabilities?: string[] })
 
 export default function TaskDashboard() {
   const [, setLocation] = useLocation();
+  const { isAuthenticated } = useAuth();
   const [goal, setGoal] = useState("");
   const [involvesCode, setInvolvesCode] = useState(false);
   const [mode, setMode] = useState<"ask_before_risky" | "supervised">("ask_before_risky");
@@ -49,7 +51,7 @@ export default function TaskDashboard() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const recorderRef = useRef<MediaRecorder | null>(null);
   const voiceStreamRef = useRef<MediaStream | null>(null);
-  const tasks = trpc.tasks.list.useQuery(undefined, TASK_HISTORY_QUERY_OPTIONS);
+  const tasks = trpc.tasks.list.useQuery(undefined, { ...TASK_HISTORY_QUERY_OPTIONS, enabled: isAuthenticated });
   const projects = trpc.projects.list.useQuery(undefined, { retry: false });
   const settings = trpc.settings.get.useQuery(undefined, { retry: false });
   const usage = trpc.workspace.usage.useQuery(undefined, { retry: false });
@@ -272,9 +274,9 @@ export default function TaskDashboard() {
 
         <section className="synthia-dashboard-tasks" aria-label="Task history">
           <div className="synthia-section-heading"><h2>Recent tasks</h2><span>{tasks.data?.length ?? 0} total</span></div>
-          {!tasks.isError && tasks.isLoading ? <div className="synthia-loading-row"><Loader2 className="animate-spin" size={14} /> Loading your tasks…</div> : null}
-          {tasks.isError ? <div className="synthia-unavailable-note"><Bot size={15} /> Task history will connect after the external Synthia data store is configured.</div> : null}
-          {!tasks.isLoading && !tasks.isError && tasks.data?.length === 0 ? <div className="synthia-empty-tasks"><Bot size={17} /><span>Tasks you create will appear here with their live execution state.</span></div> : null}
+          {isAuthenticated && !tasks.isError && tasks.isLoading ? <div className="synthia-loading-row"><Loader2 className="animate-spin" size={14} /> Loading your tasks…</div> : null}
+          {isAuthenticated && tasks.isError ? <div className="synthia-unavailable-note"><Bot size={15} /> Task history could not be loaded. Reload the workspace and try again.</div> : null}
+          {isAuthenticated && !tasks.isLoading && !tasks.isError && tasks.data?.length === 0 ? <div className="synthia-empty-tasks"><Bot size={17} /><span>Start with the prompt above. Tasks you create will appear here with their live execution state.</span></div> : null}
           <div className="grid gap-1.5">{tasks.data?.map(task => <button key={task.id} onClick={() => setLocation(`/tasks/${task.id}`)} className="synthia-task-row"><span className={cn("grid h-7 w-7 place-items-center rounded-md", task.status === "completed" ? "bg-emerald-400/10 text-emerald-300" : "bg-teal-400/10 text-cyan-300")}><Play size={13} /></span><span className="min-w-0 flex-1"><b>{task.title}</b><small>{task.currentStepSummary ?? task.goal}</small></span><span className="hidden text-[11px] text-[#778985] sm:block">{task.status.replace(/_/g, " ")}</span><ArrowUpRight className="text-[#637773]" size={14} /></button>)}</div>
         </section>
       </section>

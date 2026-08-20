@@ -6,10 +6,19 @@ import { TaskComposerAttachments } from "../client/src/components/TaskComposerAt
 import { LibraryPicker } from "../client/src/components/LibraryPicker";
 import TaskDashboard, { buildTaskAttachmentRefs } from "../client/src/pages/TaskDashboard";
 
+const dashboardState = vi.hoisted(() => ({
+  authenticated: true,
+  taskHistory: { data: [] as unknown[] | undefined, isLoading: false, isError: false },
+  taskQueryOptions: undefined as { enabled?: boolean } | undefined,
+}));
+
 vi.mock("@/lib/trpc", () => ({
   trpc: {
     tasks: {
-      list: { useQuery: () => ({ data: [], isLoading: false, isError: false }) },
+      list: { useQuery: (_input: unknown, options: { enabled?: boolean }) => {
+        dashboardState.taskQueryOptions = options;
+        return dashboardState.taskHistory;
+      } },
       uploadAttachment: { useMutation: () => ({ mutateAsync: vi.fn(), isPending: false }) },
       transcribeVoice: { useMutation: () => ({ mutateAsync: vi.fn(), isPending: false }) },
       create: { useMutation: () => ({ mutate: vi.fn(), isPending: false }) },
@@ -26,7 +35,16 @@ vi.mock("@/lib/trpc", () => ({
   },
 }));
 
-afterEach(cleanup);
+vi.mock("@/_core/hooks/useAuth", () => ({
+  useAuth: () => ({ isAuthenticated: dashboardState.authenticated }),
+}));
+
+afterEach(() => {
+  cleanup();
+  dashboardState.authenticated = true;
+  dashboardState.taskHistory = { data: [], isLoading: false, isError: false };
+  dashboardState.taskQueryOptions = undefined;
+});
 
 describe("task composer attachments", () => {
   it("renders an attachment chip and removes it with its explicit control", async () => {
@@ -80,5 +98,29 @@ describe("task composer attachments", () => {
     expect(screen.getByText("Wide Research")).toBeTruthy();
     expect(screen.getByText("Scheduled task")).toBeTruthy();
     expect(screen.getByText("Playbook")).toBeTruthy();
+  });
+
+  it("loads task history only for an authenticated workspace and renders a calm empty state", () => {
+    render(<TaskDashboard />);
+    expect(dashboardState.taskQueryOptions?.enabled).toBe(true);
+    expect(screen.getByText("Start with the prompt above. Tasks you create will appear here with their live execution state.")).toBeTruthy();
+    expect(screen.queryByText("Loading your tasks…")).toBeNull();
+  });
+
+  it("does not present task-history loading, empty, or unavailable copy before authentication", () => {
+    dashboardState.authenticated = false;
+    dashboardState.taskHistory = { data: undefined, isLoading: false, isError: false };
+    render(<TaskDashboard />);
+    expect(dashboardState.taskQueryOptions?.enabled).toBe(false);
+    expect(screen.queryByText("Loading your tasks…")).toBeNull();
+    expect(screen.queryByText(/Tasks you create will appear here/)).toBeNull();
+    expect(screen.queryByText(/Task history could not be loaded/)).toBeNull();
+  });
+
+  it("renders an accurate unavailable state instead of blaming unconfigured data storage", () => {
+    dashboardState.taskHistory = { data: undefined, isLoading: false, isError: true };
+    render(<TaskDashboard />);
+    expect(screen.getByText("Task history could not be loaded. Reload the workspace and try again.")).toBeTruthy();
+    expect(screen.queryByText(/external Synthia data store/)).toBeNull();
   });
 });
