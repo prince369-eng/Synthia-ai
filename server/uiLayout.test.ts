@@ -190,12 +190,21 @@ describe("compact workspace layout contract", () => {
     expect(workspace).not.toContain("require an E2B desktop sandbox.");
   });
 
-  it("keeps Agent runtime readiness explicit about both supported sandbox providers", () => {
+  it("presents Agent capabilities as user-facing task abilities rather than backend provider configuration", () => {
     const agent = readFileSync(new URL("../client/src/pages/Agent.tsx", import.meta.url), "utf8");
+    const settings = readFileSync(new URL("../client/src/pages/Settings.tsx", import.meta.url), "utf8");
 
-    expect(agent).toContain("E2B or Bunnyshell HopX sandbox credentials are required");
-    expect(agent).toContain("sandbox provider${configuredSandboxes === 1 ? \"\" : \"s\"} configured for isolated execution");
-    expect(agent).not.toContain('sandbox: "Sandbox credentials are required"');
+    expect(agent).toContain("What Synthia can use for a task");
+    expect(agent).toContain("Agent’s Computer");
+    expect(agent).toContain("Computer setup is needed");
+    expect(agent).not.toContain("Bunnyshell");
+    expect(agent).not.toContain("E2B");
+    expect(agent).not.toContain("configured provider");
+    expect(settings).toContain('title="Connectors"');
+    expect(settings).toContain('title="Skills"');
+    expect(settings).toContain("Add the apps you want Synthia to use for your tasks");
+    expect(settings).not.toContain("server-side configuration but never exposes credential values");
+    expect(settings).not.toContain("Task notifications use configured server-side mail providers");
   });
 
   it("keeps ordinary shared-shell task states in the teal signal family", () => {

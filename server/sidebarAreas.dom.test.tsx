@@ -4,7 +4,7 @@ import React from "react";
 import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { AgentNavigationControls, agentTaskStateCopy, runtimeCapabilityCopy } from "../client/src/pages/Agent";
-import { ConnectedIntegrationRow, filterPluginServices } from "../client/src/pages/Plugins";
+import { ConnectedIntegrationRow, filterPluginServices, providerStatusCopy } from "../client/src/pages/Plugins";
 import { ProjectCreateForm, ProjectWorkspaceLink } from "../client/src/pages/Projects";
 import { ProfileMenu } from "../client/src/components/SynthiaAppShell";
 
@@ -33,24 +33,25 @@ describe("reference-led Synthia sidebar areas", () => {
     render(<AgentNavigationControls onCreateTask={onCreateTask} onOpenServices={onOpenServices} />);
 
     await user.click(screen.getByRole("button", { name: "Create task" }));
-    await user.click(screen.getByRole("button", { name: "Service connections" }));
+    await user.click(screen.getByRole("button", { name: "Explore capabilities" }));
     expect(onCreateTask).toHaveBeenCalledTimes(1);
     expect(onOpenServices).toHaveBeenCalledTimes(1);
-    expect(agentTaskStateCopy({ isLoading: false, isError: true, activeCount: 0 })).toContain("data store is configured");
-    expect(runtimeCapabilityCopy({ isLoading: false, configuredModels: 1, configuredSearch: 2, configuredSandboxes: 0 })).toEqual({ models: "1 configured provider", search: "2 configured search providers", sandbox: "E2B or Bunnyshell HopX sandbox credentials are required" });
+    expect(agentTaskStateCopy({ isLoading: false, isError: true, activeCount: 0 })).toBe("Task activity is temporarily unavailable.");
+    expect(runtimeCapabilityCopy({ isLoading: false, configuredModels: 1, configuredSearch: 2, configuredSandboxes: 0 })).toEqual({ models: "Ready to plan and complete tasks", search: "Ready to research the web", sandbox: "Computer setup is needed" });
   });
 
   it("filters real Plugin readiness records and initiates the selected integration disconnect", async () => {
     const user = userEvent.setup();
     const onDisconnect = vi.fn();
     const plugins = [
-      { id: "groq", label: "Groq", category: "model", configured: true, status: "active" },
       { id: "google", label: "Google", category: "integration", configured: true, status: "connected" },
-      { id: "slack", label: "Slack", category: "integration", configured: false, status: "missing_credentials" },
+      { id: "slack", label: "Slack", category: "integration", configured: true, status: "ready_to_connect" },
     ];
-    expect(filterPluginServices(plugins, "goo", "all")).toEqual([plugins[1]]);
-    expect(filterPluginServices(plugins, "", "configured")).toEqual([plugins[0], plugins[1]]);
-    expect(filterPluginServices(plugins, "", "connected")).toEqual([plugins[1]]);
+    expect(filterPluginServices(plugins, "goo", "all")).toEqual([plugins[0]]);
+    expect(filterPluginServices(plugins, "", "configured")).toEqual(plugins);
+    expect(filterPluginServices(plugins, "", "connected")).toEqual([plugins[0]]);
+    expect(providerStatusCopy("ready_to_connect")).toBe("Available to connect");
+    expect(providerStatusCopy("active")).toBe("Not available in this workspace");
 
     render(<ConnectedIntegrationRow integration={{ id: "integration-1", label: "Google Workspace", provider: "google", availableToAllTasks: true }} pending={false} onDisconnect={onDisconnect} />);
     await user.click(screen.getByRole("button", { name: "Disconnect" }));

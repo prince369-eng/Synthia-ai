@@ -203,6 +203,22 @@
 - [x] Distinguish stored credential readiness from actionable media and agent-browser availability in the authenticated provider catalog.
 - [x] Add concise guidance for Pixazo model/enablement and Hyperbrowser domain-policy prerequisites without exposing secrets or changing provider quota state.
 - [x] Add deterministic regressions and browser verification for the clarified provider-state semantics.
+
+## User-focused capability presentation
+
+- [x] Audit Agent Capabilities and Settings views for internal backend, provider, credential-variable, and configuration implementation disclosures.
+- [x] Replace implementation-oriented language with user-available features, availability, and safe setup guidance aligned to the approved Manus-style interaction pattern.
+- [x] Preserve truthful availability, approval, and safety boundaries without naming internal infrastructure or revealing credential configuration mechanics.
+- [x] Add source regressions and authenticated browser verification for the user-focused capability presentation.
+
+## Manus-pattern capability surfaces
+
+- [x] Reframe Connectors as a browseable catalog of user apps and user-approved connections, with short outcome-focused descriptions and no backend-service cards.
+- [x] Reframe Skills as a user-managed catalog of task abilities with concise explanations and available/unavailable controls, without provider or credential implementation language.
+- [x] Reframe Mail and Computer as user-facing workflows and controls rather than mail-provider and sandbox-runtime status pages.
+- [x] Reframe the Agent capability summary around usable task abilities and approvals, not runtime configuration counts or named internal services.
+- [x] Align the sidebar Connections area with the Settings connectors catalog so it describes user apps and task outcomes rather than internal provider readiness.
+- [x] Add deterministic regression coverage and authenticated browser review for the approved Manus-style capability presentation.
 - [x] Redesign the central task composer with compact workspace summary, attachment controls, lower control bar, suggestions, and recent-task hierarchy.
 - [x] Add a persisted user-owned task-attachment schema and reviewed PostgreSQL migration for local uploads and selected Library artifacts.
 - [x] Add a rate-limited authenticated attachment-upload contract with strict filename, MIME, and 10 MB file validation through secure object storage.
