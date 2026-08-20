@@ -20,8 +20,8 @@ const navItems = [
 ];
 
 const stateDot: Record<string, string> = {
-  queued: "bg-amber-500",
-  booting: "bg-amber-500",
+  queued: "bg-teal-500",
+  booting: "bg-teal-500",
   planning: "bg-teal-500",
   running: "bg-teal-500 animate-pulse",
   needs_input: "bg-rose-500",

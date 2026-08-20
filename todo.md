@@ -125,6 +125,13 @@
 - [x] Replace standard workspace accents with teal/cyan while retaining amber only for approvals and warnings.
 - [x] Add regression coverage and verify the workspace visually at desktop and mobile sizes before checkpointing.
 - [x] Confirm at 1440×1000 and 390×844 that the compact teal/cyan composer, starter chips, empty task-history state, and mobile navigation remain contained without clipped controls or non-decision orange emphasis.
+
+## Cross-route visual-system audit
+
+- [x] Inspect remaining routes and shared components for standard-control orange or amber that violates the teal/cyan and amber-allowlist boundary.
+- [x] Correct a verified semantic-color violation without affecting credential-gated functionality.
+- [x] Add targeted regression coverage and verify affected routes at desktop and mobile sizes before checkpointing.
+- [x] Verify `/`, `/agent`, and `/settings` at 1440×1000 and 390×844: normal task-state signals remain teal, operational-unavailable and approval attention remain amber, and controls remain visible without clipping.
 - [x] Redesign the central task composer with compact workspace summary, attachment controls, lower control bar, suggestions, and recent-task hierarchy.
 - [x] Add a persisted user-owned task-attachment schema and reviewed PostgreSQL migration for local uploads and selected Library artifacts.
 - [x] Add a rate-limited authenticated attachment-upload contract with strict filename, MIME, and 10 MB file validation through secure object storage.

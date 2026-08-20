@@ -181,4 +181,19 @@ describe("compact workspace layout contract", () => {
     expect(workspace).not.toContain('bg-orange-');
     expect(workspace).not.toContain('border-orange-');
   });
+
+  it("keeps ordinary shared-shell task states in the teal signal family", () => {
+    const shell = readFileSync(new URL("../client/src/components/SynthiaAppShell.tsx", import.meta.url), "utf8");
+
+    expect(shell).toContain('queued: "bg-teal-500"');
+    expect(shell).toContain('booting: "bg-teal-500"');
+    expect(shell).not.toContain('bg-amber-500');
+  });
+
+  it("uses cyan rather than legacy orange for usage-ledger values", () => {
+    const settings = readFileSync(new URL("../client/src/pages/Settings.tsx", import.meta.url), "utf8");
+
+    expect(settings).toContain('text-cyan-200');
+    expect(settings).not.toContain('text-orange-200');
+  });
 });
