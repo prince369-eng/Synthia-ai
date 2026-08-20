@@ -61,4 +61,15 @@ describe("serviceConnectionStatus", () => {
       expect(service).not.toHaveProperty("apiKey");
     }
   });
+
+  it("keeps configured Pixazo and Hyperbrowser credentials distinct from actionable media and remote-browser capability", () => {
+    const services = systemServiceReadiness();
+    const pixazo = services.find(service => service.id === "pixazo");
+    const hyperbrowser = services.find(service => service.id === "hyperbrowser");
+
+    expect(pixazo).toMatchObject({ label: "Pixazo", category: "model" });
+    expect(hyperbrowser).toMatchObject({ label: "Hyperbrowser Agent Browser", category: "sandbox" });
+    expect(pixazo?.detail ?? "").not.toContain("API_KEY=");
+    expect(hyperbrowser?.detail ?? "").not.toContain("API_KEY=");
+  });
 });
