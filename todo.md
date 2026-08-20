@@ -277,8 +277,8 @@
 - [x] Securely configure the user-provided OpenRouter and Gemini credentials, then validate their documented non-generative provider endpoints without invoking inference or media generation.
 - [x] Retrieve and present only provider-supported free-tier model catalog and usage information for Groq, OpenRouter, and Gemini, without exposing credentials or inventing quota availability.
 - [x] Add opt-in-only provider-account regressions and user-facing status coverage for the three configured language-model services.
-- [ ] Confirm the selected image-generation provider and required API credential before enabling image generation.
-- [ ] Confirm the selected video-generation provider and required API credential before enabling video generation.
+- [x] Confirm the selected image-generation provider and required API credential before enabling image generation.
+- [x] Confirm the selected video-generation provider and required API credential before enabling video generation.
 - [ ] Confirm the selected vision-capable LLM models and `SYNTHIA_VISION_MODELS` configuration before enabling visual task execution.
 - [ ] Confirm the selected audio transcription provider and credential before enabling voice input in production.
 - [ ] Confirm media storage, sandbox, queue, database, search, email, and application secret values before live end-to-end testing.
