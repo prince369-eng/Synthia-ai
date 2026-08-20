@@ -37,7 +37,7 @@ export type AutonomySettings = {
   allowWebSearch: boolean;
   allowCodeExecution: boolean;
   allowFileWrites: boolean;
-  selectedModel?: { provider: "groq" | "openrouter" | "gemini" | "deepseek"; model: string };
+  selectedModel?: { provider: "groq" | "agnes" | "aihubmix" | "openrouter" | "gemini" | "deepseek"; model: string };
 };
 
 export type TaskAttachmentInput = {

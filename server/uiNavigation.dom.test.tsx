@@ -5,7 +5,7 @@ import { cleanup, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { ProfileMenu } from "../client/src/components/SynthiaAppShell";
 import { AuthEntryActions } from "../client/src/components/SynthiaAppShell";
-import { modelCapabilityLabel, PreferenceSwitch, ServiceConnectionCard, SettingsAccount, SettingsCloseButton, SettingsGeneral, SettingsSectionNav, SettingsUsage } from "../client/src/pages/Settings";
+import { modelCapabilityLabel, PreferenceSwitch, ServiceConnectionCard, SettingsAccount, SettingsCloseButton, SettingsGeneral, SettingsModels, SettingsSectionNav, SettingsUsage } from "../client/src/pages/Settings";
 import { TaskMediaMenu, TaskOverflowMenu, WorkspaceReturnNavigation } from "../client/src/pages/TaskWorkspace";
 
 vi.mock("@/lib/trpc", () => ({
@@ -174,6 +174,19 @@ describe("Synthia navigation behavior", () => {
   it("uses capability labels that distinguish real vision-capable configured models", () => {
     expect(modelCapabilityLabel({ capabilities: ["text"] })).toBe("Text");
     expect(modelCapabilityLabel({ capabilities: ["text", "vision"] })).toBe("Text + vision");
+  });
+
+  it("identifies configured AIHubMix and Agnes free-tier choices by their exact model IDs", () => {
+    render(<SettingsModels readiness={[{ category: "model", configured: true }]} loading={false} error={false} models={[
+      { id: "aihubmix:glm-5.2-free", provider: "aihubmix", model: "glm-5.2-free", label: "Primary", capabilities: ["text"] },
+      { id: "agnes:agnes-2.0-flash", provider: "agnes", model: "agnes-2.0-flash", label: "Configured", capabilities: ["text"] },
+    ]} />);
+
+    expect(screen.getByText("glm-5.2-free")).toBeTruthy();
+    expect(screen.getByText("agnes-2.0-flash")).toBeTruthy();
+    expect(screen.getAllByText("Text", { exact: true })).toHaveLength(2);
+    expect(screen.queryByText("AIHubMix · Primary")).toBeNull();
+    expect(screen.queryByText("Agnes AI · Configured")).toBeNull();
   });
 
   it("exposes scoped task actions and keeps scheduling visibly unavailable while requiring delete confirmation", async () => {

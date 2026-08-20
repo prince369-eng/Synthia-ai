@@ -11,12 +11,14 @@ const environmentSnapshot = {
   hyperbrowserApiKey: ENV.hyperbrowserApiKey,
   hyperbrowserTimeoutMinutes: ENV.hyperbrowserTimeoutMinutes,
   hyperbrowserAllowedHosts: [...ENV.hyperbrowserAllowedHosts],
+  hyperbrowserPublicWebAccess: ENV.hyperbrowserPublicWebAccess,
 };
 
 afterEach(() => {
   ENV.hyperbrowserApiKey = environmentSnapshot.hyperbrowserApiKey;
   ENV.hyperbrowserTimeoutMinutes = environmentSnapshot.hyperbrowserTimeoutMinutes;
   ENV.hyperbrowserAllowedHosts = [...environmentSnapshot.hyperbrowserAllowedHosts];
+  ENV.hyperbrowserPublicWebAccess = environmentSnapshot.hyperbrowserPublicWebAccess;
 });
 
 describe("Hyperbrowser agent-browser safety contract", () => {
@@ -46,7 +48,16 @@ describe("Hyperbrowser agent-browser safety contract", () => {
     await expect(createHyperbrowserSession({ taskId: "task-1" })).rejects.toThrow("HYPERBROWSER_API_KEY");
   });
 
+  it("requires an explicit broad-web switch or a scoped host policy before creating a remote browser session", async () => {
+    ENV.hyperbrowserAllowedHosts = [];
+    ENV.hyperbrowserPublicWebAccess = false;
+    const client = { sessions: { create: vi.fn(), stop: vi.fn() } } as never;
+    await expect(createHyperbrowserSession({ taskId: "task-1", client })).rejects.toThrow("Public-web research is not enabled");
+    expect(hyperbrowserSessionRequest()).toMatchObject({ allowInternetAccess: false });
+  });
+
   it("maps only task-safe session fields and uses idempotent stop through an injected client", async () => {
+    ENV.hyperbrowserPublicWebAccess = true;
     const create = vi.fn().mockResolvedValue({
       id: "session-1",
       status: "active",

@@ -10,6 +10,44 @@ const modelList = (value?: string) =>
     .map(item => item.trim())
     .filter(Boolean);
 
+const APPROVED_FREE_MODELS = [
+  "aihubmix:glm-5.2-free",
+  "aihubmix:gemini-3.7-flash-free",
+  "aihubmix:coding-glm-5.2-free",
+  "aihubmix:coding-kimi-k3-free",
+  "aihubmix:gpt-oss-20b-free",
+  "agnes:agnes-2.0-flash",
+];
+
+/**
+ * Non-secret, user-approved defaults. Environment values always override these
+ * values so production operators can intentionally narrow a capability.
+ */
+export function configuredProviderDefaults(source: NodeJS.ProcessEnv = process.env) {
+  const pixazoImageModels = modelList(source.PIXAZO_IMAGE_MODELS).length ? modelList(source.PIXAZO_IMAGE_MODELS) : ["flux"];
+  const pixazoVideoModels = modelList(source.PIXAZO_VIDEO_MODELS).length ? modelList(source.PIXAZO_VIDEO_MODELS) : ["ltx"];
+  const pixazoAudioModels = modelList(source.PIXAZO_AUDIO_MODELS).length ? modelList(source.PIXAZO_AUDIO_MODELS) : ["tracks"];
+  const availableModels = modelList(source.SYNTHIA_AVAILABLE_MODELS).length ? modelList(source.SYNTHIA_AVAILABLE_MODELS) : APPROVED_FREE_MODELS;
+  const visionModels = modelList(source.SYNTHIA_VISION_MODELS).length ? modelList(source.SYNTHIA_VISION_MODELS) : ["agnes:agnes-2.0-flash"];
+
+  return {
+    availableModels,
+    visionModels,
+    imageProvider: source.SYNTHIA_IMAGE_PROVIDER ?? "pixazo",
+    imageModels: modelList(source.SYNTHIA_IMAGE_MODELS).length ? modelList(source.SYNTHIA_IMAGE_MODELS) : pixazoImageModels,
+    videoProvider: source.SYNTHIA_VIDEO_PROVIDER ?? "pixazo",
+    videoModels: modelList(source.SYNTHIA_VIDEO_MODELS).length ? modelList(source.SYNTHIA_VIDEO_MODELS) : pixazoVideoModels,
+    audioProvider: source.SYNTHIA_AUDIO_PROVIDER ?? "pixazo",
+    audioModels: modelList(source.SYNTHIA_AUDIO_MODELS).length ? modelList(source.SYNTHIA_AUDIO_MODELS) : pixazoAudioModels,
+    pixazoImageModels,
+    pixazoVideoModels,
+    pixazoAudioModels,
+    pixazoGenerationEnabled: source.SYNTHIA_PIXAZO_GENERATION_ENABLED ?? "true",
+  };
+}
+
+const providerDefaults = configuredProviderDefaults();
+
 export const ENV = {
   appId: process.env.VITE_APP_ID ?? "",
   cookieSecret: process.env.JWT_SECRET ?? "",
@@ -40,26 +78,27 @@ export const ENV = {
   hopxSandboxTimeoutSeconds: Number(process.env.HOPX_SANDBOX_TIMEOUT_SECONDS ?? 82800),
   dockerSandboxImage: process.env.SYNTHIA_DOCKER_SANDBOX_IMAGE ?? "synthia-sandbox:latest",
   sandboxAllowedHosts: list(process.env.SYNTHIA_SANDBOX_ALLOWED_HOSTS),
+  sandboxPublicWebAccess: (process.env.SYNTHIA_SANDBOX_PUBLIC_WEB_ACCESS ?? "true") === "true",
   sandboxRegion: process.env.SYNTHIA_SANDBOX_REGION ?? "us",
-  orchestratorProvider: process.env.SYNTHIA_ORCHESTRATOR_PROVIDER ?? "openrouter",
-  orchestratorModel: process.env.SYNTHIA_ORCHESTRATOR_MODEL ?? "",
+  orchestratorProvider: process.env.SYNTHIA_ORCHESTRATOR_PROVIDER ?? "aihubmix",
+  orchestratorModel: process.env.SYNTHIA_ORCHESTRATOR_MODEL ?? "glm-5.2-free",
   subtaskProvider: process.env.SYNTHIA_SUBTASK_PROVIDER ?? "",
   subtaskModel: process.env.SYNTHIA_SUBTASK_MODEL ?? "",
-  availableModels: modelList(process.env.SYNTHIA_AVAILABLE_MODELS),
-  visionModels: modelList(process.env.SYNTHIA_VISION_MODELS),
-  imageProvider: process.env.SYNTHIA_IMAGE_PROVIDER ?? "forge",
-  imageModels: modelList(process.env.SYNTHIA_IMAGE_MODELS),
-  videoProvider: process.env.SYNTHIA_VIDEO_PROVIDER ?? "",
-  videoModels: modelList(process.env.SYNTHIA_VIDEO_MODELS),
+  availableModels: providerDefaults.availableModels,
+  visionModels: providerDefaults.visionModels,
+  imageProvider: providerDefaults.imageProvider,
+  imageModels: providerDefaults.imageModels,
+  videoProvider: providerDefaults.videoProvider,
+  videoModels: providerDefaults.videoModels,
   videoApiKey: process.env.SYNTHIA_VIDEO_API_KEY ?? "",
-  audioProvider: process.env.SYNTHIA_AUDIO_PROVIDER ?? "",
-  audioModels: modelList(process.env.SYNTHIA_AUDIO_MODELS),
+  audioProvider: providerDefaults.audioProvider,
+  audioModels: providerDefaults.audioModels,
   pixazoApiKey: process.env.PIXAZO_API_KEY ?? "",
-  pixazoBaseUrl: process.env.PIXAZO_BASE_URL ?? "https://pixazoapi.azure-api.net",
-  pixazoImageModels: modelList(process.env.PIXAZO_IMAGE_MODELS),
-  pixazoVideoModels: modelList(process.env.PIXAZO_VIDEO_MODELS),
-  pixazoAudioModels: modelList(process.env.PIXAZO_AUDIO_MODELS),
-  pixazoGenerationEnabled: process.env.SYNTHIA_PIXAZO_GENERATION_ENABLED === "true",
+  pixazoBaseUrl: process.env.PIXAZO_BASE_URL ?? "https://gateway.pixazo.ai",
+  pixazoImageModels: providerDefaults.pixazoImageModels,
+  pixazoVideoModels: providerDefaults.pixazoVideoModels,
+  pixazoAudioModels: providerDefaults.pixazoAudioModels,
+  pixazoGenerationEnabled: providerDefaults.pixazoGenerationEnabled === "true",
   groqApiKey: process.env.GROQ_API_KEY ?? "",
   agnesApiKey: process.env.AGNES_API_KEY ?? "",
   agnesBaseUrl: process.env.AGNES_BASE_URL ?? "https://apihub.agnes-ai.com/v1",
@@ -77,11 +116,12 @@ export const ENV = {
   openRouterAppName: process.env.OPENROUTER_APP_NAME ?? "Synthia AI",
   geminiApiKey: process.env.GEMINI_API_KEY ?? "",
   deepseekApiKey: process.env.DEEPSEEK_API_KEY ?? "",
-  agentBrowserProvider: process.env.SYNTHIA_AGENT_BROWSER_PROVIDER ?? "sandbox",
+  agentBrowserProvider: process.env.SYNTHIA_AGENT_BROWSER_PROVIDER ?? "hyperbrowser",
   hyperbrowserApiKey: process.env.HYPERBROWSER_API_KEY ?? "",
   hyperbrowserBaseUrl: process.env.HYPERBROWSER_BASE_URL ?? "https://api.hyperbrowser.ai",
   hyperbrowserTimeoutMinutes: Number(process.env.SYNTHIA_HYPERBROWSER_TIMEOUT_MINUTES ?? 10),
   hyperbrowserAllowedHosts: list(process.env.SYNTHIA_HYPERBROWSER_ALLOWED_HOSTS),
+  hyperbrowserPublicWebAccess: (process.env.SYNTHIA_HYPERBROWSER_PUBLIC_WEB_ACCESS ?? "true") === "true",
   searchPrimary: process.env.SYNTHIA_SEARCH_PRIMARY ?? "tavily",
   tavilyApiKey: process.env.TAVILY_API_KEY ?? "",
   serperApiKey: process.env.SERPER_API_KEY ?? "",

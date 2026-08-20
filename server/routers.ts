@@ -50,10 +50,11 @@ import { storageGetSignedUrl, storagePut } from "./storage";
 import { ENV } from "./_core/env";
 import { mediaReadiness } from "./mediaCapabilities";
 import { generateGeminiImage, generateGeminiVideo, GeminiMediaError, type GeminiMediaReference } from "./media/gemini";
-import { generatePixazoImage, generatePixazoVideo, PixazoMediaError } from "./media/pixazo";
+import { generatePixazoAudio, generatePixazoImage, generatePixazoVideo, PixazoMediaError } from "./media/pixazo";
 import { AIHubMixMediaError, generateAIHubMixAudio, generateAIHubMixImage, generateAIHubMixVideo } from "./media/aihubmix";
 import { logger } from "./security/logger";
 import { transcribeAudio } from "./_core/voiceTranscription";
+import { configuredComposerModels as composerModelsFromEnvironment } from "./agent/modelCatalog";
 
 const taskIdSchema = z.object({ taskId: z.string().uuid() });
 const taskTitleSchema = z.string().trim().min(1).max(180);
@@ -81,7 +82,7 @@ const MAX_ATTACHMENT_BYTES = 10 * 1024 * 1024;
 const MAX_ATTACHMENT_BASE64_LENGTH = Math.ceil(MAX_ATTACHMENT_BYTES / 3) * 4;
 const MAX_VOICE_BYTES = 16 * 1024 * 1024;
 const MAX_VOICE_BASE64_LENGTH = Math.ceil(MAX_VOICE_BYTES / 3) * 4;
-const llmProviderSchema = z.enum(["groq", "openrouter", "gemini", "deepseek"]);
+const llmProviderSchema = z.enum(["groq", "agnes", "aihubmix", "openrouter", "gemini", "deepseek"]);
 const selectedModelSchema = z.object({
   provider: llmProviderSchema,
   model: z.string().trim().min(1).max(180),
@@ -142,29 +143,25 @@ function decodeVoiceBase64(value: string) {
 }
 
 function isProviderConfigured(provider: z.infer<typeof llmProviderSchema>) {
-  return ({ groq: Boolean(ENV.groqApiKey), openrouter: Boolean(ENV.openRouterApiKey), gemini: Boolean(ENV.geminiApiKey), deepseek: Boolean(ENV.deepseekApiKey) })[provider];
+  return ({ groq: Boolean(ENV.groqApiKey), agnes: Boolean(ENV.agnesApiKey), aihubmix: Boolean(ENV.aihubmixApiKey), openrouter: Boolean(ENV.openRouterApiKey), gemini: Boolean(ENV.geminiApiKey), deepseek: Boolean(ENV.deepseekApiKey) })[provider];
 }
 
 function configuredComposerModels() {
-  const defaults = [
-    { provider: ENV.orchestratorProvider, model: ENV.orchestratorModel, label: "Primary" },
-    { provider: ENV.subtaskProvider, model: ENV.subtaskModel, label: "Subtask" },
-  ];
-  const explicit = ENV.availableModels.map(model => ({ provider: ENV.orchestratorProvider, model, label: "Configured" }));
-  const seen = new Set<string>();
-  return [...defaults, ...explicit].flatMap(entry => {
-    const parsed = llmProviderSchema.safeParse(entry.provider);
-    if (!parsed.success || !entry.model || !isProviderConfigured(parsed.data)) return [];
-    const id = `${parsed.data}:${entry.model}`;
-    if (seen.has(id)) return [];
-    seen.add(id);
-    return [{
-      id,
-      provider: parsed.data,
-      model: entry.model,
-      label: entry.label,
-      capabilities: ["text", ...(ENV.visionModels.includes(id) ? ["vision"] : [])] as Array<"text" | "vision">,
-    }];
+  return composerModelsFromEnvironment({
+    orchestratorProvider: ENV.orchestratorProvider,
+    orchestratorModel: ENV.orchestratorModel,
+    subtaskProvider: ENV.subtaskProvider,
+    subtaskModel: ENV.subtaskModel,
+    availableModels: ENV.availableModels,
+    visionModels: ENV.visionModels,
+    configuredProviders: {
+      groq: isProviderConfigured("groq"),
+      agnes: isProviderConfigured("agnes"),
+      aihubmix: isProviderConfigured("aihubmix"),
+      openrouter: isProviderConfigured("openrouter"),
+      gemini: isProviderConfigured("gemini"),
+      deepseek: isProviderConfigured("deepseek"),
+    },
   });
 }
 
@@ -325,7 +322,7 @@ export const appRouter = router({
               : await generateAIHubMixAudio({ prompt: input.prompt, model: input.model })
           : provider === "pixazo"
           ? input.kind === "audio"
-            ? (() => { throw new PixazoMediaError("CONFIGURATION_REQUIRED", "Pixazo audio routing is not enabled. Select a configured AIHubMix audio provider."); })()
+            ? await generatePixazoAudio({ prompt: input.prompt, model: input.model })
             : input.kind === "image"
               ? await generatePixazoImage({ prompt: input.prompt, model: input.model, aspectRatio: input.aspectRatio as "1:1" | "16:9" | "9:16" | "4:3" | "3:4" | undefined, referenceAttached: Boolean(reference) })
               : await generatePixazoVideo({ prompt: input.prompt, model: input.model, aspectRatio: input.aspectRatio === "9:16" ? "9:16" : "16:9", referenceAttached: Boolean(reference) })

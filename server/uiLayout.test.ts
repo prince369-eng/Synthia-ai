@@ -135,6 +135,16 @@ describe("compact workspace layout contract", () => {
     expect(css).not.toContain(".synthia-attachment-menu { @apply absolute bottom-[calc(100%+.4rem)]");
   });
 
+  it("keeps the model selector bounded and scrollable while showing user-facing model capabilities only", () => {
+    const dashboard = readFileSync(new URL("../client/src/pages/TaskDashboard.tsx", import.meta.url), "utf8");
+    const css = readFileSync(new URL("../client/src/index.css", import.meta.url), "utf8");
+
+    expect(css).toContain(".synthia-model-menu { @apply absolute bottom-[calc(100%+.4rem)] right-0 z-20 grid w-57 max-h-[min(16rem,calc(100dvh-8rem))] overflow-y-auto overscroll-contain");
+    expect(dashboard).toContain('data-scrollable="true"');
+    expect(dashboard).toContain("<b>{model.model}</b><small>{composerModelCapabilityLabel(model)}</small>");
+    expect(dashboard).not.toContain("{model.provider} · {model.model}");
+  });
+
   it("keeps the center workspace calm by progressively disclosing secondary task controls", () => {
     const dashboard = readFileSync(new URL("../client/src/pages/TaskDashboard.tsx", import.meta.url), "utf8");
     const css = readFileSync(new URL("../client/src/index.css", import.meta.url), "utf8");

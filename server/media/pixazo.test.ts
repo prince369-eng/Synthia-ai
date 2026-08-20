@@ -7,12 +7,14 @@ vi.mock("../_core/env", () => ({
     pixazoGenerationEnabled: true,
     pixazoImageModels: ["flux"],
     pixazoVideoModels: ["ltx"],
+    pixazoAudioModels: ["tracks"],
   },
 }));
 
 vi.mock("../security/logger", () => ({ logger: { warn: vi.fn(), error: vi.fn() } }));
+vi.mock("../agent/publicWebPolicy", () => ({ assertPublicWebDestination: vi.fn(async (value: string) => new URL(value)) }));
 
-import { generatePixazoImage, generatePixazoVideo, PixazoMediaError } from "./pixazo";
+import { generatePixazoAudio, generatePixazoImage, generatePixazoVideo, PixazoMediaError } from "./pixazo";
 
 const originalFetch = globalThis.fetch;
 
@@ -50,5 +52,22 @@ describe("Pixazo media adapter", () => {
     await expect(generatePixazoVideo({ prompt: "Animate the workspace status update.", referenceAttached: true }))
       .rejects.toEqual(expect.objectContaining<Partial<PixazoMediaError>>({ code: "INVALID_REQUEST" }));
     expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("submits Tracks, polls its documented status route, and retrieves only a bounded audio artifact", async () => {
+    const audioBytes = Buffer.from("pixazo-tracks-audio");
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify({ request_id: "tracks_019d1234-aaaa-bbbb-cccc-1234567890ab", status: "QUEUED" }), { status: 202, headers: { "content-type": "application/json" } }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ status: "COMPLETED", output: { media_url: ["https://artifacts.pixazo.example/tracks.mp3"], media_type: "audio/mpeg" } }), { status: 200, headers: { "content-type": "application/json" } }))
+      .mockResolvedValueOnce(new Response(audioBytes, { status: 200, headers: { "content-type": "audio/mpeg" } }));
+    globalThis.fetch = fetchMock;
+
+    const result = await generatePixazoAudio({ prompt: "A calming ambient instrumental for focused work." });
+
+    expect(result).toMatchObject({ kind: "audio", provider: "pixazo", model: "tracks", interactionId: "tracks_019d1234-aaaa-bbbb-cccc-1234567890ab", mimeType: "audio/mpeg" });
+    expect(result.bytes.equals(audioBytes)).toBe(true);
+    expect(fetchMock).toHaveBeenNthCalledWith(1, "https://api.pixazo.example/tracks/v1/generate", expect.objectContaining({ method: "POST" }));
+    expect(fetchMock).toHaveBeenNthCalledWith(2, "https://api.pixazo.example/v2/requests/status/tracks_019d1234-aaaa-bbbb-cccc-1234567890ab", expect.any(Object));
+    expect(fetchMock).toHaveBeenNthCalledWith(3, expect.any(URL), expect.objectContaining({ redirect: "error" }));
   });
 });

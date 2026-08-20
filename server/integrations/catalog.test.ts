@@ -1,5 +1,20 @@
 import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
+import { ENV } from "../_core/env";
 import { serviceConnectionStatus, serviceReadinessForUser, systemServiceReadiness } from "./catalog";
+
+const environmentSnapshot = {
+  agentBrowserProvider: ENV.agentBrowserProvider,
+  hyperbrowserPublicWebAccess: ENV.hyperbrowserPublicWebAccess,
+  hyperbrowserAllowedHosts: ENV.hyperbrowserAllowedHosts,
+  orchestratorProvider: ENV.orchestratorProvider,
+  pixazoGenerationEnabled: ENV.pixazoGenerationEnabled,
+  pixazoImageModels: ENV.pixazoImageModels,
+  pixazoVideoModels: ENV.pixazoVideoModels,
+  availableModels: ENV.availableModels,
+};
+
+afterEach(() => Object.assign(ENV, environmentSnapshot));
 
 describe("serviceConnectionStatus", () => {
   it("separates active providers from configured but inactive providers", () => {
@@ -55,7 +70,7 @@ describe("serviceConnectionStatus", () => {
 
     expect(agnes).toMatchObject({ label: "Agnes AI", category: "model", requiredEnvironment: ["AGNES_API_KEY", "AGNES_BASE_URL"] });
     expect(aihubmix).toMatchObject({ label: "AIHubMix", category: "model", requiredEnvironment: ["AIHUBMIX_API_KEY", "AIHUBMIX_BASE_URL", "AIHUBMIX_FALLBACK_BASE_URL"] });
-    expect(hyperbrowser).toMatchObject({ label: "Hyperbrowser Agent Browser", category: "sandbox", requiredEnvironment: ["HYPERBROWSER_API_KEY", "SYNTHIA_AGENT_BROWSER_PROVIDER", "SYNTHIA_HYPERBROWSER_TIMEOUT_MINUTES", "SYNTHIA_HYPERBROWSER_ALLOWED_HOSTS"] });
+    expect(hyperbrowser).toMatchObject({ label: "Hyperbrowser Agent Browser", category: "sandbox", requiredEnvironment: ["HYPERBROWSER_API_KEY", "SYNTHIA_AGENT_BROWSER_PROVIDER", "SYNTHIA_HYPERBROWSER_TIMEOUT_MINUTES", "SYNTHIA_HYPERBROWSER_PUBLIC_WEB_ACCESS", "SYNTHIA_HYPERBROWSER_ALLOWED_HOSTS"] });
     for (const service of [agnes, aihubmix, hyperbrowser]) {
       expect(service).not.toHaveProperty("value");
       expect(service).not.toHaveProperty("apiKey");
@@ -71,5 +86,26 @@ describe("serviceConnectionStatus", () => {
     expect(hyperbrowser).toMatchObject({ label: "Hyperbrowser Agent Browser", category: "sandbox" });
     expect(pixazo?.detail ?? "").not.toContain("API_KEY=");
     expect(hyperbrowser?.detail ?? "").not.toContain("API_KEY=");
+  });
+
+  it("marks the approved Pixazo and guarded public-web settings as actionable without calling an external provider", () => {
+    Object.assign(ENV, {
+      agentBrowserProvider: "hyperbrowser",
+      hyperbrowserPublicWebAccess: true,
+      hyperbrowserAllowedHosts: [],
+      orchestratorProvider: "aihubmix",
+      pixazoGenerationEnabled: true,
+      pixazoImageModels: ["flux"],
+      pixazoVideoModels: ["ltx"],
+      availableModels: ["aihubmix:glm-5.2-free", "agnes:agnes-2.0-flash"],
+    });
+    const services = systemServiceReadiness();
+    const pixazo = services.find(service => service.id === "pixazo");
+    const hyperbrowser = services.find(service => service.id === "hyperbrowser");
+    const agnes = services.find(service => service.id === "agnes");
+
+    expect(pixazo).toMatchObject({ configured: true, active: true, status: "active" });
+    expect(hyperbrowser).toMatchObject({ configured: true, active: true, status: "active" });
+    expect(agnes).toMatchObject({ configured: true, active: true, status: "active" });
   });
 });

@@ -219,6 +219,23 @@
 - [x] Reframe the Agent capability summary around usable task abilities and approvals, not runtime configuration counts or named internal services.
 - [x] Align the sidebar Connections area with the Settings connectors catalog so it describes user apps and task outcomes rather than internal provider readiness.
 - [x] Add deterministic regression coverage and authenticated browser review for the approved Manus-style capability presentation.
+
+## Free-tier media and public-web access
+
+- [x] Research official Pixazo and AIHubMix free-tier image, video, and audio model catalogs, including quotas and documented API model identifiers.
+- [x] Define a documented free-model allowlist with per-model user-visible capability labels and no invented availability claims.
+- [x] Configure broad public-web access for Agent research while blocking localhost, private networks, cloud metadata hosts, and sensitive or authenticated browser actions until explicitly approved.
+- [x] Add unit coverage and opt-in-only readiness checks that confirm model and browser policy configuration without invoking media generation or creating browser sessions.
+- [x] Verify the user-facing availability states and checkpoint the free-tier media and public-web access configuration.
+- [x] Apply the user-approved Pixazo `flux`/`ltx`, AIHubMix curated free-text model, Agnes `agnes-2.0-flash`, and guarded public-web configuration values without invoking any model, media, or remote-browser workload.
+- [x] Make the configured model catalog provider-qualified so the user can select an Agnes model without it being routed through the AIHubMix provider.
+- [x] Add deterministic coverage for the approved free-tier catalog and run type, test, build, restart, and authenticated UI verification before checkpointing.
+- [x] Show the configured model labels in Settings and the composer picker so the user can identify the approved AIHubMix and Agnes options without exposing credentials or triggering a workload.
+- [x] Make the composer model menu scroll within a bounded viewport when its catalog exceeds the available space, and show only each model name with its capability labels rather than provider or configuration state.
+- [x] Surface every genuinely available text, vision, image, video, and audio capability in the task experience, distinguishing ready task routes from unavailable or credential-gated capabilities without exposing providers or credentials.
+- [x] Add deterministic multimodal capability presentation coverage and verify the authenticated composer without invoking media generation, audio synthesis, remote browsing, or model inference.
+- [x] Implement the documented asynchronous Pixazo Tracks audio route, bounded polling and task-owned MP3 retrieval so the approved free-tier audio model can be presented as ready without conducting a live generation test.
+- [x] Configure the non-secret Pixazo Tracks audio allowlist and extend media readiness, task routing, and authenticated capability presentation coverage without exposing provider credentials.
 - [x] Redesign the central task composer with compact workspace summary, attachment controls, lower control bar, suggestions, and recent-task hierarchy.
 - [x] Add a persisted user-owned task-attachment schema and reviewed PostgreSQL migration for local uploads and selected Library artifacts.
 - [x] Add a rate-limited authenticated attachment-upload contract with strict filename, MIME, and 10 MB file validation through secure object storage.
@@ -2985,3 +3002,9 @@
 - [ ] Refine typography, neutral surfaces, borders, shadows, orange emphasis, and motion to create a calm, readable, dynamic interface.
 - [ ] Rebalance desktop, tablet, and mobile spacing so controls do not crowd or compete for attention.
 - [ ] Add deterministic layout regressions and visually verify the reorganized experience before checkpointing.
+
+## Secure configuration form repair
+
+- [ ] Repair the non-secret configuration form so user-entered free-model and public-web values persist rather than being replaced by fixed empty defaults.
+- [ ] Verify the corrected form accepts user-editable values without exposing credentials, then resume guarded Pixazo, AIHubMix, Agnes AI, and public-web configuration.
+- [ ] Apply the user-approved documented Pixazo, AIHubMix, Agnes AI, and safeguarded public-web values through the direct configuration workaround, then verify readiness without invoking a workload.

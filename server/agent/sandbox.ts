@@ -3,6 +3,7 @@ import { Sandbox as HopxSandbox } from "@hopx-ai/sdk";
 import { execFile as execFileCallback } from "node:child_process";
 import { promisify } from "node:util";
 import { ENV } from "../_core/env";
+import { assertPublicWebDestination } from "./publicWebPolicy";
 
 const execFile = promisify(execFileCallback);
 
@@ -91,7 +92,9 @@ export class E2BSandboxProvider implements SandboxProvider {
     await sandbox.updateNetwork(
       ENV.sandboxAllowedHosts.length > 0
         ? { allowOut: ENV.sandboxAllowedHosts }
-        : { allowInternetAccess: false },
+        : ENV.sandboxPublicWebAccess
+          ? { allowInternetAccess: true }
+          : { allowInternetAccess: false },
     );
     return {
       provider: "e2b",
@@ -120,10 +123,8 @@ export class E2BSandboxProvider implements SandboxProvider {
   }
 
   async openUrl(descriptor: SandboxDescriptor, url: string): Promise<void> {
-    const parsed = new URL(url);
-    if (parsed.protocol !== "https:" && parsed.protocol !== "http:") {
-      throw new Error("Only HTTP(S) URLs may be opened in the sandbox browser.");
-    }
+    if (!ENV.sandboxPublicWebAccess && ENV.sandboxAllowedHosts.length === 0) throw new Error("Public-web research is not enabled for this workspace.");
+    const parsed = await assertPublicWebDestination(url);
     const sandbox = await this.connect(descriptor);
     await sandbox.open(parsed.toString());
   }
@@ -183,7 +184,7 @@ export class HopxSandboxProvider implements SandboxProvider {
       templateId: ENV.hopxTemplateId,
       region: ENV.sandboxRegion,
       timeoutSeconds: ENV.hopxSandboxTimeoutSeconds,
-      internetAccess: false,
+      internetAccess: ENV.sandboxPublicWebAccess,
       envVars: { SYNTHIA_TASK_ID: taskId },
     });
     return {
@@ -213,10 +214,8 @@ export class HopxSandboxProvider implements SandboxProvider {
   }
 
   async openUrl(descriptor: SandboxDescriptor, url: string): Promise<void> {
-    const parsed = new URL(url);
-    if (parsed.protocol !== "https:" && parsed.protocol !== "http:") {
-      throw new Error("Only HTTP(S) URLs may be opened in the sandbox browser.");
-    }
+    if (!ENV.sandboxPublicWebAccess) throw new Error("Public-web research is not enabled for this workspace.");
+    const parsed = await assertPublicWebDestination(url);
     const encodedUrl = Buffer.from(parsed.toString(), "utf8").toString("base64");
     const result = await this.execute(descriptor, `url=$(printf %s '${encodedUrl}' | base64 -d); xdg-open "$url"`, 30_000);
     if (result.exitCode !== 0) throw new Error(result.stderr || "The HopX desktop browser could not open the URL.");

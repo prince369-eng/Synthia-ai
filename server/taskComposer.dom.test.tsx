@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import React from "react";
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { TaskComposerAttachments } from "../client/src/components/TaskComposerAttachments";
 import { LibraryPicker } from "../client/src/components/LibraryPicker";
@@ -10,6 +10,7 @@ const dashboardState = vi.hoisted(() => ({
   authenticated: true,
   taskHistory: { data: [] as unknown[] | undefined, isLoading: false, isError: false },
   taskQueryOptions: undefined as { enabled?: boolean } | undefined,
+  models: [] as Array<{ id: string; provider: string; model: string; label: string; capabilities: string[] }>,
 }));
 
 vi.mock("@/lib/trpc", () => ({
@@ -28,8 +29,8 @@ vi.mock("@/lib/trpc", () => ({
     workspace: { usage: { useQuery: () => ({ data: { creditsBalance: 25 }, isLoading: false, isError: false }) } },
     catalog: {
       estimateTask: { useQuery: () => ({ data: undefined, isLoading: false, isError: false }) },
-      models: { useQuery: () => ({ data: { models: [] }, isLoading: false, isError: false }) },
-      media: { useQuery: () => ({ data: { image: { provider: "forge", models: [], configured: true }, video: { provider: null, models: [], configured: false, reason: "Choose a video provider and add its credential before enabling generation." } }, isLoading: false, isError: false }) },
+      models: { useQuery: () => ({ data: { models: dashboardState.models }, isLoading: false, isError: false }) },
+      media: { useQuery: () => ({ data: { image: { models: ["flux"], configured: true }, video: { models: ["ltx"], configured: true }, audio: { models: ["tracks"], configured: true } }, isLoading: false, isError: false }) },
     },
     library: { list: { useQuery: () => ({ data: [], isLoading: false, isError: false }) } },
   },
@@ -44,6 +45,7 @@ afterEach(() => {
   dashboardState.authenticated = true;
   dashboardState.taskHistory = { data: [], isLoading: false, isError: false };
   dashboardState.taskQueryOptions = undefined;
+  dashboardState.models = [];
 });
 
 describe("task composer attachments", () => {
@@ -87,7 +89,10 @@ describe("task composer attachments", () => {
     await user.click(screen.getByRole("button", { name: "View media capabilities" }));
     expect(screen.getByText("Image generation")).toBeTruthy();
     expect(screen.getByText("Video generation")).toBeTruthy();
-    expect(screen.getByText("Unavailable", { exact: true })).toBeTruthy();
+    expect(screen.getByText("Audio generation")).toBeTruthy();
+    expect(screen.getByText("Ready · flux")).toBeTruthy();
+    expect(screen.getByText("Ready · ltx")).toBeTruthy();
+    expect(screen.getByText("Ready · tracks")).toBeTruthy();
     expect(screen.getByRole("button", { name: "Start voice instruction" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Usage summary" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Open task files" })).toBeTruthy();
@@ -98,6 +103,24 @@ describe("task composer attachments", () => {
     expect(screen.getByText("Wide Research")).toBeTruthy();
     expect(screen.getByText("Scheduled task")).toBeTruthy();
     expect(screen.getByText("Playbook")).toBeTruthy();
+  });
+
+  it("keeps long configured model catalogs in a bounded scrollable selector with model names and capabilities only", async () => {
+    const user = userEvent.setup();
+    dashboardState.models = [
+      { id: "aihubmix:glm-5.2-free", provider: "aihubmix", model: "glm-5.2-free", label: "Primary", capabilities: ["text", "vision"] },
+      { id: "agnes:agnes-2.0-flash", provider: "agnes", model: "agnes-2.0-flash", label: "Configured", capabilities: ["text", "audio"] },
+    ];
+    render(<TaskDashboard />);
+
+    await user.click(screen.getByRole("button", { name: "Choose model" }));
+    const menu = screen.getByTestId("composer-model-menu");
+    expect(menu.getAttribute("data-scrollable")).toBe("true");
+    expect(within(menu).getByText("glm-5.2-free")).toBeTruthy();
+    expect(within(menu).getByText("agnes-2.0-flash")).toBeTruthy();
+    expect(within(menu).getByText("Text · Vision")).toBeTruthy();
+    expect(within(menu).getByText("Text · Audio")).toBeTruthy();
+    expect(within(menu).queryByText(/AIHubMix|Agnes AI|Configured/)).toBeNull();
   });
 
   it("loads task history only for an authenticated workspace and renders a calm empty state", () => {

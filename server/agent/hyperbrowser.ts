@@ -30,6 +30,7 @@ export function isHyperbrowserConfigured() {
 
 export function hyperbrowserSessionRequest(timeoutMinutes = ENV.hyperbrowserTimeoutMinutes) {
   const allowOut = ENV.hyperbrowserAllowedHosts.length > 0 ? ENV.hyperbrowserAllowedHosts : undefined;
+  const publicWebEnabled = ENV.hyperbrowserPublicWebAccess || Boolean(allowOut);
   return {
     timeoutMinutes: boundedTimeoutMinutes(timeoutMinutes),
     screen: { width: 1440, height: 900 },
@@ -47,7 +48,7 @@ export function hyperbrowserSessionRequest(timeoutMinutes = ENV.hyperbrowserTime
     saveDownloads: false,
     disablePasswordManager: true,
     viewOnlyLiveView: true,
-    allowInternetAccess: true,
+    allowInternetAccess: publicWebEnabled,
     ...(allowOut ? { allowOut } : {}),
   };
 }
@@ -68,6 +69,9 @@ export async function createHyperbrowserSession(input: {
 }): Promise<HyperbrowserSessionDescriptor> {
   if (!input.taskId.trim()) throw new Error("A task ID is required to create a Hyperbrowser session.");
   const client = input.client ?? createHyperbrowserClient();
+  if (!ENV.hyperbrowserPublicWebAccess && ENV.hyperbrowserAllowedHosts.length === 0) {
+    throw new Error("Public-web research is not enabled for the Hyperbrowser agent browser.");
+  }
   const session = await client.sessions.create(hyperbrowserSessionRequest(input.timeoutMinutes));
   return {
     provider: "hyperbrowser",

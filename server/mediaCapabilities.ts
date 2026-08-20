@@ -55,6 +55,10 @@ export function mediaReadiness(environment: MediaProviderEnvironment): {
       (videoProvider !== "aihubmix" || (environment.aihubmixArtifactAllowedHosts?.length ?? 0) > 0),
   );
 
+  const audioProvider = environment.audioProvider?.trim() || null;
+  const audioModels = environment.audioModels ?? [];
+  const audioConfigured = Boolean(audioProvider && audioModels.length > 0 && credentialFor(audioProvider, environment));
+
   return {
     image: {
       provider: imageProvider,
@@ -79,11 +83,15 @@ export function mediaReadiness(environment: MediaProviderEnvironment): {
           : "Add a real video provider credential and at least one configured video model before enabling generation.",
     },
     audio: {
-      provider: environment.audioProvider?.trim() || null,
-      models: environment.audioModels ?? [],
-      configured: Boolean(environment.audioProvider?.trim() === "aihubmix" && (environment.audioModels?.length ?? 0) > 0 && credentialFor("aihubmix", environment)),
-      route: environment.audioProvider?.trim() === "aihubmix" ? "server/media/aihubmix.ts" : "server/media/audio.ts",
-      reason: "Add AIHUBMIX_API_KEY, at least one configured AIHUBMIX_AUDIO_MODELS value, and SYNTHIA_AIHUBMIX_GENERATION_ENABLED=true before enabling audio generation.",
+      provider: audioProvider,
+      models: audioModels,
+      configured: audioConfigured,
+      route: audioProvider === "pixazo" ? "server/media/pixazo.ts" : audioProvider === "aihubmix" ? "server/media/aihubmix.ts" : "server/media/audio.ts",
+      reason: audioConfigured
+        ? undefined
+        : audioProvider === "pixazo"
+          ? "Add a real audio provider credential and at least one configured audio model before enabling generation."
+          : "Add a real audio provider credential and at least one configured audio model before enabling generation.",
     },
   };
 }

@@ -24,7 +24,21 @@ const modeLabels = {
 const MAX_VOICE_BYTES = 16 * 1024 * 1024;
 
 export function composerModelCapabilityLabel(model: { capabilities?: string[] }) {
-  return model.capabilities?.includes("vision") ? "Text + vision" : "Text";
+  const labels = (model.capabilities ?? []).flatMap(capability => {
+    if (capability === "text") return ["Text"];
+    if (capability === "vision") return ["Vision"];
+    if (capability === "image") return ["Image"];
+    if (capability === "video") return ["Video"];
+    if (capability === "audio") return ["Audio"];
+    return [];
+  });
+  return labels.length ? labels.join(" · ") : "Text";
+}
+
+export function composerMediaCapabilityLabel(capability: { models?: string[]; configured?: boolean } | undefined, kind: string) {
+  if (!capability) return `${kind} capability is loading…`;
+  if (capability.configured) return `Ready · ${capability.models?.join(", ") || kind}`;
+  return capability.models?.length ? `${capability.models.join(", ")} is not enabled yet.` : `${kind} generation is unavailable.`;
 }
 
 export default function TaskDashboard() {
@@ -254,11 +268,11 @@ export default function TaskDashboard() {
             <div className="synthia-composer-control-group synthia-composer-control-group-end">
               <div className="relative">
                 <button type="button" className={cn("synthia-composer-toggle", mediaMenuOpen && "active")} aria-label="View media capabilities" aria-expanded={mediaMenuOpen} onClick={() => setMediaMenuOpen(value => !value)}><Sparkles size={13} /><span>Media</span></button>
-                {mediaMenuOpen ? <div className="synthia-model-menu synthia-media-menu" data-testid="media-capability-menu"><div className="synthia-media-capability"><ImageIcon size={14} /><span><b>Image generation</b><small>{mediaCapabilities.data?.image.configured ? `Ready · ${mediaCapabilities.data.image.provider}` : "Unavailable · configure image provider"}</small></span><em className={mediaCapabilities.data?.image.configured ? "ready" : "pending"}>{mediaCapabilities.data?.image.configured ? "Ready" : "Unavailable"}</em></div><div className="synthia-media-capability"><Video size={14} /><span><b>Video generation</b><small>{mediaCapabilities.data?.video.reason ?? "Checking provider adapter…"}</small></span><em className="pending">Unavailable</em></div><p>Generation jobs will appear here only after a verified provider adapter, storage path, and task route are configured.</p></div> : null}
+                {mediaMenuOpen ? <div className="synthia-model-menu synthia-media-menu" data-testid="media-capability-menu"><div className="synthia-media-capability"><ImageIcon size={14} /><span><b>Image generation</b><small>{composerMediaCapabilityLabel(mediaCapabilities.data?.image, "Image")}</small></span><em className={mediaCapabilities.data?.image.configured ? "ready" : "pending"}>{mediaCapabilities.data?.image.configured ? "Ready" : "Unavailable"}</em></div><div className="synthia-media-capability"><Video size={14} /><span><b>Video generation</b><small>{composerMediaCapabilityLabel(mediaCapabilities.data?.video, "Video")}</small></span><em className={mediaCapabilities.data?.video.configured ? "ready" : "pending"}>{mediaCapabilities.data?.video.configured ? "Ready" : "Unavailable"}</em></div><div className="synthia-media-capability"><AudioLines size={14} /><span><b>Audio generation</b><small>{composerMediaCapabilityLabel(mediaCapabilities.data?.audio, "Audio")}</small></span><em className={mediaCapabilities.data?.audio.configured ? "ready" : "pending"}>{mediaCapabilities.data?.audio.configured ? "Ready" : "Unavailable"}</em></div><p>Ready generation tools are used only within a task after you explicitly start it.</p></div> : null}
               </div>
               <div className="relative">
                 <button type="button" className={cn("synthia-composer-toggle synthia-model-trigger", modelMenuOpen && "active")} aria-label="Choose model" aria-expanded={modelMenuOpen} onClick={() => setModelMenuOpen(value => !value)}><Bot size={13} /><span>{selectedModel?.model ?? "Automatic"}</span></button>
-                {modelMenuOpen ? <div className="synthia-model-menu"><button type="button" className={cn(!selectedModelId && "active")} onClick={() => { setSelectedModelId(""); setModelMenuOpen(false); }}><b>Automatic routing</b><small>Use the configured runtime default for this task.</small></button>{availableModels.data?.models.map(model => <button key={model.id} type="button" className={cn(model.id === selectedModelId && "active")} onClick={() => { setSelectedModelId(model.id); setModelMenuOpen(false); }}><b>{model.label}</b><small>{model.provider} · {model.model} · {composerModelCapabilityLabel(model)}</small></button>)}{availableModels.data?.models.length ? <p>Voice instructions are transcribed into task text.</p> : <p>Automatic routing is active. Configure an orchestrator model to choose one explicitly.</p>}</div> : null}
+                {modelMenuOpen ? <div className="synthia-model-menu" data-testid="composer-model-menu" data-scrollable="true"><button type="button" className={cn(!selectedModelId && "active")} onClick={() => { setSelectedModelId(""); setModelMenuOpen(false); }}><b>Automatic</b><small>Let Synthia choose for this task.</small></button>{availableModels.data?.models.map(model => <button key={model.id} type="button" className={cn(model.id === selectedModelId && "active")} onClick={() => { setSelectedModelId(model.id); setModelMenuOpen(false); }}><b>{model.model}</b><small>{composerModelCapabilityLabel(model)}</small></button>)}{availableModels.data?.models.length ? null : <p>Automatic selection is active.</p>}</div> : null}
               </div>
               <button type="button" className={cn("synthia-composer-toggle synthia-mic-button", voiceState !== "idle" && "active")} aria-label={voiceState === "recording" ? "Stop recording voice instruction" : "Start voice instruction"} title={voiceState === "transcribing" ? "Transcribing voice instruction" : voiceState === "recording" ? "Stop recording" : "Add voice instruction"} onClick={() => void toggleVoiceCapture()} disabled={voiceState === "transcribing"}><Mic size={14} /><span className="sr-only">Voice input</span>{voiceState === "recording" ? <span className="synthia-recording-dot" /> : null}</button>
               <Button type="submit" size="icon" aria-label="Start task" title="Start task" disabled={goal.trim().length < 8 || createTask.isPending || visualInputBlocked} className="synthia-send-button">{createTask.isPending ? <Loader2 className="animate-spin" size={17} /> : <ArrowUp size={18} />}</Button>

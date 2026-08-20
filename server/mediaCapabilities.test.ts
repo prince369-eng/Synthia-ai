@@ -75,4 +75,22 @@ describe("mediaReadiness", () => {
     expect(disabled.image).toMatchObject({ provider: "pixazo", configured: false, route: "server/media/pixazo.ts" });
     expect(enabled.image).toMatchObject({ provider: "pixazo", configured: true, route: "server/media/pixazo.ts" });
   });
+
+  it("reports the approved Pixazo Flux, LTX, and Tracks routes separately when the explicit generation switch is enabled", () => {
+    const result = mediaReadiness({
+      imageProvider: "pixazo",
+      imageModels: ["flux"],
+      videoProvider: "pixazo",
+      videoModels: ["ltx"],
+      audioProvider: "pixazo",
+      audioModels: ["tracks"],
+      pixazoApiKey: "pixazo-test-key",
+      pixazoGenerationEnabled: true,
+    });
+
+    expect(result.image).toMatchObject({ models: ["flux"], configured: true });
+    expect(result.video).toMatchObject({ models: ["ltx"], configured: true });
+    expect(result.audio).toMatchObject({ provider: "pixazo", models: ["tracks"], configured: true, route: "server/media/pixazo.ts" });
+    expect(result.audio.reason).toBeUndefined();
+  });
 });

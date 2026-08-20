@@ -187,7 +187,7 @@ button:not(:disabled):active { transform: scale(.97); }
   .synthia-task-controls-menu select { @apply h-7 rounded-md border border-white/[.08] bg-[#141c1b] px-2 text-[10px] text-[#bed3ce] outline-none; }
   .synthia-model-trigger { @apply max-w-40; }
   .synthia-model-trigger span { @apply max-w-23 truncate; }
-  .synthia-model-menu { @apply absolute bottom-[calc(100%+.4rem)] right-0 z-20 grid w-57 overflow-hidden rounded-lg border border-white/10 bg-[#1d2927] p-1 shadow-xl; }
+  .synthia-model-menu { @apply absolute bottom-[calc(100%+.4rem)] right-0 z-20 grid w-57 max-h-[min(16rem,calc(100dvh-8rem))] overflow-y-auto overscroll-contain rounded-lg border border-white/10 bg-[#1d2927] p-1 shadow-xl; scrollbar-gutter: stable; }
   .synthia-model-menu button { @apply grid gap-0.5 rounded-md px-2 py-1.5 text-left hover:bg-teal-400/10; }
   .synthia-model-menu button.active { @apply bg-teal-400/10; }
   .synthia-model-menu b { @apply truncate text-[11px] font-medium text-[#eee2d3]; }
