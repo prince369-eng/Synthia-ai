@@ -138,6 +138,12 @@
 - [x] Compare runtime environment validation, the maintained public environment reference, and the public go-live credential guide without reading or adding secret values.
 - [x] Correct the verified Gemini media-readiness adapter label so image and video configuration both identify the implemented shared `server/media/gemini.ts` adapter while preserving all credentials as user-supplied secure project configuration.
 - [x] Keep the existing non-secret media-readiness regression aligned with the implemented adapter and complete TypeScript, test-suite, and production-build verification before checkpointing.
+
+## Fresh-preview boot-state verification
+
+- [x] Verify that a fresh authenticated preview session resolves the workspace boot screen after authentication and task queries settle; it reached the zero-task empty state without mock data.
+- [x] Confirm no persistent boot-state or task-query regression was verified, so no corrective code change was required.
+- [x] Retain the existing authenticated loading-to-empty-state DOM regression; desktop browser verification confirmed the resolved state, and the 390px mobile review confirmed that the same state area remains contained during the brief query transition.
 - [x] Redesign the central task composer with compact workspace summary, attachment controls, lower control bar, suggestions, and recent-task hierarchy.
 - [x] Add a persisted user-owned task-attachment schema and reviewed PostgreSQL migration for local uploads and selected Library artifacts.
 - [x] Add a rate-limited authenticated attachment-upload contract with strict filename, MIME, and 10 MB file validation through secure object storage.
