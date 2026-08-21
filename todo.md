@@ -3159,3 +3159,9 @@
 - [x] Compare Synthia’s opt-in read-only LiveKit authorization request with the official protocol and SDK behavior before attributing a repeated 401 response to user-provided credentials.
 - [x] Correct any confirmed verifier defect, retain the disabled-by-default Voice Mode gate, and re-run only a read-only authorization check.
 - [x] Record the verified validation result and the remaining worker/deployment steps without enabling Voice Mode or starting realtime media.
+
+## Confirmed dashboard Live Voice control rendering defect
+
+- [x] Compare the new dashboard screenshot with the active source bundle and determine why the Live control is absent while Media, Automatic, and microphone controls remain visible.
+- [x] Correct the dashboard composer rendering so the Live Voice control is visibly present and keyboard-accessible before the user creates a task.
+- [x] Add regression coverage and visual verification for the rendered dashboard control without opening a media session or enabling realtime Voice Mode.
