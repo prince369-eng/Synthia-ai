@@ -219,11 +219,18 @@ describe("compact workspace layout contract", () => {
 
   it("makes the same user-initiated secure artifact retrieval available from the Library", () => {
     const library = readFileSync(new URL("../client/src/pages/Library.tsx", import.meta.url), "utf8");
+    const styles = readFileSync(new URL("../client/src/index.css", import.meta.url), "utf8");
 
     expect(library).toContain("export function LibraryArtifactOpenButton");
     expect(library).toContain("trpc.tasks.artifactUrl.useQuery");
     expect(library).toContain("<LibraryArtifactOpenButton taskId={item.taskId} deliverable={item} />");
     expect(library).toContain("Open task workspace →");
+    expect(library).toContain("export function LibraryEmptyState");
+    expect(library).toContain('aria-label="Search deliverables"');
+    expect(library).toContain('className="synthia-input h-9 pl-9 text-xs"');
+    expect(library).toContain('onStartTask={() => setLocation("/")}');
+    expect(library).toContain("Start a task");
+    expect(styles).toContain(".synthia-library-empty { @apply mt-7 flex min-h-28");
   });
 
   it("keeps General Settings review buttons and capability switches inside bounded responsive grid cells", () => {
