@@ -326,6 +326,7 @@ describe("compact workspace layout contract", () => {
     expect(agent).not.toContain("Bunnyshell");
     expect(agent).not.toContain("E2B");
     expect(agent).not.toContain("configured provider");
+    expect(agent.match(/<AgentNavigationControls/g)).toHaveLength(1);
     expect(settings).toContain('title="Connectors"');
     expect(settings).toContain('title="Skills"');
     expect(settings).toContain("Add the apps you want Synthia to use for your tasks");
