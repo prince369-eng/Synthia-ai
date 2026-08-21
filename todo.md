@@ -435,6 +435,7 @@
 - [ ] Ask user to supply credentials through secure project configuration after provider choices are confirmed.
 - [ ] Ask user to publish before live scheduling tests.
 - [ ] Ask user to confirm GitHub push only after all go-live checks pass.
+- [x] Classify remaining live-provider, storage, scheduling, deployment, and GitHub steps by their credential or explicit-confirmation gate.
 
 ## Delivery status
 
