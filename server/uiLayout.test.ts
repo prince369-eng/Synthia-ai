@@ -526,6 +526,32 @@ describe("compact workspace layout contract", () => {
     expect(schema).toContain("taskDelegations");
   });
 
+  it("keeps Office exports task-owned and future-task lessons explicitly user-reviewed", () => {
+    const workspace = readFileSync(new URL("../client/src/pages/TaskWorkspace.tsx", import.meta.url), "utf8");
+    const controls = readFileSync(new URL("../client/src/components/TaskOfficeControls.tsx", import.meta.url), "utf8");
+    const router = readFileSync(new URL("../server/routers.ts", import.meta.url), "utf8");
+    const db = readFileSync(new URL("../server/db.ts", import.meta.url), "utf8");
+    const runner = readFileSync(new URL("../server/agent/taskRunner.ts", import.meta.url), "utf8");
+
+    expect(workspace).toContain('id: "learning", label: "Review", icon: BookOpenText');
+    expect(workspace).toContain("<TaskOfficeExportMenu taskId={taskId} />");
+    expect(controls).toContain("Export audited PDF brief");
+    expect(controls).toContain("Export editable presentation");
+    expect(controls).toContain("Export task timeline spreadsheet");
+    expect(controls).toContain("No model run is started.");
+    expect(controls).toContain("Review before Synthia learns");
+    expect(controls).toContain("Approve for future tasks");
+    expect(controls).toContain("Synthia does not infer or activate cross-task learning automatically.");
+    expect(router).toContain("exportOffice: protectedProcedure");
+    expect(router).toContain("proposeTaskLesson: protectedProcedure");
+    expect(router).toContain("reviewTaskLesson: protectedProcedure");
+    expect(router).toContain("await requireOwnedTask(input.taskId, ctx.user.id)");
+    expect(router).toContain('enforceUserMutationLimit(ctx.user.id, "task-office-export", 20, 3_600)');
+    expect(db).toContain("listPendingTaskLessonsForUser");
+    expect(db).toContain("reviewPendingTaskLessonForUser");
+    expect(runner).not.toContain("createMemoryFact(");
+  });
+
   it("keeps the compact dashboard and workspace hierarchy in cool Synthia neutrals", () => {
     const dashboard = readFileSync(new URL("../client/src/pages/TaskDashboard.tsx", import.meta.url), "utf8");
     const workspace = readFileSync(new URL("../client/src/pages/TaskWorkspace.tsx", import.meta.url), "utf8");

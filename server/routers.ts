@@ -6,6 +6,7 @@ import { z } from "zod";
 import {
   appendTaskEvent,
   clearSessionPersonalizationMemories,
+  createMemoryFact,
   createPersonalizationMemory,
   createTaskDelegationForUser,
   createTaskPipelineHealthSignalForUser,
@@ -34,6 +35,7 @@ import {
   listTaskDeliverables,
   listTaskEvents,
   listTaskMessages,
+  listPendingTaskLessonsForUser,
   listTaskDelegationsForUser,
   listTaskPipelineHealthSignalsForUser,
   listTaskProofRecordsForUser,
@@ -48,6 +50,7 @@ import {
   updatePersonalizationMemory,
   updatePersonalizationProfile,
   updateMemoryFactStatus,
+  reviewPendingTaskLessonForUser,
   deletePersonalizationMemory,
   deleteIntegrationForUser,
   createIntegrationForUser,
@@ -72,7 +75,7 @@ import { enforceRateLimit, RateLimitError } from "./security/rateLimit";
 import { serviceReadinessForUser } from "./integrations/catalog";
 import { estimateTaskCredits } from "./agent/creditEstimate";
 import { encryptSecret } from "./security/encryption";
-import { getTaskArtifactUrl } from "./agent/artifactStorage";
+import { getTaskArtifactUrl, putTaskArtifact } from "./agent/artifactStorage";
 import { createHeartbeatJob, deleteHeartbeatJob, updateHeartbeatJob } from "./_core/heartbeat";
 import { storageGetSignedUrl, storagePut } from "./storage";
 import { ENV } from "./_core/env";
@@ -84,6 +87,7 @@ import { executeTaskMedia, TaskMediaRequestError } from "./media/taskMedia";
 import { captureLiveComputerScreen, listLiveComputerFiles, liveComputerAvailability, readLiveComputerSource } from "./agent/liveComputer";
 import { generateWithFallback, parseStructuredModelOutput } from "./agent/llm";
 import { createVoiceModeJoinCredentials, getVoiceModeAvailability } from "./realtime/voiceMode";
+import { buildTaskOfficeExport, OFFICE_EXPORT_FORMATS } from "./office/taskOfficeExport";
 
 const taskIdSchema = z.object({ taskId: z.string().uuid() });
 const taskTitleSchema = z.string().trim().min(1).max(180);
@@ -163,6 +167,9 @@ const voiceModeSettingsSchema = z.object({
 });
 const voiceModeStartSchema = taskIdSchema.extend({ settings: voiceModeSettingsSchema });
 const voiceModeSessionSchema = taskIdSchema.extend({ sessionId: z.string().uuid() });
+const taskOfficeExportSchema = taskIdSchema.extend({ format: z.enum(OFFICE_EXPORT_FORMATS) });
+const taskLessonSchema = taskIdSchema.extend({ lesson: z.string().trim().min(20).max(1_200), confidence: z.number().min(0).max(1).default(0.7) });
+const reviewTaskLessonSchema = taskIdSchema.extend({ memoryId: z.string().uuid(), decision: z.enum(["active", "archived"]) });
 const voiceModeTranscriptSchema = voiceModeSessionSchema.extend({
   role: z.enum(["user", "agent"]),
   content: z.string().trim().min(1).max(8_000),
@@ -623,7 +630,7 @@ export const appRouter = router({
     list: protectedProcedure.input(z.object({ includeArchived: z.boolean().optional() }).optional()).query(async ({ ctx, input }) => listTasksForUser(ctx.user.id, input?.includeArchived)),
     get: protectedProcedure.input(taskIdSchema).query(async ({ ctx, input }) => {
       const task = await requireOwnedTask(input.taskId, ctx.user.id);
-      const [events, messages, approvals, deliverables, attachments, sandboxRows, skillSelections, proofRecords, pipelineHealthSignals, remediationProposals, delegations] = await Promise.all([
+      const [events, messages, approvals, deliverables, attachments, sandboxRows, skillSelections, proofRecords, pipelineHealthSignals, remediationProposals, delegations, pendingTaskLessons] = await Promise.all([
         listTaskEvents(task.id),
         listTaskMessages(task.id),
         listTaskApprovals(task.id),
@@ -635,9 +642,46 @@ export const appRouter = router({
         listTaskPipelineHealthSignalsForUser(task.id, ctx.user.id),
         listTaskRemediationProposalsForUser(task.id, ctx.user.id),
         listTaskDelegationsForUser(task.id, ctx.user.id),
+        listPendingTaskLessonsForUser({ taskId: task.id, userId: ctx.user.id }),
       ]);
-      return { task, events, messages, approvals, deliverables, attachments, sandboxes: sandboxRows, skillSelections, proofRecords, pipelineHealthSignals, remediationProposals, delegations };
+      return { task, events, messages, approvals, deliverables, attachments, sandboxes: sandboxRows, skillSelections, proofRecords, pipelineHealthSignals, remediationProposals, delegations, pendingTaskLessons };
     }),
+    exportOffice: protectedProcedure
+      .input(taskOfficeExportSchema)
+      .mutation(async ({ ctx, input }) => {
+        await enforceUserMutationLimit(ctx.user.id, "task-office-export", 20, 3_600);
+        const task = await requireOwnedTask(input.taskId, ctx.user.id);
+        const events = await listTaskEvents(task.id);
+        const document = await buildTaskOfficeExport({ taskId: task.id, title: task.title, goal: task.goal, status: task.status, createdAt: task.createdAt, completedAt: task.completedAt, events }, input.format);
+        try {
+          const artifact = await putTaskArtifact({ taskId: task.id, filename: document.filename, body: document.bytes, contentType: document.contentType });
+          const event = await appendTaskEvent(task.id, { type: "task_metadata", payload: { kind: "office_export", format: input.format, filename: document.filename, generatedBy: "user_requested_server_export" } });
+          const deliverableId = await createDeliverable({ taskId: task.id, eventId: event.id, filename: document.filename, fileType: document.contentType, storageKey: artifact.key, storageUrl: artifact.url, isFinal: true });
+          return { deliverableId, filename: document.filename, fileType: document.contentType };
+        } catch (error) {
+          const message = error instanceof Error ? error.message : "Office export storage failed.";
+          throw new TRPCError({ code: "PRECONDITION_FAILED", message: `The Office export could not be stored. ${message}` });
+        }
+      }),
+    proposeTaskLesson: protectedProcedure
+      .input(taskLessonSchema)
+      .mutation(async ({ ctx, input }) => {
+        await enforceUserMutationLimit(ctx.user.id, "task-lesson-propose", 30, 3_600);
+        const task = await requireOwnedTask(input.taskId, ctx.user.id);
+        const memoryId = await createMemoryFact({ userId: ctx.user.id, factText: input.lesson, category: "skill", sourceTaskId: task.id, confidence: input.confidence, status: "pending" });
+        await appendTaskEvent(task.id, { type: "task_metadata", payload: { kind: "task_lesson_proposed", memoryId, confidence: input.confidence, source: "user_review" } });
+        return { memoryId };
+      }),
+    reviewTaskLesson: protectedProcedure
+      .input(reviewTaskLessonSchema)
+      .mutation(async ({ ctx, input }) => {
+        await enforceUserMutationLimit(ctx.user.id, "task-lesson-review", 30, 3_600);
+        const task = await requireOwnedTask(input.taskId, ctx.user.id);
+        const reviewed = await reviewPendingTaskLessonForUser({ taskId: task.id, userId: ctx.user.id, memoryId: input.memoryId, status: input.decision });
+        if (!reviewed) throw new TRPCError({ code: "NOT_FOUND", message: "That pending task lesson is unavailable for review." });
+        await appendTaskEvent(task.id, { type: "task_metadata", payload: { kind: "task_lesson_reviewed", memoryId: input.memoryId, decision: input.decision, source: "user_review" } });
+        return { ok: true };
+      }),
     artifactUrl: protectedProcedure
       .input(taskIdSchema.extend({ deliverableId: z.string().uuid() }))
       .query(async ({ ctx, input }) => {

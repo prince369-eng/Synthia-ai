@@ -3176,3 +3176,10 @@
 - [x] Audit Synthia’s current implemented, activation-gated, and intentionally unavailable product capabilities into an accurate user-facing feature inventory and differentiated roadmap.
 - [x] Redesign the public Synthia AI landing page with a detailed, responsive teal/cyan narrative, clear product surfaces, accessible motion, and truthful calls to action.
 - [x] Add deterministic landing-page regression coverage and desktop/mobile visual validation without starting models, media, browser-agent, sandbox, storage, or task workloads.
+
+## Office deliverables and governed task-learning foundations
+
+- [x] Audit the current task runner, artifacts, document outputs, spreadsheet capabilities, approved memory, and past-task evidence to distinguish available functions from gaps.
+- [x] Design secure, user-owned PDF/PPTX/XLSX generation, approval-gated spreadsheet writeback, and evidence-based task-review records without a self-modifying agent.
+- [x] Implement the highest-value safe document, spreadsheet, and task-review foundations using owner-scoped persistence, bounded inputs, explicit user action, and artifact storage.
+- [x] Add deterministic coverage for authorization, validation, artifact output, and the prohibition on automatic cross-task self-modification or external spreadsheet writes.

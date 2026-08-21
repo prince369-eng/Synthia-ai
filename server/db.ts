@@ -1098,6 +1098,31 @@ export async function listMemoryFacts(userId: number) {
     .orderBy(desc(memoryFacts.lastUsedAt), desc(memoryFacts.createdAt));
 }
 
+export async function listPendingTaskLessonsForUser(input: { taskId: string; userId: number }) {
+  const database = databaseRequired(await getDb());
+  return database
+    .select()
+    .from(memoryFacts)
+    .where(and(eq(memoryFacts.userId, input.userId), eq(memoryFacts.sourceTaskId, input.taskId), eq(memoryFacts.category, "skill"), eq(memoryFacts.status, "pending")))
+    .orderBy(desc(memoryFacts.createdAt));
+}
+
+export async function reviewPendingTaskLessonForUser(input: { taskId: string; userId: number; memoryId: string; status: "active" | "archived" }) {
+  const database = databaseRequired(await getDb());
+  const updated = await database
+    .update(memoryFacts)
+    .set({ status: input.status, lastUsedAt: input.status === "active" ? new Date() : undefined })
+    .where(and(
+      eq(memoryFacts.id, input.memoryId),
+      eq(memoryFacts.userId, input.userId),
+      eq(memoryFacts.sourceTaskId, input.taskId),
+      eq(memoryFacts.category, "skill"),
+      eq(memoryFacts.status, "pending"),
+    ))
+    .returning({ id: memoryFacts.id });
+  return Boolean(updated[0]);
+}
+
 export async function listIntegrationsForUser(userId: number) {
   const database = databaseRequired(await getDb());
   return database
@@ -1298,7 +1323,7 @@ export async function getApprovedPersonalizationContext(userId: number) {
   const profile = await getPersonalizationProfile(userId);
   if (!profile.enabled) return { dimensions: null, sessionMemories: [] as string[], longTermMemories: [] as string[] };
   const now = Date.now();
-  const records = await listPersonalizationMemories(userId);
+  const [records, approvedLessons] = await Promise.all([listPersonalizationMemories(userId), listMemoryFacts(userId)]);
   const active = records.filter(record => record.enabled && (!record.expiresAt || record.expiresAt.getTime() > now));
   const takeBounded = (items: typeof active, maxItems: number, maxCharacters: number) => {
     let remaining = maxCharacters;
@@ -1311,7 +1336,12 @@ export async function getApprovedPersonalizationContext(userId: number) {
   return {
     dimensions: profile.dimensions,
     sessionMemories: profile.sessionMemoryEnabled ? takeBounded(active.filter(record => record.memoryType === "session"), 3, 360) : [],
-    longTermMemories: profile.longTermMemoryEnabled ? takeBounded(active.filter(record => record.memoryType === "long_term"), 6, 720) : [],
+    longTermMemories: profile.longTermMemoryEnabled
+      ? [
+        ...takeBounded(active.filter(record => record.memoryType === "long_term"), 4, 480),
+        ...approvedLessons.filter(record => record.category === "skill").slice(0, 2).map(record => record.factText.trim().slice(0, 120)).filter(Boolean),
+      ]
+      : [],
   };
 }
 
