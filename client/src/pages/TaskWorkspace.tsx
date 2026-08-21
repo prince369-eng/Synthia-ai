@@ -4,13 +4,13 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { cn } from "@/lib/utils";
 import { trpc } from "@/lib/trpc";
 import { useTaskEventStream } from "@/hooks/useTaskEventStream";
-import { AlertTriangle, Archive, AudioLines, BookOpenText, Bot, CalendarClock, Check, ChevronLeft, CirclePause, Code2, ExternalLink, FileCode2, FileText, FolderTree, Globe2, ImagePlus, ListTree, Loader2, Maximize2, Minimize2, MoreHorizontal, MonitorDot, Pencil, Pin, Play, Send, Square, Star, TerminalSquare, Trash2, Video, Wand2, X } from "lucide-react";
+import { AlertTriangle, Archive, AudioLines, BookOpenText, Bot, CalendarClock, Check, ChevronLeft, CirclePause, Code2, ExternalLink, FileCode2, FileText, FolderTree, Globe2, ImagePlus, ListTree, Loader2, Maximize2, Minimize2, MoreHorizontal, MonitorDot, Pencil, Pin, Play, Send, ShieldCheck, Square, Star, TerminalSquare, Trash2, Video, Wand2, X } from "lucide-react";
 import { Room, RoomEvent, Track } from "livekit-client";
 import { WORKSPACE_RETURN_ROUTES } from "@/lib/workspaceLayout";
 import React, { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation, useRoute } from "wouter";
 
-type WorkspaceTab = "screen" | "website" | "code" | "terminal" | "files" | "timeline" | "plan";
+type WorkspaceTab = "screen" | "website" | "code" | "terminal" | "files" | "timeline" | "plan" | "proof";
 
 const statusColor: Record<string, string> = { queued: "text-teal-300", booting: "text-teal-300", planning: "text-cyan-300", running: "text-cyan-300", needs_input: "text-rose-300", paused: "text-[#a5b6b1]", completed: "text-emerald-300", failed: "text-rose-300", cancelled: "text-[#a5b6b1]" };
 
@@ -52,7 +52,7 @@ export default function TaskWorkspace({ replayMode = false }: { replayMode?: boo
   if (snapshot.isLoading) return <div className="grid min-h-screen place-items-center text-sm text-[#91a7a1]"><Loader2 className="mr-2 animate-spin" size={16} />Loading task workspace…</div>;
   if (snapshot.isError || !task || !taskId) return <main className="p-8"><Link href={WORKSPACE_RETURN_ROUTES.dashboard} className="text-sm text-cyan-300">← Back to tasks</Link><p role="alert" className="mt-5 text-rose-300">{snapshot.error?.message ?? "The requested task is unavailable."}</p></main>;
 
-  const tabs: Array<{ id: WorkspaceTab; label: string; icon: typeof Code2 }> = [{ id: "screen", label: "Screen", icon: MonitorDot }, { id: "website", label: "Website", icon: Globe2 }, { id: "code", label: "Code", icon: Code2 }, { id: "terminal", label: "Terminal", icon: TerminalSquare }, { id: "files", label: "Files", icon: FolderTree }, { id: "timeline", label: "Timeline", icon: ListTree }, { id: "plan", label: "Plan", icon: FileText }];
+  const tabs: Array<{ id: WorkspaceTab; label: string; icon: typeof Code2 }> = [{ id: "screen", label: "Screen", icon: MonitorDot }, { id: "website", label: "Website", icon: Globe2 }, { id: "code", label: "Code", icon: Code2 }, { id: "terminal", label: "Terminal", icon: TerminalSquare }, { id: "files", label: "Files", icon: FolderTree }, { id: "timeline", label: "Timeline", icon: ListTree }, { id: "plan", label: "Plan", icon: FileText }, { id: "proof", label: "Proof", icon: ShieldCheck }];
   const activeApprovals = data.approvals.filter(approval => approval.status === "pending");
   const planSteps = Array.isArray(task.plan) ? task.plan.filter(step => step && typeof step === "object") as Array<{ state?: string; title?: string }> : [];
   const completedPlanSteps = planSteps.filter(step => step.state === "completed" || step.state === "done").length;
@@ -88,6 +88,7 @@ export default function TaskWorkspace({ replayMode = false }: { replayMode?: boo
           {!panelPending && tab === "files" ? <FilesPanel taskId={taskId} deliverables={data.deliverables} /> : null}
           {!panelPending && tab === "timeline" ? <TimelinePanel events={events} replayMode={replayMode} replayCursor={replayCursor} setReplayCursor={setReplayCursor} allEvents={data.events} /> : null}
           {!panelPending && tab === "plan" ? <PlanPanel plan={task.plan as Array<any>} /> : null}
+          {!panelPending && tab === "proof" ? <ProofPanel taskId={taskId} proofRecords={data.proofRecords} readOnly={replayMode} /> : null}
         </div>
       </aside>
     </div>
@@ -396,4 +397,38 @@ function PlanPanel({ plan }: { plan: Array<any> }) {
       <span><b className="block text-sm font-medium text-[#e5f2ef]">{step.title}</b><small className="mt-1 block text-xs text-[#91a7a1]">{step.state}</small></span>
     </li>)}
   </ol>;
+}
+
+function ProofPanel({ taskId, proofRecords, readOnly }: { taskId: string; proofRecords: Array<any>; readOnly: boolean }) {
+  const utils = trpc.useUtils();
+  const [recording, setRecording] = useState(false);
+  const [draft, setDraft] = useState({
+    claim: "",
+    source: "user_statement" as "task_event" | "deliverable" | "external_url" | "user_statement",
+    label: "",
+    locator: "",
+    description: "",
+    verificationStatus: "self_attested" as "self_attested" | "unverified" | "corroborated" | "contradicted" | "needs_review",
+    confidence: "50",
+    recoveryGuidance: "",
+  });
+  const recordProof = trpc.tasks.recordProof.useMutation({
+    onSuccess: () => {
+      setRecording(false);
+      setDraft({ claim: "", source: "user_statement", label: "", locator: "", description: "", verificationStatus: "self_attested", confidence: "50", recoveryGuidance: "" });
+      void utils.tasks.get.invalidate({ taskId });
+    },
+  });
+  const statusTone: Record<string, string> = { self_attested: "text-amber-200", unverified: "text-[#a5b6b1]", corroborated: "text-emerald-300", contradicted: "text-rose-300", needs_review: "text-cyan-200" };
+  const submit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const evidence = [{ source: draft.source, label: draft.label.trim(), ...(draft.locator.trim() ? { locator: draft.locator.trim() } : {}), ...(draft.description.trim() ? { description: draft.description.trim() } : {}) }];
+    recordProof.mutate({ taskId, claim: draft.claim.trim(), evidence, verificationStatus: draft.verificationStatus, confidence: Number(draft.confidence), ...(draft.recoveryGuidance.trim() ? { recoveryGuidance: draft.recoveryGuidance.trim() } : {}) });
+  };
+  return <div className="space-y-3">
+    <section className="rounded-xl border border-cyan-300/15 bg-cyan-300/[.035] p-3"><div className="flex items-start gap-2"><ShieldCheck className="mt-0.5 shrink-0 text-cyan-300" size={16} /><div><h2 className="text-xs font-semibold text-cyan-50">Proof-Carrying Tasks</h2><p className="mt-1 text-[11px] leading-5 text-[#9ab2ad]">Attach reviewed references to a task claim. Synthia never creates, fetches, or overstates evidence here; every record remains in the task’s event history.</p></div></div></section>
+    {!readOnly ? <div className="flex justify-end"><Button type="button" size="sm" onClick={() => setRecording(value => !value)} className="h-7 bg-teal-400 px-2 text-[11px] text-[#06231f] hover:bg-cyan-300">{recording ? "Cancel" : "Record proof"}</Button></div> : null}
+    {recording && !readOnly ? <form onSubmit={submit} className="space-y-3 rounded-xl border border-white/10 bg-white/[.025] p-3" aria-label="Record task proof"><div><label htmlFor="proof-claim" className="text-[10px] font-semibold uppercase tracking-[.12em] text-[#9ab2ad]">Claim</label><textarea id="proof-claim" required minLength={8} maxLength={2000} value={draft.claim} onChange={event => setDraft(value => ({ ...value, claim: event.target.value }))} placeholder="What specific outcome are you documenting?" className="mt-1.5 min-h-20 w-full rounded-md border border-white/10 bg-[#0c1514] px-2.5 py-2 text-xs text-[#e5f2ef] outline-none placeholder:text-[#667a75] focus:border-cyan-300/45" /></div><div className="grid gap-2 sm:grid-cols-2"><label className="text-[10px] font-semibold uppercase tracking-[.12em] text-[#9ab2ad]">Reference type<select value={draft.source} onChange={event => setDraft(value => ({ ...value, source: event.target.value as typeof value.source }))} className="mt-1.5 h-8 w-full rounded-md border border-white/10 bg-[#0c1514] px-2 text-xs font-normal normal-case tracking-normal text-[#e5f2ef] outline-none focus:border-cyan-300/45"><option value="user_statement">User statement</option><option value="task_event">Task event</option><option value="deliverable">Deliverable</option><option value="external_url">External URL</option></select></label><label className="text-[10px] font-semibold uppercase tracking-[.12em] text-[#9ab2ad]">Confidence (0–100)<input required type="number" min="0" max="100" value={draft.confidence} onChange={event => setDraft(value => ({ ...value, confidence: event.target.value }))} className="mt-1.5 h-8 w-full rounded-md border border-white/10 bg-[#0c1514] px-2 text-xs font-normal normal-case tracking-normal text-[#e5f2ef] outline-none focus:border-cyan-300/45" /></label></div><div className="grid gap-2 sm:grid-cols-2"><label className="text-[10px] font-semibold uppercase tracking-[.12em] text-[#9ab2ad]">Reference label<input required minLength={2} maxLength={180} value={draft.label} onChange={event => setDraft(value => ({ ...value, label: event.target.value }))} placeholder="Reviewed source or artifact" className="mt-1.5 h-8 w-full rounded-md border border-white/10 bg-[#0c1514] px-2 text-xs font-normal normal-case tracking-normal text-[#e5f2ef] outline-none placeholder:text-[#667a75] focus:border-cyan-300/45" /></label><label className="text-[10px] font-semibold uppercase tracking-[.12em] text-[#9ab2ad]">Verifier status<select value={draft.verificationStatus} onChange={event => setDraft(value => ({ ...value, verificationStatus: event.target.value as typeof value.verificationStatus }))} className="mt-1.5 h-8 w-full rounded-md border border-white/10 bg-[#0c1514] px-2 text-xs font-normal normal-case tracking-normal text-[#e5f2ef] outline-none focus:border-cyan-300/45"><option value="self_attested">Self-attested</option><option value="unverified">Unverified</option><option value="corroborated">Corroborated</option><option value="contradicted">Contradicted</option><option value="needs_review">Needs review</option></select></label></div><label className="block text-[10px] font-semibold uppercase tracking-[.12em] text-[#9ab2ad]">Locator <span className="font-normal normal-case tracking-normal text-[#718580]">(optional URL, event ID, or file name)</span><input maxLength={2048} value={draft.locator} onChange={event => setDraft(value => ({ ...value, locator: event.target.value }))} placeholder="https://… or task event / deliverable reference" className="mt-1.5 h-8 w-full rounded-md border border-white/10 bg-[#0c1514] px-2 text-xs font-normal normal-case tracking-normal text-[#e5f2ef] outline-none placeholder:text-[#667a75] focus:border-cyan-300/45" /></label><label className="block text-[10px] font-semibold uppercase tracking-[.12em] text-[#9ab2ad]">What would recover confidence? <span className="font-normal normal-case tracking-normal text-[#718580]">(optional)</span><textarea maxLength={1200} value={draft.recoveryGuidance} onChange={event => setDraft(value => ({ ...value, recoveryGuidance: event.target.value }))} placeholder="For example, review an independent source or rerun a scoped validation." className="mt-1.5 min-h-16 w-full rounded-md border border-white/10 bg-[#0c1514] px-2.5 py-2 text-xs font-normal normal-case tracking-normal text-[#e5f2ef] outline-none placeholder:text-[#667a75] focus:border-cyan-300/45" /></label><div className="flex items-center justify-between gap-3"><p className="text-[10px] leading-4 text-[#718580]">This writes a durable task event. Do not record claims you have not reviewed.</p><Button type="submit" size="sm" disabled={recordProof.isPending || draft.claim.trim().length < 8 || draft.label.trim().length < 2} className="h-7 shrink-0 bg-teal-400 px-2 text-[11px] text-[#06231f] hover:bg-cyan-300">{recordProof.isPending ? "Saving…" : "Save proof"}</Button></div>{recordProof.isError ? <p role="alert" className="text-[11px] text-rose-300">{recordProof.error.message}</p> : null}</form> : null}
+    {proofRecords.length === 0 ? <div className="rounded-xl border border-dashed border-white/12 p-5 text-center"><p className="text-xs font-medium text-[#dcece7]">No proof records yet</p><p className="mx-auto mt-1 max-w-md text-[11px] leading-5 text-[#778985]">Add a reviewed reference when a task reaches an important conclusion. Evidence stays a user-controlled reference, not a hidden model assertion.</p></div> : <ol className="space-y-2">{proofRecords.map(proof => { const evidence = Array.isArray(proof.evidence) ? proof.evidence as Array<Record<string, unknown>> : []; return <li key={proof.id} className="rounded-xl border border-white/8 bg-white/[.025] p-3"><div className="flex items-start justify-between gap-3"><p className="text-xs font-medium leading-5 text-[#e5f2ef]">{proof.claim}</p><span className={cn("shrink-0 text-[10px] font-medium", statusTone[proof.verificationStatus] ?? "text-[#a5b6b1]")}>{String(proof.verificationStatus).replace(/_/g, " ")}</span></div><p className="mt-2 text-[10px] text-[#91a7a1]">Confidence: {proof.confidence}% · {localTime(proof.createdAt)}</p>{evidence.length > 0 ? <ul className="mt-2 space-y-1 border-t border-white/8 pt-2">{evidence.map((reference, index) => <li key={`${proof.id}-${index}`} className="text-[11px] leading-5 text-[#a8c1bb]"><span className="font-medium text-cyan-100">{String(reference.label ?? "Reference")}</span>{typeof reference.locator === "string" && reference.locator ? <> · {reference.locator.startsWith("http") ? <a href={reference.locator} target="_blank" rel="noreferrer" className="text-cyan-300 hover:text-cyan-200">Open reference</a> : <span className="text-[#91a7a1]">{reference.locator}</span>}</> : null}{typeof reference.description === "string" && reference.description ? <span className="text-[#91a7a1]"> — {reference.description}</span> : null}</li>)}</ul> : null}{proof.recoveryGuidance ? <p className="mt-2 border-t border-white/8 pt-2 text-[11px] leading-5 text-[#a8c1bb]"><span className="font-medium text-cyan-100">Recovery:</span> {proof.recoveryGuidance}</p> : null}</li>; })}</ol>}
+  </div>;
 }

@@ -85,6 +85,13 @@
       "when": 1787293936943,
       "tag": "0011_left_thunderbird",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1787295798836,
+      "tag": "0012_abandoned_sharon_carter",
+      "breakpoints": true
     }
   ]
 }

@@ -3120,3 +3120,10 @@
 - [x] Research current AI-agent products, capabilities, recurring startup blind spots, and defensible differentiation opportunities using primary and authoritative industry sources.
 - [x] Produce a prioritized Synthia roadmap that distinguishes immediately buildable work from credential-, deployment-, provider-, policy-, and user-confirmation-gated work.
 - [x] Validate and checkpoint any audit-driven implementation changes before publishing the final readiness and roadmap report.
+
+## Differentiated trust capability: Proof-Carrying Tasks
+
+- [x] Define a user-owned proof-record contract that attaches claims, evidence references, verifier status, confidence, and recovery guidance to existing tasks without storing synthetic evidence.
+- [x] Add additive persistence, protected APIs, and task-event integration for proof records while preserving task ownership and ordered history.
+- [x] Add a task-workspace proof view with clear evidence provenance, verifier status, confidence, recovery options, responsive behavior, and empty/error states.
+- [x] Add deterministic regression coverage and validate the Proof-Carrying Tasks experience without invoking a model, provider, browser, sandbox, media, or storage workload.

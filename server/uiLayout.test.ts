@@ -450,6 +450,28 @@ describe("compact workspace layout contract", () => {
     expect(css).toContain(".synthia-voice-dialog");
   });
 
+  it("keeps Proof-Carrying Tasks user-authored, task-owned, and explicit about provenance", () => {
+    const workspace = readFileSync(new URL("../client/src/pages/TaskWorkspace.tsx", import.meta.url), "utf8");
+    const router = readFileSync(new URL("../server/routers.ts", import.meta.url), "utf8");
+    const db = readFileSync(new URL("../server/db.ts", import.meta.url), "utf8");
+    const schema = readFileSync(new URL("../drizzle/schema.ts", import.meta.url), "utf8");
+
+    expect(workspace).toContain('id: "proof", label: "Proof", icon: ShieldCheck');
+    expect(workspace).toContain("Proof-Carrying Tasks");
+    expect(workspace).toContain("Synthia never creates, fetches, or overstates evidence here");
+    expect(workspace).toContain('aria-label="Record task proof"');
+    expect(workspace).toContain("What would recover confidence?");
+    expect(workspace).toContain("No proof records yet");
+    expect(router).toContain("recordProof: protectedProcedure");
+    expect(router).toContain('enforceUserMutationLimit(ctx.user.id, "task-proof-record", 40, 3_600)');
+    expect(router).toContain('await requireOwnedTask(input.taskId, ctx.user.id)');
+    expect(db).toContain("createTaskProofRecordForUser");
+    expect(db).toContain('type: "proof_record"');
+    expect(db).toContain("It deliberately stores no provider output, audio, screen frames, artifact bytes, or model-generated evidence.");
+    expect(schema).toContain("taskProofRecords");
+    expect(schema).toContain('"proof_record"');
+  });
+
   it("keeps the compact dashboard and workspace hierarchy in cool Synthia neutrals", () => {
     const dashboard = readFileSync(new URL("../client/src/pages/TaskDashboard.tsx", import.meta.url), "utf8");
     const workspace = readFileSync(new URL("../client/src/pages/TaskWorkspace.tsx", import.meta.url), "utf8");

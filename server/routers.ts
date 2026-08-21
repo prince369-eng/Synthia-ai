@@ -7,6 +7,7 @@ import {
   appendTaskEvent,
   clearSessionPersonalizationMemories,
   createPersonalizationMemory,
+  createTaskProofRecordForUser,
   createDeliverable,
   createProjectForUser,
   createTaskForUser,
@@ -30,6 +31,7 @@ import {
   listTaskDeliverables,
   listTaskEvents,
   listTaskMessages,
+  listTaskProofRecordsForUser,
   listTaskSandboxes,
   listTasksForUser,
   recordUserMessage,
@@ -158,6 +160,19 @@ const voiceModeSessionSchema = taskIdSchema.extend({ sessionId: z.string().uuid(
 const voiceModeTranscriptSchema = voiceModeSessionSchema.extend({
   role: z.enum(["user", "agent"]),
   content: z.string().trim().min(1).max(8_000),
+});
+const proofEvidenceSchema = z.object({
+  source: z.enum(["task_event", "deliverable", "external_url", "user_statement"]),
+  label: z.string().trim().min(2).max(180),
+  locator: z.string().trim().min(1).max(2_048).optional(),
+  description: z.string().trim().min(1).max(600).optional(),
+});
+const createProofRecordSchema = taskIdSchema.extend({
+  claim: z.string().trim().min(8).max(2_000),
+  evidence: z.array(proofEvidenceSchema).min(1).max(8),
+  verificationStatus: z.enum(["self_attested", "unverified", "corroborated", "contradicted", "needs_review"]),
+  confidence: z.number().int().min(0).max(100),
+  recoveryGuidance: z.string().trim().min(4).max(1_200).optional(),
 });
 export const attachmentMimeSchema = z.string().trim().min(3).max(100).regex(
   /^(application\/(pdf|json|zip|x-7z-compressed|x-tar|vnd\.(openxmlformats-officedocument\.(wordprocessingml\.document|spreadsheetml\.sheet)|ms-excel|msword))|text\/(plain|csv|markdown)|image\/(png|jpeg|webp)|video\/(mp4|webm|quicktime))$/,
@@ -572,7 +587,7 @@ export const appRouter = router({
     list: protectedProcedure.input(z.object({ includeArchived: z.boolean().optional() }).optional()).query(async ({ ctx, input }) => listTasksForUser(ctx.user.id, input?.includeArchived)),
     get: protectedProcedure.input(taskIdSchema).query(async ({ ctx, input }) => {
       const task = await requireOwnedTask(input.taskId, ctx.user.id);
-      const [events, messages, approvals, deliverables, attachments, sandboxRows, skillSelections] = await Promise.all([
+      const [events, messages, approvals, deliverables, attachments, sandboxRows, skillSelections, proofRecords] = await Promise.all([
         listTaskEvents(task.id),
         listTaskMessages(task.id),
         listTaskApprovals(task.id),
@@ -580,8 +595,9 @@ export const appRouter = router({
         listTaskAttachments(task.id),
         listTaskSandboxes(task.id),
         getTaskSkillSelectionsForUser(task.id, ctx.user.id),
+        listTaskProofRecordsForUser(task.id, ctx.user.id),
       ]);
-      return { task, events, messages, approvals, deliverables, attachments, sandboxes: sandboxRows, skillSelections };
+      return { task, events, messages, approvals, deliverables, attachments, sandboxes: sandboxRows, skillSelections, proofRecords };
     }),
     artifactUrl: protectedProcedure
       .input(taskIdSchema.extend({ deliverableId: z.string().uuid() }))
@@ -677,6 +693,18 @@ export const appRouter = router({
           return { ok: true };
         } catch {
           throw new TRPCError({ code: "NOT_FOUND", message: "That Voice Mode session is unavailable." });
+        }
+      }),
+    recordProof: protectedProcedure
+      .input(createProofRecordSchema)
+      .mutation(async ({ ctx, input }) => {
+        await enforceUserMutationLimit(ctx.user.id, "task-proof-record", 40, 3_600);
+        await requireOwnedTask(input.taskId, ctx.user.id);
+        try {
+          return await createTaskProofRecordForUser({ ...input, userId: ctx.user.id });
+        } catch (error) {
+          console.error(JSON.stringify({ event: "task_proof_record_failed", taskId: input.taskId, userId: ctx.user.id, message: error instanceof Error ? error.message : "unknown" }));
+          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "The proof record could not be saved. Please retry." });
         }
       }),
     generateMedia: protectedProcedure.input(mediaGenerationSchema).mutation(async ({ ctx, input }) => {

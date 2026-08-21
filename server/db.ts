@@ -21,6 +21,7 @@ import {
   taskEvents,
   taskEventSequences,
   taskMessages,
+  taskProofRecords,
   taskSkillSelections,
   tasks,
   type Project,
@@ -94,6 +95,22 @@ export type SkillInstallScope = "personal" | "workspace";
 export type SkillBundleFile = { key: string; filename: string; mimeType: string; bytes: number };
 export type SkillCandidate = { id: string; name: string; description: string; matchingTerms: string; skillMdContent: string };
 export type TaskSkillSelection = { skillId: string; skillName: string; skillMdContent: string; relevanceScore: number; selectedAt: Date };
+export type ProofEvidenceReference = {
+  source: "task_event" | "deliverable" | "external_url" | "user_statement";
+  label: string;
+  locator?: string;
+  description?: string;
+};
+export type ProofVerificationStatus = "self_attested" | "unverified" | "corroborated" | "contradicted" | "needs_review";
+export type CreateTaskProofRecordInput = {
+  taskId: string;
+  userId: number;
+  claim: string;
+  evidence: ProofEvidenceReference[];
+  verificationStatus: ProofVerificationStatus;
+  confidence: number;
+  recoveryGuidance?: string;
+};
 
 export const DEFAULT_PERSONALITY_DIMENSIONS: PersonalityDimensions = {
   warmth: 55,
@@ -455,6 +472,63 @@ export async function listTaskEvents(taskId: string) {
     .from(taskEvents)
     .where(eq(taskEvents.taskId, taskId))
     .orderBy(asc(taskEvents.sequenceNumber));
+}
+
+export async function listTaskProofRecordsForUser(taskId: string, userId: number) {
+  const database = databaseRequired(await getDb());
+  return database
+    .select()
+    .from(taskProofRecords)
+    .where(and(eq(taskProofRecords.taskId, taskId), eq(taskProofRecords.userId, userId)))
+    .orderBy(desc(taskProofRecords.createdAt));
+}
+
+/**
+ * Records a user-approved claim and reference metadata atomically with the immutable task event.
+ * It deliberately stores no provider output, audio, screen frames, artifact bytes, or model-generated evidence.
+ */
+export async function createTaskProofRecordForUser(input: CreateTaskProofRecordInput) {
+  const database = databaseRequired(await getDb());
+  const proofId = randomUUID();
+  const createdAt = new Date();
+  const result = await database.transaction(async transaction => {
+    const [ownedTask] = await transaction
+      .select({ id: tasks.id })
+      .from(tasks)
+      .where(and(eq(tasks.id, input.taskId), eq(tasks.userId, input.userId)))
+      .limit(1);
+    if (!ownedTask) throw new Error("Task ownership could not be verified.");
+
+    const event = await appendTaskEventInTransaction(transaction, input.taskId, {
+      type: "proof_record",
+      payload: {
+        action: "recorded",
+        proofId,
+        claimPreview: input.claim.slice(0, 180),
+        evidenceCount: input.evidence.length,
+        verificationStatus: input.verificationStatus,
+        confidence: input.confidence,
+      },
+    });
+    const [proof] = await transaction
+      .insert(taskProofRecords)
+      .values({
+        id: proofId,
+        taskId: input.taskId,
+        userId: input.userId,
+        eventId: event.id,
+        claim: input.claim,
+        evidence: input.evidence,
+        verificationStatus: input.verificationStatus,
+        confidence: input.confidence,
+        recoveryGuidance: input.recoveryGuidance ?? null,
+        createdAt,
+      })
+      .returning();
+    return { proof, sequenceNumber: event.sequenceNumber };
+  });
+  publishTaskEvent(input.taskId, result.sequenceNumber);
+  return result.proof;
 }
 
 export async function listTaskEventsSince(taskId: string, sequenceNumber: number) {

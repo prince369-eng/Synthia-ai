@@ -17,9 +17,10 @@ import {
 const userRoleEnum = pgEnum("user_role", ["user", "admin"]);
 const taskStatusEnum = pgEnum("task_status", ["queued", "booting", "planning", "running", "needs_input", "paused", "completed", "failed", "cancelled"]);
 const estimateBandEnum = pgEnum("estimate_band", ["quick", "standard", "extensive"]);
-const eventTypeEnum = pgEnum("event_type", ["user_message", "agent_message", "clarifying_question", "plan_update", "tool_call", "tool_result", "approval_request", "approval_response", "screenshot", "error", "status_change", "context_summary", "user_file_edit", "user_terminal_command", "task_metadata", "skill_loaded", "voice_session", "voice_transcript", "screen_share"]);
+const eventTypeEnum = pgEnum("event_type", ["user_message", "agent_message", "clarifying_question", "plan_update", "tool_call", "tool_result", "approval_request", "approval_response", "screenshot", "error", "status_change", "context_summary", "user_file_edit", "user_terminal_command", "task_metadata", "skill_loaded", "voice_session", "voice_transcript", "screen_share", "proof_record"]);
 const messageRoleEnum = pgEnum("message_role", ["user", "agent"]);
 const voiceSessionStatusEnum = pgEnum("voice_session_status", ["starting", "active", "ended", "failed"]);
+const proofVerificationStatusEnum = pgEnum("proof_verification_status", ["self_attested", "unverified", "corroborated", "contradicted", "needs_review"]);
 const sandboxProviderEnum = pgEnum("sandbox_provider", ["docker", "e2b", "hopx"]);
 const sandboxStatusEnum = pgEnum("sandbox_status", ["booting", "active", "checkpointed", "destroyed"]);
 const riskLevelEnum = pgEnum("risk_level", ["low", "medium", "high"]);
@@ -48,7 +49,7 @@ export const users = pgTable("users", {
 });
 
 export const taskStatuses = ["queued", "booting", "planning", "running", "needs_input", "paused", "completed", "failed", "cancelled"] as const;
-export const eventTypes = ["user_message", "agent_message", "clarifying_question", "plan_update", "tool_call", "tool_result", "approval_request", "approval_response", "screenshot", "error", "status_change", "context_summary", "user_file_edit", "user_terminal_command", "task_metadata", "skill_loaded", "voice_session", "voice_transcript", "screen_share"] as const;
+export const eventTypes = ["user_message", "agent_message", "clarifying_question", "plan_update", "tool_call", "tool_result", "approval_request", "approval_response", "screenshot", "error", "status_change", "context_summary", "user_file_edit", "user_terminal_command", "task_metadata", "skill_loaded", "voice_session", "voice_transcript", "screen_share", "proof_record"] as const;
 
 export const projects = pgTable("projects", {
   id: varchar("id", { length: 36 }).primaryKey(),
@@ -179,6 +180,28 @@ export const voiceSessions = pgTable("voice_sessions", {
 }, table => [
   index("voice_sessions_task_created_idx").on(table.taskId, table.createdAt),
   index("voice_sessions_user_status_updated_idx").on(table.userId, table.status, table.updatedAt),
+]);
+
+/**
+ * A user-owned, append-only proof record for a task claim. Evidence contains metadata
+ * and user-approved references only; no provider result, screen frame, audio, or
+ * artifact bytes are duplicated here.
+ */
+export const taskProofRecords = pgTable("task_proof_records", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  taskId: varchar("task_id", { length: 36 }).notNull().references(() => tasks.id, { onDelete: "cascade" }),
+  userId: integer("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  eventId: varchar("event_id", { length: 36 }).notNull().references(() => taskEvents.id, { onDelete: "cascade" }),
+  claim: text("claim").notNull(),
+  evidence: jsonb("evidence").notNull(),
+  verificationStatus: proofVerificationStatusEnum("verification_status").notNull().default("self_attested"),
+  confidence: integer("confidence").notNull(),
+  recoveryGuidance: text("recovery_guidance"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, table => [
+  index("task_proof_records_task_created_idx").on(table.taskId, table.createdAt),
+  index("task_proof_records_user_created_idx").on(table.userId, table.createdAt),
+  uniqueIndex("task_proof_records_event_unique").on(table.eventId),
 ]);
 
 export const sandboxes = pgTable("sandboxes", {
