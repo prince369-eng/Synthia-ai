@@ -431,6 +431,7 @@ describe("compact workspace layout contract", () => {
     const css = readFileSync(new URL("../client/src/index.css", import.meta.url), "utf8");
 
     expect(workspace).toContain('onClick={() => setVoiceModeOpen(true)}');
+    expect(workspace).toContain('aria-label="Open Voice Mode from task chat"');
     expect(workspace).toContain('role="dialog"');
     expect(workspace).toContain('aria-modal="true"');
     expect(workspace).toContain("getDisplayMedia({ video: { frameRate: { ideal: 5, max: 10 } }, audio: false })");
@@ -440,6 +441,10 @@ describe("compact workspace layout contract", () => {
     expect(workspace).toContain("segment.final");
     expect(workspace).toContain("recordTranscript.mutate");
     expect(workspace).toContain("Do not share passwords, recovery codes, payment details");
+    expect(workspace).toContain("synthia-voice-live-indicator");
+    expect(workspace).toContain("synthia-voice-active-control");
+    expect(workspace).toContain("synthia-screen-share-live-label");
+    expect(workspace).toContain("synthia-screen-share-active-control");
     expect(router).toContain("voiceModeAvailability: protectedProcedure");
     expect(router).toContain("startVoiceMode: protectedProcedure");
     expect(router).toContain("recordVoiceTranscript: protectedProcedure");
@@ -448,6 +453,9 @@ describe("compact workspace layout contract", () => {
     expect(realtime).toContain("source.realtimeVoiceEnabled");
     expect(realtime).toContain("Voice Mode is disabled until");
     expect(css).toContain(".synthia-voice-dialog");
+    expect(css).toContain(".synthia-chat-voice-entry");
+    expect(css).toContain("@keyframes synthia-live-signal");
+    expect(css).toContain("prefers-reduced-motion: no-preference");
   });
 
   it("keeps Proof-Carrying Tasks user-authored, task-owned, and explicit about provenance", () => {

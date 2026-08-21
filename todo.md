@@ -3141,3 +3141,9 @@
 
 - [x] Verify the existing Voice Mode entry control, native local screen-sharing control, consent states, configuration gate, and deployment prerequisites against the requested interaction pattern without starting capture or a realtime provider workload.
 - [x] Document the verified availability status and only implement a user-visible control adjustment if the existing safe feature boundary is incomplete.
+
+## Voice Mode live-state controls and feature inventory
+
+- [x] Add accessible, low-motion active-state indicators for a connected Voice Mode session and an active local screen share, preserving explicit user consent and stop controls.
+- [x] Review the chat-area Voice Mode entry and document a source-verified inventory of working, configuration-gated, and not-yet-implemented Synthia capabilities.
+- [x] Add deterministic regression coverage and responsive visual verification for the active-state controls without opening a microphone, display capture, LiveKit room, Gemini session, or external workload.

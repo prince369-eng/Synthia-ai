@@ -348,12 +348,23 @@ p[role="alert"].text-amber-200 { --synthia-amber-allowed: 1; }
   .synthia-voice-backdrop { @apply fixed inset-0 z-60 grid place-items-center bg-[#07100f]/78 p-4 backdrop-blur-md; }
   .synthia-voice-dialog { width: min(100%, 42rem); max-height: min(44rem, calc(100vh - 2rem)); @apply overflow-y-auto rounded-2xl border border-cyan-300/20 bg-[#0d1816] p-4 shadow-2xl sm:p-6; background: linear-gradient(150deg, #11201d, #0b1513 78%); }
   .synthia-voice-select { @apply mt-1.5 block w-full rounded-lg border border-white/12 bg-[#0c1715] px-2.5 py-2 text-xs text-[#d9f5ee] outline-none focus-visible:ring-2 focus-visible:ring-cyan-300 disabled:cursor-not-allowed disabled:opacity-55; }
+  .synthia-chat-voice-entry { @apply h-8 w-8 shrink-0 rounded-full border-cyan-300/25 bg-cyan-300/[.05] text-cyan-100 hover:border-cyan-300/45 hover:bg-cyan-300/12 focus-visible:ring-cyan-300; }
+  .synthia-voice-live-surface { @apply border-emerald-300/30 bg-emerald-300/[.035]; }
+  .synthia-voice-live-label, .synthia-screen-share-live-label { @apply inline-flex items-center gap-1 rounded-full border border-emerald-300/22 bg-emerald-300/[.08] px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-[.1em] text-emerald-200; }
+  .synthia-voice-live-indicator, .synthia-screen-share-live-indicator { @apply relative inline-block h-1.5 w-1.5 rounded-full bg-emerald-300; }
+  .synthia-voice-live-indicator::after, .synthia-screen-share-live-indicator::after { content: ""; position: absolute; inset: -4px; border: 1px solid rgba(110, 231, 183, .62); border-radius: 999px; opacity: 0; }
+  .synthia-voice-active-control, .synthia-screen-share-active-control { @apply relative border-rose-200/40 shadow-[0_0_0_1px_rgba(251,113,133,.12),0_0_20px_rgba(251,113,133,.12)]; }
 }
 
 @keyframes synthia-skeleton-shimmer { from { background-position: 100% 0; } to { background-position: -100% 0; } }
+@keyframes synthia-live-signal { 0% { transform: scale(.72); opacity: .9; } 75%, 100% { transform: scale(1.25); opacity: 0; } }
+
+@media (prefers-reduced-motion: no-preference) {
+  .synthia-voice-live-indicator::after, .synthia-screen-share-live-indicator::after { animation: synthia-live-signal 1.65s cubic-bezier(.23,1,.32,1) infinite; }
+}
 
 @media (prefers-reduced-motion: reduce) {
-  .synthia-computer-panel, .synthia-computer-skeleton span { animation: none; transition: none; }
+  .synthia-computer-panel, .synthia-computer-skeleton span, .synthia-voice-live-indicator::after, .synthia-screen-share-live-indicator::after { animation: none; transition: none; }
 }
 
 /* Public landing experience */
