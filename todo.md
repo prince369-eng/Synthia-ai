@@ -3183,3 +3183,9 @@
 - [x] Design secure, user-owned PDF/PPTX/XLSX generation, approval-gated spreadsheet writeback, and evidence-based task-review records without a self-modifying agent.
 - [x] Implement the highest-value safe document, spreadsheet, and task-review foundations using owner-scoped persistence, bounded inputs, explicit user action, and artifact storage.
 - [x] Add deterministic coverage for authorization, validation, artifact output, and the prohibition on automatic cross-task self-modification or external spreadsheet writes.
+
+## Durable and dynamic agent capability roadmap
+
+- [x] Research the highest-value reliability, oversight, evaluation, memory, recovery, and collaboration gaps in modern AI-agent products.
+- [x] Compare the researched opportunities against Synthia’s existing governed operations, proof, reviewed-learning, approval, and replay capabilities.
+- [x] Deliver a prioritized, safety-bounded roadmap that distinguishes immediate implementation candidates from configuration- or connector-gated work.
