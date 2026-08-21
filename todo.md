@@ -3170,3 +3170,9 @@
 
 - [x] Record the user’s decision to retain Autoscale hosting and keep the Voice Mode worker deployment out of scope.
 - [x] Confirm that the existing LiveKit credential validation and disabled-by-default realtime flags preserve the selected safety boundary.
+
+## Distinctive product research and public landing-page redesign
+- [x] Inspect the requested CamelAI reference and current AI-agent market positioning for reusable public-landing-page interaction and narrative patterns without copying proprietary visual assets or claims.
+- [x] Audit Synthia’s current implemented, activation-gated, and intentionally unavailable product capabilities into an accurate user-facing feature inventory and differentiated roadmap.
+- [x] Redesign the public Synthia AI landing page with a detailed, responsive teal/cyan narrative, clear product surfaces, accessible motion, and truthful calls to action.
+- [x] Add deterministic landing-page regression coverage and desktop/mobile visual validation without starting models, media, browser-agent, sandbox, storage, or task workloads.

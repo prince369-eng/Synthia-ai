@@ -402,12 +402,17 @@ describe("compact workspace layout contract", () => {
     expect(app).toContain("return user ? <SynthiaRoute><TaskDashboard /></SynthiaRoute> : <Home />");
     expect(home).toContain("Autonomous work, made inspectable");
     expect(home).toContain("Agent’s Computer");
-    expect(home).toContain("Automatic routing");
+    expect(home).toContain("Delegate the work.");
+    expect(home).toContain("Capability availability");
+    expect(home).toContain("Connect to enable");
+    expect(home).toContain("Research candidate");
     expect(home).toContain('aria-controls="synthia-public-navigation"');
     expect(home).toContain('id="synthia-public-navigation"');
     expect(home).toContain('event.key === "Escape"');
     expect(css).toContain(".synthia-marketing{min-height:100vh");
     expect(css).toContain(".synthia-marketing-feature-grid{display:grid;grid-template-columns:repeat(3,1fr)");
+    expect(css).toContain(".synthia-marketing-availability-grid{display:grid;grid-template-columns:1fr 1fr");
+    expect(css).toContain(".synthia-marketing-roadmap{width:min(1120px");
     expect(css).toContain("@media(max-width:880px)");
     expect(css).toContain(".synthia-marketing *{animation:none!important");
   });
