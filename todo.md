@@ -3197,3 +3197,11 @@
 - [x] Add protected APIs and a task-workspace evaluation panel for success criteria, evidence requirements, evidence references, verdicts, and reviewer guidance.
 - [x] Add deterministic authorization and non-self-modification regression coverage without starting a task or external workload.
 - [x] Render a read-only-safe task-workspace evaluation panel that creates declarative packs and records human reviewer outcomes without executing an evaluation or altering agent behavior.
+
+## Guided prompting and governed connected apps
+
+- [x] Research Zapier, Zapier MCP, and security-first alternatives for a user-authorized app-integration layer with explicit action approvals.
+- [x] Add accessible, local live prompt suggestions that help users clarify a task without calling a model or altering the typed goal.
+- [x] Dismiss or replace the Live Voice empty-goal hint once it has been read or the composer state changes, without requesting media permissions.
+- [x] Implement a connector catalog and consent-first connected-app controls that do not store third-party secrets, execute actions, or imply a connection before user authorization.
+- [x] Add deterministic regression coverage, safe-use documentation, type validation, production-build validation, and a checkpoint for guided prompting and governed connected apps.

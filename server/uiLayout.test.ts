@@ -40,6 +40,29 @@ describe("compact workspace layout contract", () => {
     expect(css).toContain('.synthia-live-voice-toggle');
   });
 
+  it("keeps Smart suggestions local and makes the Live Voice prerequisite notice dismissible", () => {
+    const dashboard = readFileSync(new URL("../client/src/pages/TaskDashboard.tsx", import.meta.url), "utf8");
+    const guidance = readFileSync(new URL("../client/src/lib/promptGuidance.ts", import.meta.url), "utf8");
+
+    expect(dashboard).toContain('aria-label="Smart prompt suggestions"');
+    expect(dashboard).toContain('applyPromptGuidance(current, suggestion)');
+    expect(dashboard).toContain('setLiveVoiceHint("Add a task goal first');
+    expect(dashboard).toContain('aria-label="Dismiss Live Voice guidance"');
+    expect(guidance).not.toContain("trpc");
+    expect(guidance).not.toContain("fetch(");
+  });
+
+  it("shows prospective connected apps as consent-first routes rather than connected execution authority", () => {
+    const plugins = readFileSync(new URL("../client/src/pages/Plugins.tsx", import.meta.url), "utf8");
+    const catalog = readFileSync(new URL("../client/src/lib/governedConnectedApps.ts", import.meta.url), "utf8");
+
+    expect(plugins).toContain('Governed connected apps');
+    expect(plugins).toContain('Actions stay approval-gated');
+    expect(plugins).toContain('setLocation("/settings/integrations")');
+    expect(catalog).toContain('"zapier" | "pipedream" | "composio" | "github"');
+    expect(catalog).toContain("Synthia must still show an action proposal before any tool call.");
+  });
+
   it("does not delay the unavailable state when the external task store is absent", () => {
     expect(TASK_HISTORY_QUERY_OPTIONS).toEqual({ retry: false });
   });

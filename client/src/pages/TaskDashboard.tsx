@@ -10,6 +10,7 @@ import { TASK_ENTRY_SUGGESTIONS, TASK_HISTORY_QUERY_OPTIONS, workspaceWelcome } 
 import { LibraryPicker, type LibraryAttachmentSelection } from "@/components/LibraryPicker";
 import { TaskComposerAttachments, type ComposerAttachment } from "@/components/TaskComposerAttachments";
 import { resolveAutomaticTaskRoute, type AutomaticTaskRoute } from "@shared/automaticTaskRouting";
+import { applyPromptGuidance, promptGuidanceForGoal } from "@/lib/promptGuidance";
 
 export function buildTaskAttachmentRefs(attachments: ComposerAttachment[]) {
   return attachments.map(attachment => attachment.sourceType === "library"
@@ -75,6 +76,7 @@ export default function TaskDashboard() {
   const [selectedModelId, setSelectedModelId] = useState("");
   const [voiceState, setVoiceState] = useState<"idle" | "recording" | "transcribing">("idle");
   const [voicePermissionBlocked, setVoicePermissionBlocked] = useState(false);
+  const [liveVoiceHint, setLiveVoiceHint] = useState<string | null>(null);
   const composerRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const recorderRef = useRef<MediaRecorder | null>(null);
@@ -114,6 +116,7 @@ export default function TaskDashboard() {
     publicMedia: mediaCapabilities.data?.publicMedia,
   }), [attachments, goal, mediaCapabilities.data]);
   const welcome = useMemo(() => workspaceWelcome(user?.name), [user?.name]);
+  const promptGuidance = useMemo(() => promptGuidanceForGoal(goal), [goal]);
 
   useEffect(() => {
     if (preferencesApplied || !settings.data) return;
@@ -143,14 +146,19 @@ export default function TaskDashboard() {
     voiceStreamRef.current?.getTracks().forEach(track => track.stop());
   }, []);
 
+  useEffect(() => {
+    if (goal.trim().length >= 8) setLiveVoiceHint(null);
+  }, [goal]);
+
   function startTask(openVoiceMode = false) {
     if (goal.trim().length < 8 || createTask.isPending || visualInputBlocked) {
       if (openVoiceMode && goal.trim().length < 8) {
-        setAttachmentError("Add a task goal first, then select Live voice to open a voice-enabled task.");
+        setLiveVoiceHint("Add a task goal first, then select Live voice to open a voice-enabled task.");
         composerRef.current?.focus();
       }
       return;
     }
+    setLiveVoiceHint(null);
     openVoiceAfterTaskCreateRef.current = openVoiceMode;
     createTask.mutate({
       goal: goal.trim(),
@@ -300,6 +308,7 @@ export default function TaskDashboard() {
         <form onSubmit={submit} className="synthia-chat-composer">
           <label className="sr-only" htmlFor="task-goal">Task goal</label>
           <Textarea ref={composerRef} id="task-goal" value={goal} onChange={event => setGoal(event.target.value)} placeholder="Ask Synthia anything — no task runs until you start it" className="synthia-chat-input" />
+          {promptGuidance.length ? <aside className="synthia-prompt-guidance" aria-label="Smart prompt suggestions" aria-live="polite"><div><Sparkles size={13} /><span><b>Smart suggestions</b><small>Local guidance only — your goal stays in your control.</small></span></div><div className="synthia-prompt-guidance-actions">{promptGuidance.map(suggestion => <button key={suggestion.id} type="button" title={suggestion.detail} onClick={() => setGoal(current => applyPromptGuidance(current, suggestion))}>{suggestion.label}<ArrowUpRight size={12} /></button>)}</div></aside> : null}
           <TaskComposerAttachments attachments={attachments} onRemove={removeAttachment} />
           <div className="synthia-composer-actions">
             <div className="synthia-composer-control-group">
@@ -334,6 +343,7 @@ export default function TaskDashboard() {
           {goal.trim().length >= 8 ? <p className="synthia-route-preview" data-testid="automatic-route-preview"><Sparkles size={12} />{automaticRoutePreview(automaticRoute, Boolean(selectedModel))}</p> : null}
           {estimate.data ? <p className="synthia-estimate">Estimated: <span>{estimate.data.estimatedCreditsMin}–{estimate.data.estimatedCreditsMax} credits</span></p> : null}
           {visualInputBlocked ? <p role="alert" className="mt-2 px-1 text-xs text-amber-200">This task includes an image. Select a vision-capable model or return to Automatic routing before starting.</p> : null}
+          {liveVoiceHint ? <div role="status" className="synthia-composer-hint"><span>{liveVoiceHint}</span><button type="button" onClick={() => setLiveVoiceHint(null)} aria-label="Dismiss Live Voice guidance">Dismiss</button></div> : null}
           {attachmentError ? <div role="alert" className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 px-1 text-xs text-rose-300"><span>{attachmentError}</span>{voicePermissionBlocked ? <><button type="button" className="font-medium text-cyan-200 underline decoration-cyan-300/50 underline-offset-2 transition-colors hover:text-cyan-100" onClick={() => void toggleVoiceCapture()}>Try microphone again</button><button type="button" className="font-medium text-[#91a7a1] underline decoration-white/20 underline-offset-2 transition-colors hover:text-[#e5f2ef]" aria-label="Dismiss microphone warning" onClick={dismissVoiceWarning}>Dismiss</button></> : null}</div> : null}
           {createTask.isError ? <p role="alert" className="mt-3 text-xs text-rose-300">{createTask.error.message}</p> : null}
           <input ref={fileInputRef} onChange={event => void chooseLocalFile(event)} className="sr-only" type="file" accept=".pdf,.txt,.md,.csv,.json,.doc,.docx,.xls,.xlsx,.zip,.7z,.tar,.png,.jpg,.jpeg,.webp,.mp4,.webm,.mov" />
