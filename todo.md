@@ -3111,3 +3111,12 @@
 - [x] Add user-initiated browser-native `getDisplayMedia()` screen sharing with a local preview, persistent stop control, track cleanup, and no automatic frame persistence.
 - [x] Add provider-safe realtime session configuration and a LiveKit-compatible server boundary that remains disabled until deployment and credentials are explicitly configured.
 - [x] Add deterministic coverage and visual validation for consent prompts, permission denial, unsupported browsers, stop sharing, lifecycle event history, and responsive Voice Mode UI without invoking any live media, vision, or model workload.
+
+## Product readiness audit and differentiated AI-agent roadmap
+
+- [x] Inventory every Synthia route, task-loop capability, provider boundary, runtime gate, placeholder, and associated regression evidence into a user-readable readiness matrix.
+- [x] Audit source code and user-facing routes for non-functional placeholders, disabled controls without truthful explanation, unfinished paths, and mismatches between documented and executable capability state.
+- [x] Complete any confirmed in-scope placeholder that has no dependency on unrevealed credentials, provider quotas, user confirmation, or deployment configuration. No unresolved production placeholder was confirmed; the audited gates are deliberate and documented.
+- [x] Research current AI-agent products, capabilities, recurring startup blind spots, and defensible differentiation opportunities using primary and authoritative industry sources.
+- [x] Produce a prioritized Synthia roadmap that distinguishes immediately buildable work from credential-, deployment-, provider-, policy-, and user-confirmation-gated work.
+- [x] Validate and checkpoint any audit-driven implementation changes before publishing the final readiness and roadmap report.
