@@ -79,11 +79,7 @@ export function SynthiaAppShell({ children }: { children: ReactNode }) {
   if (loading) {
     return (
       <main className="synthia-auth-shell" aria-busy="true" aria-live="polite">
-        <section className="synthia-auth-card text-center">
-          <div className="synthia-logo-mark mx-auto"><Sparkles size={20} /></div>
-          <h1>Opening your workspace</h1>
-          <p className="flex items-center justify-center gap-2"><Loader2 className="animate-spin text-cyan-300" size={15} />Checking your authenticated session…</p>
-        </section>
+        <div className="synthia-auth-frame synthia-auth-loading-frame"><section className="synthia-auth-card text-center"><div className="synthia-logo-mark mx-auto"><Sparkles size={20} /></div><p className="synthia-eyebrow">Synthia AI</p><h1>Opening your workspace</h1><p className="flex items-center justify-center gap-2"><Loader2 className="animate-spin text-cyan-300" size={15} />Checking your authenticated session…</p></section></div>
       </main>
     );
   }
@@ -91,13 +87,20 @@ export function SynthiaAppShell({ children }: { children: ReactNode }) {
   if (!user) {
     return (
       <main className="synthia-auth-shell">
-        <section className="synthia-auth-card">
-          <div className="synthia-logo-mark"><Sparkles size={20} /></div>
-          <p className="synthia-eyebrow">Synthia AI</p>
-          <h1>Autonomous work, under your control.</h1>
-          <p>Sign in to create tasks, review agent decisions, and inspect every workspace artifact.</p>
-          <AuthEntryActions onSignIn={() => startLogin("signIn")} onSignUp={startSignup} onGoogle={startGoogleLogin} />
-        </section>
+        <div className="synthia-auth-frame">
+          <section className="synthia-auth-card">
+            <div className="synthia-auth-brand"><span className="synthia-logo-mark"><Sparkles size={20} /></span><span>Synthia <b>AI</b></span></div>
+            <p className="synthia-eyebrow">Your task workspace</p>
+            <h1>Autonomous work, under your control.</h1>
+            <p>Sign in to create tasks, review agent decisions, and inspect every workspace artifact.</p>
+            <AuthEntryActions onSignIn={() => startLogin("signIn")} onSignUp={startSignup} onGoogle={startGoogleLogin} />
+          </section>
+          <aside className="synthia-auth-aside" aria-label="Synthia task workspace overview">
+            <p className="synthia-auth-aside-kicker"><Bot size={14} /> Work that stays reviewable</p>
+            <h2>Give Synthia a goal. Keep every important choice in view.</h2>
+            <div className="synthia-auth-trace"><div><span className="is-done">✓</span><p><b>Analyze the task</b><small>Context and constraints are gathered first.</small></p></div><div><span className="is-live" /><p><b>Carry out bounded work</b><small>Progress remains visible in the workspace.</small></p></div><div><span /><p><b>Review the result</b><small>Files, events, and approvals stay with the task.</small></p></div></div>
+          </aside>
+        </div>
       </main>
     );
   }

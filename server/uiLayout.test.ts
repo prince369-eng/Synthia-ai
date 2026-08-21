@@ -266,4 +266,46 @@ describe("compact workspace layout contract", () => {
     expect(settings).toContain('text-cyan-200');
     expect(settings).not.toContain('text-orange-200');
   });
+
+  it("keeps the public landing page behind the unauthenticated root route and preserves the authenticated task dashboard", () => {
+    const app = readFileSync(new URL("../client/src/App.tsx", import.meta.url), "utf8");
+    const home = readFileSync(new URL("../client/src/pages/Home.tsx", import.meta.url), "utf8");
+    const css = readFileSync(new URL("../client/src/index.css", import.meta.url), "utf8");
+
+    expect(app).toContain("function PublicHomeRoute()");
+    expect(app).toContain("return user ? <SynthiaRoute><TaskDashboard /></SynthiaRoute> : <Home />");
+    expect(home).toContain("Autonomous work, made inspectable");
+    expect(home).toContain("Agent’s Computer");
+    expect(home).toContain("Automatic routing");
+    expect(css).toContain(".synthia-marketing{min-height:100vh");
+    expect(css).toContain(".synthia-marketing-feature-grid{display:grid;grid-template-columns:repeat(3,1fr)");
+    expect(css).toContain("@media(max-width:880px)");
+    expect(css).toContain(".synthia-marketing *{animation:none!important");
+  });
+
+  it("retains official OAuth actions while presenting a branded, responsive sign-in workspace frame", () => {
+    const shell = readFileSync(new URL("../client/src/components/SynthiaAppShell.tsx", import.meta.url), "utf8");
+    const css = readFileSync(new URL("../client/src/index.css", import.meta.url), "utf8");
+
+    expect(shell).toContain('onSignIn={() => startLogin("signIn")}');
+    expect(shell).toContain("onSignUp={startSignup}");
+    expect(shell).toContain("onGoogle={startGoogleLogin}");
+    expect(shell).toContain("synthia-auth-frame");
+    expect(shell).toContain("Work that stays reviewable");
+    expect(css).toContain(".synthia-auth-frame{position:relative");
+    expect(css).toContain(".synthia-auth-aside{position:relative");
+    expect(css).toContain("@media(max-width:720px)");
+  });
+
+  it("retains smooth, bounded Live Computer tab transitions and focus controls", () => {
+    const workspace = readFileSync(new URL("../client/src/pages/TaskWorkspace.tsx", import.meta.url), "utf8");
+    const css = readFileSync(new URL("../client/src/index.css", import.meta.url), "utf8");
+
+    expect(workspace).toContain("const selectTab = (nextTab: WorkspaceTab)");
+    expect(workspace).toContain("synthia-computer-panel-pending");
+    expect(workspace).toContain("synthia-computer-skeleton");
+    expect(workspace).toContain("focusMode");
+    expect(css).toContain(".synthia-computer-skeleton");
+    expect(css).toContain("@keyframes synthia-skeleton-shimmer");
+  });
 });

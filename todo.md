@@ -3051,3 +3051,20 @@
 - [x] Build a Manus-style Live Computer panel with task timeline, task-owned file tree, source-code viewer, website preview, and explicit unavailable states for unconfigured browser or sandbox services.
 - [x] Add task ownership, path-traversal, and sensitive-file protections for all Live Computer file and source views.
 - [x] Add deterministic UI, authorization, and responsive-layout regressions; verify the page without launching sandbox, browser, model, or media workloads.
+
+## Compact workspace hierarchy refinement
+- [ ] Audit authenticated shell, dashboard, and task-workspace density against the requested calm Manus-style navigation hierarchy.
+- [ ] Refine sidebar, header, composer, task detail, and Live Computer spacing to preserve all controls while reducing visual noise and oversized surfaces.
+- [ ] Preserve the teal/cyan visual system, white-text contrast, and bounded cyan scroll affordances across desktop and mobile layouts.
+- [ ] Add source and responsive visual regressions, then verify dashboard and task workspace without provider workloads.
+
+## Live Computer and public-entry motion refinement
+- [x] Match the Live Computer hierarchy to the supplied Manus reference with task progress visible beside the active computer surface.
+- [x] Add a keyboard-accessible toggle between split-screen and full-screen modes for Code and Website views, preserving the task context.
+- [x] Add smooth, reduced-motion-aware skeleton and tab-transition states for Live Computer view changes.
+- [x] Refine the public landing, feature, use-case, and sign-in surfaces with branded Synthia motion, clear navigation, and responsive behavior without adding unsupported product claims.
+- [x] Add deterministic interaction, accessibility, responsive, and source regressions, then verify without launching provider workloads.
+
+- [x] Build the animated public Synthia AI landing page with branded hero, feature sections, use-case highlights, responsive navigation, and reduced-motion support.
+- [x] Refine sign-in and sign-up surfaces with Synthia motion, compact branded layout, accessible states, and authenticated redirect continuity.
+- [x] Verify Live Computer JSX integrity, split/focus behavior, tab skeleton transitions, and landing/auth responsive presentation.

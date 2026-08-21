@@ -4,7 +4,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { cn } from "@/lib/utils";
 import { trpc } from "@/lib/trpc";
 import { useTaskEventStream } from "@/hooks/useTaskEventStream";
-import { AlertTriangle, Archive, AudioLines, BookOpenText, Bot, CalendarClock, Check, ChevronLeft, CirclePause, Code2, ExternalLink, FileCode2, FileText, FolderTree, Globe2, ImagePlus, ListTree, Loader2, MoreHorizontal, MonitorDot, Pencil, Pin, Play, Send, Square, Star, TerminalSquare, Trash2, Video, Wand2, X } from "lucide-react";
+import { AlertTriangle, Archive, AudioLines, BookOpenText, Bot, CalendarClock, Check, ChevronLeft, CirclePause, Code2, ExternalLink, FileCode2, FileText, FolderTree, Globe2, ImagePlus, ListTree, Loader2, Maximize2, Minimize2, MoreHorizontal, MonitorDot, Pencil, Pin, Play, Send, Square, Star, TerminalSquare, Trash2, Video, Wand2, X } from "lucide-react";
 import { WORKSPACE_RETURN_ROUTES } from "@/lib/workspaceLayout";
 import React, { FormEvent, useMemo, useState } from "react";
 import { Link, useLocation, useRoute } from "wouter";
@@ -21,6 +21,8 @@ export default function TaskWorkspace({ replayMode = false }: { replayMode?: boo
   const taskId = route[1]?.taskId;
   const [, setLocation] = useLocation();
   const [tab, setTab] = useState<WorkspaceTab>("code");
+  const [computerMode, setComputerMode] = useState<"split" | "focus">("split");
+  const [panelPending, setPanelPending] = useState(false);
   const [message, setMessage] = useState("");
   const [replayCursor, setReplayCursor] = useState<number | undefined>();
   const snapshot = trpc.tasks.get.useQuery({ taskId: taskId ?? "00000000-0000-4000-8000-000000000000" }, { enabled: Boolean(taskId), refetchInterval: 10_000 });
@@ -41,12 +43,21 @@ export default function TaskWorkspace({ replayMode = false }: { replayMode?: boo
 
   const tabs: Array<{ id: WorkspaceTab; label: string; icon: typeof Code2 }> = [{ id: "screen", label: "Screen", icon: MonitorDot }, { id: "website", label: "Website", icon: Globe2 }, { id: "code", label: "Code", icon: Code2 }, { id: "terminal", label: "Terminal", icon: TerminalSquare }, { id: "files", label: "Files", icon: FolderTree }, { id: "timeline", label: "Timeline", icon: ListTree }, { id: "plan", label: "Plan", icon: FileText }];
   const activeApprovals = data.approvals.filter(approval => approval.status === "pending");
+  const planSteps = Array.isArray(task.plan) ? task.plan.filter(step => step && typeof step === "object") as Array<{ state?: string; title?: string }> : [];
+  const completedPlanSteps = planSteps.filter(step => step.state === "completed" || step.state === "done").length;
+  const selectTab = (nextTab: WorkspaceTab) => {
+    if (nextTab === tab) return;
+    setPanelPending(true);
+    setTab(nextTab);
+    window.setTimeout(() => setPanelPending(false), 180);
+  };
+  const focusMode = computerMode === "focus" && (tab === "code" || tab === "website");
 
-  return <div className="synthia-workspace">
+  return <div className={cn("synthia-workspace", focusMode && "synthia-workspace-focus")}>
     <header className="synthia-workspace-header"><div className="min-w-0"><WorkspaceReturnNavigation onNavigate={setLocation} /><h1 className="mt-1 truncate text-sm font-semibold text-[#e5f2ef]">{task.title}</h1></div><div className="flex items-center gap-2"><span className={cn("hidden text-[11px] font-medium sm:inline", statusColor[task.status])}>{task.status.replace(/_/g, " ")}</span><span title={connected ? "Live task stream connected" : "Reconnecting task stream"} className={cn("h-1.5 w-1.5 rounded-full", connected ? "bg-emerald-400" : "bg-amber-400 animate-pulse")} />{task.status === "running" || task.status === "planning" || task.status === "booting" ? <Button size="sm" variant="outline" onClick={() => pause.mutate({ taskId })} disabled={pause.isPending} className="h-7 border-white/12 bg-transparent px-2 text-[11px] text-[#c7ddd7] hover:bg-white/5"><CirclePause size={13} />Pause</Button> : null}{task.status === "paused" || task.status === "needs_input" ? <Button size="sm" onClick={() => resume.mutate({ taskId })} disabled={resume.isPending} className="h-7 bg-teal-400 px-2 text-[11px] text-[#072a27] hover:bg-cyan-300"><Play size={13} />Resume</Button> : null}{!["completed", "failed", "cancelled"].includes(task.status) ? <Button size="sm" variant="ghost" onClick={() => cancel.mutate({ taskId })} disabled={cancel.isPending} className="h-7 px-2 text-[11px] text-[#91a7a1] hover:text-rose-300"><Square size={12} />Stop</Button> : null}<TaskMediaMenu taskId={taskId} attachments={data.attachments} /><TaskOverflowMenu task={task} taskId={taskId} onDeleted={() => setLocation(WORKSPACE_RETURN_ROUTES.dashboard)} /></div></header>
     <div className="grid min-h-[calc(100vh-3.5rem)] lg:grid-cols-[minmax(320px,.9fr)_minmax(480px,1.2fr)]">
       <section className="flex min-h-0 flex-col border-r border-white/8">
-        <div className="border-b border-white/8 px-4 py-4 sm:px-5"><p className="text-[9px] font-semibold uppercase tracking-[.16em] text-cyan-300">Task objective</p><p className="mt-1.5 max-w-3xl text-xs leading-5 text-[#c7ddd7]">{task.goal}</p>{replayMode ? <div className="mt-3 rounded-md border border-cyan-300/20 bg-cyan-300/5 px-2.5 py-1.5 text-[11px] text-cyan-100">Replay mode — move through the durable event record without changing task execution.</div> : null}</div>
+        <div className="border-b border-white/8 px-4 py-4 sm:px-5"><p className="text-[9px] font-semibold uppercase tracking-[.16em] text-cyan-300">Task objective</p><p className="mt-1.5 max-w-3xl text-xs leading-5 text-[#c7ddd7]">{task.goal}</p>{planSteps.length > 0 ? <div className="mt-3 rounded-lg border border-cyan-300/12 bg-cyan-300/[.035] p-2.5" aria-label="Task progress"><div className="flex items-center justify-between text-[10px]"><span className="font-semibold uppercase tracking-[.12em] text-[#9ab2ad]">Task progress</span><span className="text-cyan-200">{completedPlanSteps}/{planSteps.length}</span></div><div className="mt-2 h-1 overflow-hidden rounded-full bg-white/[.08]"><div className="h-full rounded-full bg-gradient-to-r from-teal-400 to-cyan-300 transition-[width] duration-300" style={{ width: `${Math.round((completedPlanSteps / planSteps.length) * 100)}%` }} /></div></div> : null}{replayMode ? <div className="mt-3 rounded-md border border-cyan-300/20 bg-cyan-300/5 px-2.5 py-1.5 text-[11px] text-cyan-100">Replay mode — move through the durable event record without changing task execution.</div> : null}</div>
         <div className="min-h-0 flex-1 space-y-3 overflow-y-auto px-4 py-4 sm:px-5">
           {data.messages.length === 0 ? <div className="rounded-lg border border-dashed border-white/12 p-4 text-xs text-[#968678]">No narrated messages have been recorded yet. Status and tool events remain visible in the Agent’s Computer.</div> : null}
           {data.messages.map(entry => <article key={entry.id} className={cn("max-w-[92%] rounded-xl px-3 py-2.5", entry.role === "user" ? "ml-auto bg-teal-400/12 text-cyan-50" : "border border-white/8 bg-white/[.035] text-[#dcece7]")}><p className="mb-1 text-[9px] font-semibold uppercase tracking-[.13em] text-[#91a7a1]">{entry.role === "agent" ? "Synthia" : entry.role}</p><p className="whitespace-pre-wrap text-xs leading-5">{entry.content}</p><time className="mt-1.5 block text-[9px] text-[#718580]">{localTime(entry.createdAt)}</time></article>)}
@@ -55,16 +66,17 @@ export default function TaskWorkspace({ replayMode = false }: { replayMode?: boo
         {!replayMode ? <form onSubmit={sendMessage} className="border-t border-white/8 p-3"><label className="sr-only" htmlFor="task-message">Send a message to Synthia</label><div className="flex gap-2"><Input id="task-message" value={message} onChange={event => setMessage(event.target.value)} placeholder="Add a constraint or answer Synthia…" className="h-8 border-white/10 bg-[#14201e] text-xs text-[#e5f2ef] placeholder:text-[#69807a]" /><Button type="submit" size="icon" disabled={!message.trim() || addMessage.isPending} className="h-8 w-8 shrink-0 bg-teal-400 text-[#072a27] hover:bg-cyan-300"><Send size={14} /></Button></div>{addMessage.isError ? <p role="alert" className="mt-2 text-[11px] text-rose-300">{addMessage.error.message}</p> : null}</form> : null}
       </section>
       <aside className="flex min-h-0 flex-col bg-[#101b19]" aria-label="Agent's Computer">
-        <div className="flex items-center justify-between border-b border-white/8 px-4 py-3"><div><p className="flex items-center gap-2 text-xs font-semibold text-[#e5f2ef]"><Bot size={15} className="text-cyan-300" />Agent’s Computer</p><p className="mt-0.5 text-[10px] text-[#778985]">Open workspace · <span className="text-cyan-200">Code</span> selected</p></div>{data.sandboxes[0] ? <span className="rounded-full bg-emerald-400/10 px-2 py-1 text-[9px] text-emerald-300">Sandbox {data.sandboxes[0].status}</span> : <span className="rounded-full bg-white/5 px-2 py-1 text-[9px] text-[#91a7a1]">No sandbox yet</span>}</div>
-        <div className="flex overflow-x-auto border-b border-white/8 px-2" role="tablist" aria-label="Agent workspace panels">{tabs.map(item => { const Icon = item.icon; return <button key={item.id} role="tab" aria-selected={tab === item.id} onClick={() => setTab(item.id)} className={cn("flex h-9 shrink-0 items-center gap-1.5 border-b-2 px-2.5 text-[11px]", tab === item.id ? "border-teal-400 text-cyan-200" : "border-transparent text-[#778985] hover:text-[#c7ddd7]")}><Icon size={13} />{item.label}</button>; })}</div>
-        <div className="min-h-0 flex-1 overflow-y-auto p-3">
-          {tab === "code" ? <CodePanel taskId={taskId} deliverables={data.deliverables} events={events} onOpenTab={setTab} /> : null}
-          {tab === "screen" ? <ScreenPanel taskId={taskId} deliverables={data.deliverables} /> : null}
-          {tab === "website" ? <WebsitePanel taskId={taskId} deliverables={data.deliverables} /> : null}
-          {tab === "terminal" ? <TerminalPanel events={events} /> : null}
-          {tab === "files" ? <FilesPanel taskId={taskId} deliverables={data.deliverables} /> : null}
-          {tab === "timeline" ? <TimelinePanel events={events} replayMode={replayMode} replayCursor={replayCursor} setReplayCursor={setReplayCursor} allEvents={data.events} /> : null}
-          {tab === "plan" ? <PlanPanel plan={task.plan as Array<any>} /> : null}
+        <div className="flex items-center justify-between border-b border-white/8 px-4 py-3"><div><p className="flex items-center gap-2 text-xs font-semibold text-[#e5f2ef]"><Bot size={15} className="text-cyan-300" />Agent’s Computer</p><p className="mt-0.5 text-[10px] text-[#778985]">Task progress · {tabs.find(item => item.id === tab)?.label ?? "Workspace"} selected</p></div><div className="flex items-center gap-1.5">{tab === "code" || tab === "website" ? <button type="button" onClick={() => setComputerMode(mode => mode === "split" ? "focus" : "split")} aria-label={computerMode === "split" ? `Open ${tab} in full screen` : `Return ${tab} to split screen`} title={computerMode === "split" ? "Full-screen view" : "Split-screen view"} className="synthia-computer-mode-button">{computerMode === "split" ? <Maximize2 size={13} /> : <Minimize2 size={13} />}</button> : null}{data.sandboxes[0] ? <span className="rounded-full bg-emerald-400/10 px-2 py-1 text-[9px] text-emerald-300">Sandbox {data.sandboxes[0].status}</span> : <span className="rounded-full bg-white/5 px-2 py-1 text-[9px] text-[#91a7a1]">No sandbox yet</span>}</div></div>
+        <div className="flex overflow-x-auto border-b border-white/8 px-2" role="tablist" aria-label="Agent workspace panels">{tabs.map(item => { const Icon = item.icon; return <button key={item.id} role="tab" aria-selected={tab === item.id} onClick={() => selectTab(item.id)} className={cn("flex h-9 shrink-0 items-center gap-1.5 border-b-2 px-2.5 text-[11px]", tab === item.id ? "border-teal-400 text-cyan-200" : "border-transparent text-[#778985] hover:text-[#c7ddd7]")}><Icon size={13} />{item.label}</button>; })}</div>
+        <div className={cn("synthia-computer-panel min-h-0 flex-1 overflow-y-auto p-3", panelPending && "synthia-computer-panel-pending")} aria-busy={panelPending}>
+          {panelPending ? <div className="synthia-computer-skeleton" aria-label="Loading workspace panel"><span /><span /><span /><span /></div> : null}
+          {!panelPending && tab === "code" ? <CodePanel taskId={taskId} deliverables={data.deliverables} events={events} onOpenTab={selectTab} /> : null}
+          {!panelPending && tab === "screen" ? <ScreenPanel taskId={taskId} deliverables={data.deliverables} /> : null}
+          {!panelPending && tab === "website" ? <WebsitePanel taskId={taskId} deliverables={data.deliverables} /> : null}
+          {!panelPending && tab === "terminal" ? <TerminalPanel events={events} /> : null}
+          {!panelPending && tab === "files" ? <FilesPanel taskId={taskId} deliverables={data.deliverables} /> : null}
+          {!panelPending && tab === "timeline" ? <TimelinePanel events={events} replayMode={replayMode} replayCursor={replayCursor} setReplayCursor={setReplayCursor} allEvents={data.events} /> : null}
+          {!panelPending && tab === "plan" ? <PlanPanel plan={task.plan as Array<any>} /> : null}
         </div>
       </aside>
     </div>

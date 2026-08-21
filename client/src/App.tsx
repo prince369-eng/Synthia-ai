@@ -6,6 +6,8 @@ import { lazy, Suspense } from "react";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { SynthiaAppShell } from "./components/SynthiaAppShell";
+import { useAuth } from "./_core/hooks/useAuth";
+import Home from "./pages/Home";
 
 const TaskDashboard = lazy(() => import("./pages/TaskDashboard"));
 const TaskWorkspace = lazy(() => import("./pages/TaskWorkspace"));
@@ -25,11 +27,18 @@ function SynthiaRoute({ children }: { children: React.ReactNode }) {
   return <SynthiaAppShell><Suspense fallback={<RouteFallback />}>{children}</Suspense></SynthiaAppShell>;
 }
 
+function PublicHomeRoute() {
+  const { user, loading } = useAuth();
+
+  if (loading) return <RouteFallback />;
+  return user ? <SynthiaRoute><TaskDashboard /></SynthiaRoute> : <Home />;
+}
+
 function Router() {
   // make sure to consider if you need authentication for certain routes
   return (
     <Switch>
-      <Route path={"/"}><SynthiaRoute><TaskDashboard /></SynthiaRoute></Route>
+      <Route path={"/"}><PublicHomeRoute /></Route>
       <Route path={"/tasks/:taskId"}><SynthiaRoute><TaskWorkspace /></SynthiaRoute></Route>
       <Route path={"/tasks/:taskId/replay"}><SynthiaRoute><TaskWorkspace replayMode /></SynthiaRoute></Route>
       <Route path={"/library"}><SynthiaRoute><Library /></SynthiaRoute></Route>
