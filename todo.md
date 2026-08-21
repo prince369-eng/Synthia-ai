@@ -3153,3 +3153,9 @@
 - [x] Inspect the running authenticated interface to locate the reported missing Voice Mode entry, including the dashboard composer and task-chat composer paths, without creating a task or opening a media session.
 - [x] Correct any confirmed Voice Mode control visibility or placement defect and add regression coverage for the chosen user-facing entry path.
 - [x] Provide a managed-secret, deployment, and controlled-verification checklist for all remaining activation-gated features without starting external workloads.
+
+## LiveKit credential validation diagnosis
+
+- [x] Compare Synthia’s opt-in read-only LiveKit authorization request with the official protocol and SDK behavior before attributing a repeated 401 response to user-provided credentials.
+- [x] Correct any confirmed verifier defect, retain the disabled-by-default Voice Mode gate, and re-run only a read-only authorization check.
+- [x] Record the verified validation result and the remaining worker/deployment steps without enabling Voice Mode or starting realtime media.

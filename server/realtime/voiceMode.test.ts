@@ -1,3 +1,4 @@
+import { RoomServiceClient } from "livekit-server-sdk";
 import { describe, expect, it } from "vitest";
 import { ENV } from "../_core/env";
 import { getVoiceModeAvailability } from "./voiceMode";
@@ -39,5 +40,17 @@ describe("Voice Mode availability gate", () => {
 
   it("reports an eligible realtime boundary only when every server-side prerequisite is deliberate", () => {
     expect(getVoiceModeAvailability(configuredRealtime())).toEqual({ available: true, provider: "gemini_live", transport: "livekit" });
+  });
+
+  it.skipIf(process.env.SYNTHIA_LIVEKIT_CONNECTIVITY_TEST !== "true")("validates configured LiveKit credentials through a read-only room-list authorization request", async () => {
+    expect(ENV.livekitUrl).toMatch(/^wss?:\/\//);
+    expect(ENV.livekitApiKey).not.toHaveLength(0);
+    expect(ENV.livekitApiSecret).not.toHaveLength(0);
+
+    const serviceUrl = ENV.livekitUrl.replace(/^wss:/, "https:").replace(/^ws:/, "http:").replace(/\/$/, "");
+    const client = new RoomServiceClient(serviceUrl, ENV.livekitApiKey, ENV.livekitApiSecret, { requestTimeout: 8_000 });
+    const rooms = await client.listRooms();
+
+    expect(Array.isArray(rooms)).toBe(true);
   });
 });

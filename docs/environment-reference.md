@@ -36,3 +36,13 @@ This sequence turns Synthia’s existing implementation into live capabilities w
 | 7 | **Optional services** | Add only the relevant Resend or Postmark key for email, OAuth client credentials for integrations, or E2B credentials after its billing prerequisite is satisfied. | Exercise one reversible, user-approved workflow for each service and review its task event/approval record. |
 
 > **Voice entry behavior:** The dashboard composer now includes a clearly styled **Live** control next to the microphone. It does not request a microphone or start a provider call itself. It requires a goal, creates a user-started task, and opens that task’s consent-first Voice Mode dialog. The separate **microphone** icon remains voice-to-text input, not a live conversation toggle.
+
+### LiveKit credential verification note
+
+Synthia validates a configured LiveKit project with the server SDK’s read-only `RoomServiceClient.listRooms()` operation. This is intentionally not a browser token, not a room-creation request, and not a media session. The SDK adds the required room-list authorization grant; an earlier hand-crafted test token omitted that capability and could therefore return `401` even when the configured LiveKit credentials were correct. LiveKit Cloud supplies the project URL, API key, and API secret to the connected agent environment, while application-side server secrets remain secure and never reach the browser. [1]
+
+On 2026-08-21, Synthia’s configured LiveKit project passed this SDK-based read-only authorization check. `SYNTHIA_REALTIME_VOICE_ENABLED` and `SYNTHIA_REALTIME_VOICE_WORKER_READY` remain unset, so the feature is still deliberately unavailable until the separate worker deployment is complete and explicitly declared healthy.
+
+#### References
+
+[1]: https://docs.livekit.io/deploy/agents/secrets/ "LiveKit Agents: secrets management"
