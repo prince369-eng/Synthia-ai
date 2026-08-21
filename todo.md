@@ -3147,3 +3147,9 @@
 - [x] Add accessible, low-motion active-state indicators for a connected Voice Mode session and an active local screen share, preserving explicit user consent and stop controls.
 - [x] Review the chat-area Voice Mode entry and document a source-verified inventory of working, configuration-gated, and not-yet-implemented Synthia capabilities.
 - [x] Add deterministic regression coverage and responsive visual verification for the active-state controls without opening a microphone, display capture, LiveKit room, Gemini session, or external workload.
+
+## Reported Voice Mode visibility and activation guidance
+
+- [x] Inspect the running authenticated interface to locate the reported missing Voice Mode entry, including the dashboard composer and task-chat composer paths, without creating a task or opening a media session.
+- [x] Correct any confirmed Voice Mode control visibility or placement defect and add regression coverage for the chosen user-facing entry path.
+- [x] Provide a managed-secret, deployment, and controlled-verification checklist for all remaining activation-gated features without starting external workloads.

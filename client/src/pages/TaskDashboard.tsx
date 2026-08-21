@@ -79,6 +79,7 @@ export default function TaskDashboard() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const recorderRef = useRef<MediaRecorder | null>(null);
   const voiceStreamRef = useRef<MediaStream | null>(null);
+  const openVoiceAfterTaskCreateRef = useRef(false);
   const tasks = trpc.tasks.list.useQuery(undefined, { ...TASK_HISTORY_QUERY_OPTIONS, enabled: isAuthenticated });
   const projects = trpc.projects.list.useQuery(undefined, { retry: false });
   const settings = trpc.settings.get.useQuery(undefined, { retry: false });
@@ -88,7 +89,11 @@ export default function TaskDashboard() {
   const uploadAttachment = trpc.tasks.uploadAttachment.useMutation();
   const transcribeVoice = trpc.tasks.transcribeVoice.useMutation();
   const createTask = trpc.tasks.create.useMutation({
-    onSuccess: ({ task }) => setLocation(`/tasks/${task.id}`),
+    onSuccess: ({ task }) => {
+      const openVoice = openVoiceAfterTaskCreateRef.current;
+      openVoiceAfterTaskCreateRef.current = false;
+      setLocation(`/tasks/${task.id}${openVoice ? "?voice=1" : ""}`);
+    },
   });
   const estimate = trpc.catalog.estimateTask.useQuery(
     { goal, planSteps: 3, involvesCode },
@@ -138,9 +143,15 @@ export default function TaskDashboard() {
     voiceStreamRef.current?.getTracks().forEach(track => track.stop());
   }, []);
 
-  function submit(event: FormEvent) {
-    event.preventDefault();
-    if (goal.trim().length < 8 || createTask.isPending || visualInputBlocked) return;
+  function startTask(openVoiceMode = false) {
+    if (goal.trim().length < 8 || createTask.isPending || visualInputBlocked) {
+      if (openVoiceMode && goal.trim().length < 8) {
+        setAttachmentError("Add a task goal first, then select Live voice to open a voice-enabled task.");
+        composerRef.current?.focus();
+      }
+      return;
+    }
+    openVoiceAfterTaskCreateRef.current = openVoiceMode;
     createTask.mutate({
       goal: goal.trim(),
       projectId: projectId || undefined,
@@ -152,6 +163,11 @@ export default function TaskDashboard() {
       },
       attachments: buildTaskAttachmentRefs(attachments),
     });
+  }
+
+  function submit(event: FormEvent) {
+    event.preventDefault();
+    startTask();
   }
 
   function removeAttachment(id: string) {
@@ -310,6 +326,7 @@ export default function TaskDashboard() {
                 <button type="button" className={cn("synthia-composer-toggle synthia-model-trigger", modelMenuOpen && "active")} aria-label="Choose model" aria-expanded={modelMenuOpen} onClick={() => setModelMenuOpen(value => !value)}><Bot size={13} /><span>{selectedModel?.model ?? "Automatic"}</span></button>
                 {modelMenuOpen ? <div className="synthia-model-menu" data-testid="composer-model-menu" data-scrollable="true"><button type="button" className={cn(!selectedModelId && "active")} onClick={() => { setSelectedModelId(""); setModelMenuOpen(false); }}><b>Automatic</b><small>Understands requested media, image inputs, and development tasks. Generation runs only after Start.</small></button>{availableModels.data?.models.map(model => <button key={model.id} type="button" className={cn(model.id === selectedModelId && "active")} onClick={() => { setSelectedModelId(model.id); setModelMenuOpen(false); }}><b>{model.model}</b><small>{composerModelCapabilityLabel(model)}</small></button>)}{availableModels.data?.models.length ? null : <p>Automatic selection is active.</p>}</div> : null}
               </div>
+              <button type="button" className="synthia-composer-toggle synthia-live-voice-toggle" aria-label="Start a live voice task" title="Create a task and open Live Voice" onClick={() => startTask(true)} disabled={createTask.isPending || visualInputBlocked}><AudioLines size={14} /><span>Live</span></button>
               <button type="button" className={cn("synthia-composer-toggle synthia-mic-button", voiceState !== "idle" && "active")} aria-label={voiceState === "recording" ? "Stop recording voice instruction" : "Start voice instruction"} title={voiceState === "transcribing" ? "Transcribing voice instruction" : voiceState === "recording" ? "Stop recording" : "Add voice instruction"} onClick={() => void toggleVoiceCapture()} disabled={voiceState === "transcribing"}><Mic size={14} /><span className="sr-only">Voice input</span>{voiceState === "recording" ? <span className="synthia-recording-dot" /> : null}</button>
               <Button type="submit" size="icon" aria-label="Start task" title="Start task" disabled={goal.trim().length < 8 || createTask.isPending || visualInputBlocked} className="synthia-send-button">{createTask.isPending ? <Loader2 className="animate-spin" size={17} /> : <ArrowUp size={18} />}</Button>
             </div>

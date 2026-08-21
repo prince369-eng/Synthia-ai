@@ -175,6 +175,8 @@ button:not(:disabled):active { transform: scale(.97); }
   .synthia-composer-control-group-end { @apply ml-auto; }
   .synthia-composer-toggle { @apply inline-flex h-7 shrink-0 items-center gap-1.5 rounded-md border border-transparent px-2 text-[11px] text-[#91a7a1] hover:bg-white/[.045] hover:text-[#e5f2ef]; }
   .synthia-composer-toggle.active { @apply border-teal-300/25 bg-teal-400/10 text-cyan-200; }
+  .synthia-live-voice-toggle { @apply border-cyan-300/25 bg-cyan-300/[.07] font-medium text-cyan-100 hover:border-cyan-300/45 hover:bg-cyan-300/14; }
+  .synthia-live-voice-toggle:disabled { @apply border-white/8 bg-transparent text-[#607a73]; }
   .synthia-composer-plus { @apply grid h-7 w-7 place-items-center rounded-md border border-white/9 bg-white/[.025] text-[#a7bbb7] hover:border-teal-300/30 hover:bg-teal-400/10 hover:text-cyan-100; }
   .synthia-composer-plus.active { @apply border-teal-300/35 bg-teal-400/12 text-cyan-100; }
   .synthia-send-button { @apply h-8 w-8 shrink-0 rounded-full bg-gradient-to-br from-teal-300 to-cyan-400 text-[#061615] hover:from-teal-200 hover:to-cyan-300; }

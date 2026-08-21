@@ -26,6 +26,20 @@ describe("compact workspace layout contract", () => {
     expect(TASK_ENTRY_SUGGESTIONS.every(item => item.goal.length > 20)).toBe(true);
   });
 
+  it("keeps a visible dashboard Live Voice entry that opens the task-scoped consent dialog only after an explicit task start", () => {
+    const dashboard = readFileSync(new URL("../client/src/pages/TaskDashboard.tsx", import.meta.url), "utf8");
+    const workspace = readFileSync(new URL("../client/src/pages/TaskWorkspace.tsx", import.meta.url), "utf8");
+    const css = readFileSync(new URL("../client/src/index.css", import.meta.url), "utf8");
+
+    expect(dashboard).toContain('aria-label="Start a live voice task"');
+    expect(dashboard).toContain('title="Create a task and open Live Voice"');
+    expect(dashboard).toContain('startTask(true)');
+    expect(dashboard).toContain('setLocation(`/tasks/${task.id}${openVoice ? "?voice=1" : ""}`)');
+    expect(workspace).toContain('new URLSearchParams(window.location.search).get("voice") === "1"');
+    expect(workspace).toContain('setVoiceModeOpen(true)');
+    expect(css).toContain('.synthia-live-voice-toggle');
+  });
+
   it("does not delay the unavailable state when the external task store is absent", () => {
     expect(TASK_HISTORY_QUERY_OPTIONS).toEqual({ retry: false });
   });
