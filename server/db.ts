@@ -75,7 +75,7 @@ export type SkillCategory = "document_style" | "coding_practice" | "domain_workf
 export type SkillVisibility = "private" | "workspace" | "public_platform";
 export type SkillInstallScope = "personal" | "workspace";
 export type SkillBundleFile = { key: string; filename: string; mimeType: string; bytes: number };
-export type SkillCandidate = { id: string; name: string; description: string; skillMdContent: string };
+export type SkillCandidate = { id: string; name: string; description: string; matchingTerms: string; skillMdContent: string };
 export type TaskSkillSelection = { skillId: string; skillName: string; skillMdContent: string; relevanceScore: number; selectedAt: Date };
 
 export const DEFAULT_PERSONALITY_DIMENSIONS: PersonalityDimensions = {
@@ -85,6 +85,19 @@ export const DEFAULT_PERSONALITY_DIMENSIONS: PersonalityDimensions = {
   creativity: 50,
   initiative: 55,
 };
+
+/**
+ * A persisted lexical index is the privacy-preserving fallback when no embedding service
+ * has been configured. It uses reviewed metadata only, never credentials, resource bytes,
+ * or task data.
+ */
+function skillMatchingTerms(name: string, description: string) {
+  return `${name} ${description}`
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim()
+    .slice(0, 1_500);
+}
 
 type TaskEventInput = {
   type: typeof taskEvents.$inferInsert.type;
@@ -833,6 +846,7 @@ export async function listSkillsForUser(userId: number) {
       ownerUserId: skills.ownerUserId,
       name: skills.name,
       description: skills.description,
+      matchingTerms: skills.matchingTerms,
       skillMdContent: skills.skillMdContent,
       bundledFiles: skills.bundledFiles,
       category: skills.category,
@@ -871,6 +885,7 @@ export async function createSkillForUser(input: {
       ownerUserId: input.userId,
       name: input.name,
       description: input.description,
+      matchingTerms: skillMatchingTerms(input.name, input.description),
       skillMdContent: input.skillMdContent,
       bundledFiles: input.bundledFiles ?? [],
       category: input.category,
@@ -904,6 +919,7 @@ export async function updateSkillForUser(input: {
     .set({
       name: input.name,
       description: input.description,
+      matchingTerms: skillMatchingTerms(input.name, input.description),
       skillMdContent: input.skillMdContent,
       category: input.category,
       visibility: input.visibility,
@@ -940,7 +956,7 @@ export async function softDeleteSkillForUser(input: { skillId: string; userId: n
 export async function listEnabledSkillCandidatesForUser(userId: number): Promise<SkillCandidate[]> {
   const database = databaseRequired(await getDb());
   return database
-    .select({ id: skills.id, name: skills.name, description: skills.description, skillMdContent: skills.skillMdContent })
+    .select({ id: skills.id, name: skills.name, description: skills.description, matchingTerms: skills.matchingTerms, skillMdContent: skills.skillMdContent })
     .from(skillInstalls)
     .innerJoin(skills, eq(skills.id, skillInstalls.skillId))
     .where(and(

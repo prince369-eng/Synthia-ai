@@ -14,8 +14,8 @@ function stem(token: string) {
     .slice(0, 42);
 }
 
-export function skillTokens(value: string) {
-  return value
+export function skillTokens(value: string | null | undefined) {
+  return (value ?? "")
     .split(/\s+/)
     .map(stem)
     .filter(token => token.length >= 3 && !STOP_WORDS.has(token));
@@ -24,7 +24,9 @@ export function skillTokens(value: string) {
 /**
  * Scores meaningful word overlap between a user goal and approved Skill metadata.
  * The content of a Skill is deliberately not used to score itself, preventing broad
- * instructions from gaming task selection. Only the reviewed name/description govern matching.
+ * instructions from gaming task selection. Only the reviewed name/description and its
+ * persisted lexical index govern matching. The index keeps fallback matching deterministic
+ * when an embedding service is not configured.
  */
 export function rankSkillsForGoal(goal: string, candidates: SkillCandidate[], limit = 3): RankedSkill[] {
   const goalTokens = Array.from(new Set(skillTokens(goal)));
@@ -34,10 +36,12 @@ export function rankSkillsForGoal(goal: string, candidates: SkillCandidate[], li
     .map(candidate => {
       const nameTokens = new Set(skillTokens(candidate.name));
       const descriptionTokens = new Set(skillTokens(candidate.description));
+      const indexTokens = new Set(skillTokens(candidate.matchingTerms));
       let score = 0;
       for (const token of Array.from(goalSet)) {
         if (nameTokens.has(token)) score += 3;
         else if (descriptionTokens.has(token)) score += 1;
+        else if (indexTokens.has(token)) score += 0.75;
       }
       const normalized = Number(Math.min(1, score / Math.max(3, goalSet.size * 1.5)).toFixed(3));
       return { ...candidate, relevanceScore: normalized };

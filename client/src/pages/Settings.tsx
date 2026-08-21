@@ -130,6 +130,7 @@ export default function Settings() {
   const usage = trpc.workspace.usage.useQuery(undefined, { enabled: section === "usage", retry: false });
   const configuredModels = trpc.catalog.models.useQuery(undefined, { enabled: section === "model-keys", retry: false });
   const skillsQuery = trpc.skills.list.useQuery(undefined, { enabled: section === "skills", retry: false });
+  const completedTasks = trpc.tasks.list.useQuery(undefined, { enabled: section === "skills", retry: false });
   const utils = trpc.useUtils();
   const updatePreferences = trpc.settings.updatePreferences.useMutation({
     onSuccess: () => void utils.settings.get.invalidate(),
@@ -152,6 +153,8 @@ export default function Settings() {
   const setSkillEnabled = trpc.skills.setEnabled.useMutation({ onSuccess: () => void invalidateSkills() });
   const deleteSkill = trpc.skills.delete.useMutation({ onSuccess: () => void invalidateSkills() });
   const createSkillDraft = trpc.skills.createDraft.useMutation();
+  const createSkillDraftFromExample = trpc.skills.createDraftFromExample.useMutation();
+  const createSkillDraftFromTask = trpc.skills.createDraftFromTask.useMutation();
   const preferences = asRecord(settings.data?.preferences);
   const savePreferences = (patch: Preferences) => updatePreferences.mutate({ preferences: { ...preferences, ...patch } });
 
@@ -178,7 +181,7 @@ export default function Settings() {
           {section === "services" ? <SettingsServices readiness={readiness.data ?? []} integrations={integrations.data ?? []} loading={readiness.isLoading || integrations.isLoading} error={readiness.isError || integrations.isError} /> : null}
           {section === "integrations" ? <SettingsIntegrations readiness={readiness.data ?? []} integrations={integrations.data ?? []} loading={readiness.isLoading || integrations.isLoading} error={readiness.isError || integrations.isError} removeIntegration={removeIntegration} /> : null}
           {section === "model-keys" ? <SettingsModels readiness={readiness.data ?? []} models={configuredModels.data?.models ?? []} loading={readiness.isLoading || configuredModels.isLoading} error={readiness.isError || configuredModels.isError} /> : null}
-          {section === "skills" ? <SettingsSkills skills={skillsQuery.data ?? []} loading={skillsQuery.isLoading} error={skillsQuery.isError} onCreate={input => createSkill.mutate(input)} onUpdate={input => updateSkill.mutate(input)} onSetEnabled={input => setSkillEnabled.mutate(input)} onDelete={id => deleteSkill.mutate({ id })} onCreateDraft={input => createSkillDraft.mutateAsync(input)} saving={createSkill.isPending || updateSkill.isPending || setSkillEnabled.isPending || deleteSkill.isPending || createSkillDraft.isPending} mutationError={createSkill.error?.message || updateSkill.error?.message || setSkillEnabled.error?.message || deleteSkill.error?.message || createSkillDraft.error?.message} /> : null}
+          {section === "skills" ? <SettingsSkills skills={skillsQuery.data ?? []} completedTasks={(completedTasks.data ?? []).filter(task => task.status === "completed")} loading={skillsQuery.isLoading || completedTasks.isLoading} error={skillsQuery.isError || completedTasks.isError} onCreate={input => createSkill.mutate(input)} onUpdate={input => updateSkill.mutate(input)} onSetEnabled={input => setSkillEnabled.mutate(input)} onDelete={id => deleteSkill.mutate({ id })} onCreateDraft={input => createSkillDraft.mutateAsync(input)} onCreateDraftFromExample={input => createSkillDraftFromExample.mutateAsync(input)} onCreateDraftFromTask={input => createSkillDraftFromTask.mutateAsync(input)} saving={createSkill.isPending || updateSkill.isPending || setSkillEnabled.isPending || deleteSkill.isPending || createSkillDraft.isPending || createSkillDraftFromExample.isPending || createSkillDraftFromTask.isPending} mutationError={createSkill.error?.message || updateSkill.error?.message || setSkillEnabled.error?.message || deleteSkill.error?.message || createSkillDraft.error?.message || createSkillDraftFromExample.error?.message || createSkillDraftFromTask.error?.message} /> : null}
           {section === "mail" ? <SettingsMail readiness={readiness.data ?? []} loading={readiness.isLoading} error={readiness.isError} /> : null}
           {section === "computer" ? <SettingsComputer readiness={readiness.data ?? []} loading={readiness.isLoading} error={readiness.isError} /> : null}
           {section === "data-controls" ? <SettingsDataControls /> : null}
@@ -251,10 +254,13 @@ type SkillDraft = Pick<SkillRecord, "name" | "description" | "category" | "skill
 const blankSkillDraft: SkillDraft = { name: "", description: "", category: "other", skillMdContent: "# New skill\n\n## Purpose\nDescribe the reusable outcome.\n\n## When to use\nDescribe the task signals.\n\n## Instructions\n1. Add reviewed instructions here.\n\n## Safety boundaries\n- Follow Synthia approval and privacy controls." };
 const skillCategoryLabels: Record<SkillRecord["category"], string> = { document_style: "Document style", coding_practice: "Coding practice", domain_workflow: "Domain workflow", data_analysis: "Data analysis", network_ops: "Network operations", security_research: "Security research", other: "Other" };
 
-function SettingsSkills({ skills, loading, error, onCreate, onUpdate, onSetEnabled, onDelete, onCreateDraft, saving, mutationError }: { skills: SkillRecord[]; loading: boolean; error: boolean; onCreate: (input: SkillDraft & { isAutoGenerated: boolean }) => void; onUpdate: (input: SkillDraft & { id: string }) => void; onSetEnabled: (input: { id: string; enabled: boolean }) => void; onDelete: (id: string) => void; onCreateDraft: (input: { idea: string; category?: SkillRecord["category"] }) => Promise<SkillDraft & { isAutoGenerated: boolean }>; saving: boolean; mutationError?: string }) {
+function SettingsSkills({ skills, completedTasks, loading, error, onCreate, onUpdate, onSetEnabled, onDelete, onCreateDraft, onCreateDraftFromExample, onCreateDraftFromTask, saving, mutationError }: { skills: SkillRecord[]; completedTasks: Array<{ id: string; title: string }>; loading: boolean; error: boolean; onCreate: (input: SkillDraft & { isAutoGenerated: boolean }) => void; onUpdate: (input: SkillDraft & { id: string }) => void; onSetEnabled: (input: { id: string; enabled: boolean }) => void; onDelete: (id: string) => void; onCreateDraft: (input: { idea: string; category?: SkillRecord["category"] }) => Promise<SkillDraft & { isAutoGenerated: boolean }>; onCreateDraftFromExample: (input: { idea: string; exampleExcerpt: string; category?: SkillRecord["category"] }) => Promise<SkillDraft & { isAutoGenerated: boolean }>; onCreateDraftFromTask: (input: { taskId: string; category?: SkillRecord["category"] }) => Promise<SkillDraft & { isAutoGenerated: boolean }>; saving: boolean; mutationError?: string }) {
   const [tab, setTab] = React.useState<"yours" | "installed" | "browse">("yours");
   const [editor, setEditor] = React.useState<{ id?: string; isAutoGenerated: boolean; values: SkillDraft } | null>(null);
   const [idea, setIdea] = React.useState("");
+  const [exampleIdea, setExampleIdea] = React.useState("");
+  const [exampleExcerpt, setExampleExcerpt] = React.useState("");
+  const [selectedCompletedTaskId, setSelectedCompletedTaskId] = React.useState("");
   const [drafting, setDrafting] = React.useState(false);
   const visibleSkills = tab === "installed" ? skills.filter(skill => skill.enabled) : skills;
   const openDraft = async () => {
@@ -265,6 +271,27 @@ function SettingsSkills({ skills, loading, error, onCreate, onUpdate, onSetEnabl
       const result = await onCreateDraft({ idea: trimmed });
       setEditor({ isAutoGenerated: true, values: result });
       setIdea("");
+    } finally { setDrafting(false); }
+  };
+  const openExampleDraft = async () => {
+    const trimmedIdea = exampleIdea.trim();
+    const trimmedExcerpt = exampleExcerpt.trim();
+    if (trimmedIdea.length < 12 || trimmedExcerpt.length < 80 || drafting || saving) return;
+    setDrafting(true);
+    try {
+      const result = await onCreateDraftFromExample({ idea: trimmedIdea, exampleExcerpt: trimmedExcerpt });
+      setEditor({ isAutoGenerated: true, values: result });
+      setExampleIdea("");
+      setExampleExcerpt("");
+    } finally { setDrafting(false); }
+  };
+  const openTaskDraft = async () => {
+    if (!selectedCompletedTaskId || drafting || saving) return;
+    setDrafting(true);
+    try {
+      const result = await onCreateDraftFromTask({ taskId: selectedCompletedTaskId });
+      setEditor({ isAutoGenerated: true, values: result });
+      setSelectedCompletedTaskId("");
     } finally { setDrafting(false); }
   };
   const saveEditor = () => {
@@ -300,6 +327,18 @@ function SettingsSkills({ skills, loading, error, onCreate, onUpdate, onSetEnabl
           <textarea aria-label="Skill workflow idea" value={idea} onChange={event => setIdea(event.target.value)} maxLength={3000} placeholder="For example: Create a secure release-readiness checklist for TypeScript services." className="min-h-20 w-full resize-y rounded-lg border border-white/10 bg-black/15 p-3 text-sm text-[#e5f2ef] outline-none placeholder:text-[#718580] focus:border-cyan-300/60" />
           <div className="mt-3 flex items-center justify-between gap-3"><p className="text-xs text-[#839792]">{idea.length}/3000</p><Button size="sm" variant="outline" onClick={openDraft} disabled={saving || drafting || idea.trim().length < 12}>{drafting ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}Generate draft</Button></div>
         </SettingsCard>
+        <div className="mt-4 grid gap-4 xl:grid-cols-2">
+          <SettingsCard title="Create from an example" detail="Paste the relevant excerpt, then review the proposed workflow. Attached files are kept as your private resources; only the pasted excerpt is used for drafting.">
+            <label className="block text-xs text-[#b7ddd7]">What should this reusable workflow achieve?<textarea aria-label="Skill example goal" value={exampleIdea} onChange={event => setExampleIdea(event.target.value)} maxLength={3000} placeholder="For example: Turn this report pattern into a reusable research brief workflow." className="mt-1.5 min-h-16 w-full resize-y rounded-md border border-white/10 bg-black/15 p-3 text-sm text-[#e5f2ef] outline-none placeholder:text-[#718580] focus:border-cyan-300/60" /></label>
+            <label className="mt-3 block text-xs text-[#b7ddd7]">Example excerpt<textarea aria-label="Skill example excerpt" value={exampleExcerpt} onChange={event => setExampleExcerpt(event.target.value)} maxLength={6000} placeholder="Paste at least 80 characters of a safe example. Do not include credentials, private keys, or confidential data." className="mt-1.5 min-h-28 w-full resize-y rounded-md border border-white/10 bg-black/15 p-3 text-sm text-[#e5f2ef] outline-none placeholder:text-[#718580] focus:border-cyan-300/60" /></label>
+            <div className="mt-3 flex items-center justify-between gap-3"><p className="text-xs text-[#839792]">{exampleExcerpt.length}/6000 · Review required</p><Button size="sm" variant="outline" onClick={openExampleDraft} disabled={saving || drafting || exampleIdea.trim().length < 12 || exampleExcerpt.trim().length < 80}>{drafting ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}Draft from example</Button></div>
+          </SettingsCard>
+          <SettingsCard title="Create from a completed task" detail="Use a completed task summary to suggest a transferable workflow. Synthia does not read artifact contents or save the result until you review it.">
+            <label className="block text-xs text-[#b7ddd7]">Completed task<select aria-label="Completed task for Skill draft" value={selectedCompletedTaskId} onChange={event => setSelectedCompletedTaskId(event.target.value)} className="mt-1.5 h-10 w-full rounded-md border border-white/10 bg-black/15 px-3 text-sm text-[#e5f2ef] outline-none focus:border-cyan-300/60"><option value="">Choose a completed task</option>{completedTasks.map(task => <option key={task.id} value={task.id}>{task.title}</option>)}</select></label>
+            <p className="mt-3 text-xs leading-5 text-[#839792]">The task goal, plan, and file names are used as context. The draft remains private, disabled, and editable.</p>
+            <div className="mt-4 flex justify-end"><Button size="sm" variant="outline" onClick={openTaskDraft} disabled={saving || drafting || !selectedCompletedTaskId}>{drafting ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}Draft from task</Button></div>
+          </SettingsCard>
+        </div>
         <div className="mt-4 space-y-2">{visibleSkills.map(skill => <article key={skill.id} className="rounded-xl border border-white/8 bg-white/[.025] p-4"><div className="flex flex-col justify-between gap-3 sm:flex-row"><div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><h3 className="text-sm font-medium text-[#e5f2ef]">{skill.name}</h3><span className="rounded-full bg-cyan-300/10 px-2 py-0.5 text-[10px] text-cyan-200">{skillCategoryLabels[skill.category]}</span><span className={cn("text-xs", skill.enabled ? "text-teal-200" : "text-[#8fa39d]")}>{skill.enabled ? "Enabled" : "Review required"}</span></div><p className="mt-1.5 text-xs leading-5 text-[#91a7a1]">{skill.description}</p><p className="mt-2 text-[11px] text-[#718580]">Used in {skill.usageCount} task{skill.usageCount === 1 ? "" : "s"} · {skill.isAutoGenerated ? "Drafted with your request" : "Written by you"}</p></div><div className="flex shrink-0 flex-wrap gap-1"><Button size="sm" variant="ghost" onClick={() => setEditor({ id: skill.id, isAutoGenerated: skill.isAutoGenerated, values: { name: skill.name, description: skill.description, category: skill.category, skillMdContent: skill.skillMdContent } })} disabled={saving}>Edit</Button><Button size="sm" variant="ghost" className={skill.enabled ? "text-[#b7ddd7]" : "text-cyan-200"} onClick={() => onSetEnabled({ id: skill.id, enabled: !skill.enabled })} disabled={saving}>{skill.enabled ? "Disable" : "Enable"}</Button><Button size="sm" variant="ghost" className="text-rose-300" aria-label={`Delete skill ${skill.name}`} onClick={() => onDelete(skill.id)} disabled={saving}><Trash2 size={14} /></Button></div></div></article>)}{visibleSkills.length === 0 ? <div className="rounded-xl border border-dashed border-white/12 px-4 py-6 text-sm leading-6 text-[#91a7a1]">{tab === "installed" ? "No enabled Skills yet. Review a Skill, then enable it for matching tasks." : "No Skills yet. Create one yourself or generate a reviewable draft from a workflow."}</div> : null}</div>
       </>}
     </> : null}

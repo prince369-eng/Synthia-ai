@@ -201,6 +201,7 @@ export const skills = pgTable("skills", {
   ownerUserId: integer("owner_user_id").references(() => users.id, { onDelete: "cascade" }),
   name: varchar("name", { length: 100 }).notNull(),
   description: varchar("description", { length: 600 }).notNull(),
+  matchingTerms: text("matching_terms").notNull().default(""),
   skillMdContent: text("skill_md_content").notNull(),
   bundledFiles: jsonb("bundled_files").notNull(),
   category: skillCategoryEnum("category").notNull().default("other"),

@@ -64,6 +64,13 @@
       "when": 1787287277897,
       "tag": "0008_heavy_mole_man",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1787288217942,
+      "tag": "0009_stale_nebula",
+      "breakpoints": true
     }
   ]
 }

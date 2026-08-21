@@ -24,6 +24,15 @@ describe("Skills matching", () => {
     expect(selected).toEqual([]);
   });
 
+  it("uses the reviewed persistent matching index while safely handling legacy Skills without one", () => {
+    const selected = rankSkillsForGoal("Prepare an ISO 27001 evidence pack for production controls", [
+      { id: "indexed", name: "Compliance brief", description: "Create concise compliance summaries.", matchingTerms: "ISO 27001 evidence controls production", skillMdContent: "# Compliance\nKeep the reviewed control workflow." },
+      { id: "legacy", name: "Legacy writing", description: "Improve internal documentation.", skillMdContent: "# Legacy\nNo indexed matching terms yet." },
+    ]);
+
+    expect(selected.map(skill => skill.id)).toEqual(["indexed"]);
+  });
+
   it("bounds approved planning context to three Skills and the configured content budget", () => {
     const longInstruction = "x".repeat(12_000);
     const context = skillPlanningContext([

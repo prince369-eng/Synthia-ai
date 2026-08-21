@@ -1,0 +1,1 @@
+ALTER TABLE "skills" ADD COLUMN "matching_terms" text DEFAULT '' NOT NULL;

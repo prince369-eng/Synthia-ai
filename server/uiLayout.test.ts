@@ -96,6 +96,25 @@ describe("compact workspace layout contract", () => {
     expect(taskRunner).toContain("skillPlanningContext");
   });
 
+  it("keeps example and completed-task Skill drafts explicit, private, and review-gated", () => {
+    const settings = readFileSync(new URL("../client/src/pages/Settings.tsx", import.meta.url), "utf8");
+    const router = readFileSync(new URL("../server/routers.ts", import.meta.url), "utf8");
+    const workspace = readFileSync(new URL("../client/src/pages/TaskWorkspace.tsx", import.meta.url), "utf8");
+    const matcher = readFileSync(new URL("../server/agent/skillMatching.ts", import.meta.url), "utf8");
+
+    expect(settings).toContain("Create from an example");
+    expect(settings).toContain("Create from a completed task");
+    expect(settings).toContain("Do not include credentials, private keys, or confidential data");
+    expect(settings).toContain("Draft from task");
+    expect(router).toContain("createDraftFromExample:");
+    expect(router).toContain("createDraftFromTask:");
+    expect(router).toContain("uploadResource:");
+    expect(router).toContain('visibility: "private"');
+    expect(settings).toContain("Shared marketplace Skills are not enabled in this workspace yet");
+    expect(matcher).toContain("matchingTerms");
+    expect(workspace).toContain("Reviewed Skills available for this task");
+  });
+
   it("normalizes an unavailable or malformed scheduled-job list into the compact empty state", () => {
     expect(normalizeScheduledJobs(undefined)).toEqual([]);
     expect(normalizeScheduledJobs({ jobs: "invalid" })).toEqual([]);

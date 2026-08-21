@@ -3079,3 +3079,10 @@
 - [x] Build the Skills Library, reviewed creator, and editor UI without exposing credentials or conflating Skills with Connectors.
 - [x] Verify the profile Sign out action is visible, invokes secure logout, and preserves a usable anonymous entry state.
 - [x] Add security, ownership, routing, automatic-matching, audit, and sign-out regression coverage; validate without model or provider workloads.
+- [x] Add a reviewed generate-from-example Skills draft path that accepts only task-owned or user-uploaded references and makes its inference limitations explicit.
+- [x] Add a reviewed task-derived Skills draft suggestion path that never silently creates or enables a Skill after task completion.
+- [x] Add secure optional bundled-resource metadata for Skills, with ownership checks, bounded MIME and size policies, and no credential-bearing files in prompt context.
+- [x] Improve automatic relevance matching using a persistent, model-free semantic index when embeddings are unavailable, while preserving the three-Skill cap and cached task selection.
+- [x] Keep public-platform Skill sharing unavailable until a moderation workflow exists, and make this visibility boundary explicit in API validation and UI.
+- [x] Extend Skills Library and task-workspace audit interfaces for reviewed example/task creation paths and last-used usage visibility.
+- [x] Add security, ownership, resource, task-suggestion, relevance, visibility, and responsive UI regression coverage; validate without external workloads.
