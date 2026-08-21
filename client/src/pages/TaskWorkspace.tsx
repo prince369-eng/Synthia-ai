@@ -5,8 +5,9 @@ import { cn } from "@/lib/utils";
 import { trpc } from "@/lib/trpc";
 import { useTaskEventStream } from "@/hooks/useTaskEventStream";
 import { AlertTriangle, Archive, AudioLines, BookOpenText, Bot, CalendarClock, Check, ChevronLeft, CirclePause, Code2, ExternalLink, FileCode2, FileText, FolderTree, Globe2, ImagePlus, ListTree, Loader2, Maximize2, Minimize2, MoreHorizontal, MonitorDot, Pencil, Pin, Play, Send, Square, Star, TerminalSquare, Trash2, Video, Wand2, X } from "lucide-react";
+import { Room, RoomEvent, Track } from "livekit-client";
 import { WORKSPACE_RETURN_ROUTES } from "@/lib/workspaceLayout";
-import React, { FormEvent, useMemo, useState } from "react";
+import React, { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation, useRoute } from "wouter";
 
 type WorkspaceTab = "screen" | "website" | "code" | "terminal" | "files" | "timeline" | "plan";
@@ -34,6 +35,7 @@ export default function TaskWorkspace({ replayMode = false }: { replayMode?: boo
   const [panelPending, setPanelPending] = useState(false);
   const [message, setMessage] = useState("");
   const [replayCursor, setReplayCursor] = useState<number | undefined>();
+  const [voiceModeOpen, setVoiceModeOpen] = useState(false);
   const snapshot = trpc.tasks.get.useQuery({ taskId: taskId ?? "00000000-0000-4000-8000-000000000000" }, { enabled: Boolean(taskId), refetchInterval: 10_000 });
   const { connected } = useTaskEventStream(taskId);
   const utils = trpc.useUtils();
@@ -63,7 +65,7 @@ export default function TaskWorkspace({ replayMode = false }: { replayMode?: boo
   const focusMode = computerMode === "focus" && (tab === "code" || tab === "website");
 
   return <div className={cn("synthia-workspace", focusMode && "synthia-workspace-focus")}>
-    <header className="synthia-workspace-header"><div className="min-w-0"><WorkspaceReturnNavigation onNavigate={setLocation} /><h1 className="mt-1 truncate text-sm font-semibold text-[#e5f2ef]">{task.title}</h1></div><div className="flex items-center gap-2"><span className={cn("hidden text-[11px] font-medium sm:inline", statusColor[task.status])}>{task.status.replace(/_/g, " ")}</span><span title={connected ? "Live task stream connected" : "Reconnecting task stream"} className={cn("h-1.5 w-1.5 rounded-full", connected ? "bg-emerald-400" : "bg-amber-400 animate-pulse")} />{task.status === "running" || task.status === "planning" || task.status === "booting" ? <Button size="sm" variant="outline" onClick={() => pause.mutate({ taskId })} disabled={pause.isPending} className="h-7 border-white/12 bg-transparent px-2 text-[11px] text-[#c7ddd7] hover:bg-white/5"><CirclePause size={13} />Pause</Button> : null}{task.status === "paused" || task.status === "needs_input" ? <Button size="sm" onClick={() => resume.mutate({ taskId })} disabled={resume.isPending} className="h-7 bg-teal-400 px-2 text-[11px] text-[#072a27] hover:bg-cyan-300"><Play size={13} />Resume</Button> : null}{!["completed", "failed", "cancelled"].includes(task.status) ? <Button size="sm" variant="ghost" onClick={() => cancel.mutate({ taskId })} disabled={cancel.isPending} className="h-7 px-2 text-[11px] text-[#91a7a1] hover:text-rose-300"><Square size={12} />Stop</Button> : null}<TaskMediaMenu taskId={taskId} attachments={data.attachments} /><TaskOverflowMenu task={task} taskId={taskId} onDeleted={() => setLocation(WORKSPACE_RETURN_ROUTES.dashboard)} /></div></header>
+    <header className="synthia-workspace-header"><div className="min-w-0"><WorkspaceReturnNavigation onNavigate={setLocation} /><h1 className="mt-1 truncate text-sm font-semibold text-[#e5f2ef]">{task.title}</h1></div><div className="flex items-center gap-2"><span className={cn("hidden text-[11px] font-medium sm:inline", statusColor[task.status])}>{task.status.replace(/_/g, " ")}</span><span title={connected ? "Live task stream connected" : "Reconnecting task stream"} className={cn("h-1.5 w-1.5 rounded-full", connected ? "bg-emerald-400" : "bg-amber-400 animate-pulse")} />{!replayMode ? <Button size="sm" variant="outline" onClick={() => setVoiceModeOpen(true)} className="h-7 border-cyan-300/20 bg-cyan-300/[.04] px-2 text-[11px] text-cyan-100 hover:bg-cyan-300/10"><AudioLines size={13} />Voice</Button> : null}{task.status === "running" || task.status === "planning" || task.status === "booting" ? <Button size="sm" variant="outline" onClick={() => pause.mutate({ taskId })} disabled={pause.isPending} className="h-7 border-white/12 bg-transparent px-2 text-[11px] text-[#c7ddd7] hover:bg-white/5"><CirclePause size={13} />Pause</Button> : null}{task.status === "paused" || task.status === "needs_input" ? <Button size="sm" onClick={() => resume.mutate({ taskId })} disabled={resume.isPending} className="h-7 bg-teal-400 px-2 text-[11px] text-[#072a27] hover:bg-cyan-300"><Play size={13} />Resume</Button> : null}{!["completed", "failed", "cancelled"].includes(task.status) ? <Button size="sm" variant="ghost" onClick={() => cancel.mutate({ taskId })} disabled={cancel.isPending} className="h-7 px-2 text-[11px] text-[#91a7a1] hover:text-rose-300"><Square size={12} />Stop</Button> : null}<TaskMediaMenu taskId={taskId} attachments={data.attachments} /><TaskOverflowMenu task={task} taskId={taskId} onDeleted={() => setLocation(WORKSPACE_RETURN_ROUTES.dashboard)} /></div></header>
     <div className="grid min-h-[calc(100vh-3.5rem)] lg:grid-cols-[minmax(320px,.9fr)_minmax(480px,1.2fr)]">
       <section className="flex min-h-0 flex-col border-r border-white/8">
         <div className="border-b border-white/8 px-4 py-4 sm:px-5"><p className="text-[9px] font-semibold uppercase tracking-[.16em] text-cyan-300">Task objective</p><p className="mt-1.5 max-w-3xl text-xs leading-5 text-[#c7ddd7]">{task.goal}</p>{planSteps.length > 0 ? <div className="mt-3 rounded-lg border border-cyan-300/12 bg-cyan-300/[.035] p-2.5" aria-label="Task progress"><div className="flex items-center justify-between text-[10px]"><span className="font-semibold uppercase tracking-[.12em] text-[#9ab2ad]">Task progress</span><span className="text-cyan-200">{completedPlanSteps}/{planSteps.length}</span></div><div className="mt-2 h-1 overflow-hidden rounded-full bg-white/[.08]"><div className="h-full rounded-full bg-gradient-to-r from-teal-400 to-cyan-300 transition-[width] duration-300" style={{ width: `${Math.round((completedPlanSteps / planSteps.length) * 100)}%` }} /></div></div> : null}{replayMode ? <div className="mt-3 rounded-md border border-cyan-300/20 bg-cyan-300/5 px-2.5 py-1.5 text-[11px] text-cyan-100">Replay mode — move through the durable event record without changing task execution.</div> : null}</div>
@@ -89,7 +91,171 @@ export default function TaskWorkspace({ replayMode = false }: { replayMode?: boo
         </div>
       </aside>
     </div>
+    {voiceModeOpen ? <VoiceModeDialog taskId={taskId} onClose={() => setVoiceModeOpen(false)} /> : null}
   </div>;
+}
+
+type VoiceModeSettings = { voiceId: "synthia" | "lumen" | "calm" | "expressive"; personality: "clear" | "warm" | "precise" | "creative"; speechRate: number };
+
+export function VoiceModeDialog({ taskId, onClose }: { taskId: string; onClose: () => void }) {
+  const utils = trpc.useUtils();
+  const availability = trpc.tasks.voiceModeAvailability.useQuery();
+  const start = trpc.tasks.startVoiceMode.useMutation();
+  const update = trpc.tasks.updateVoiceModeSession.useMutation({ onSuccess: () => void utils.tasks.get.invalidate({ taskId }) });
+  const recordTranscript = trpc.tasks.recordVoiceTranscript.useMutation({ onSuccess: () => void utils.tasks.get.invalidate({ taskId }) });
+  const [settings, setSettings] = useState<VoiceModeSettings>({ voiceId: "synthia", personality: "clear", speechRate: 1 });
+  const [room, setRoom] = useState<Room | null>(null);
+  const [sessionId, setSessionId] = useState<string | null>(null);
+  const [screenStream, setScreenStream] = useState<MediaStream | null>(null);
+  const [status, setStatus] = useState<"ready" | "connecting" | "live" | "ending">("ready");
+  const [error, setError] = useState<string | null>(null);
+  const previewRef = useRef<HTMLVideoElement>(null);
+  const transcriptIdsRef = useRef(new Set<string>());
+
+  useEffect(() => {
+    if (previewRef.current) previewRef.current.srcObject = screenStream;
+  }, [screenStream]);
+
+  const endScreen = async () => {
+    if (room) {
+      const publication = Array.from(room.localParticipant.trackPublications.values()).find(item => item.source === Track.Source.ScreenShare);
+      if (publication?.track) await room.localParticipant.unpublishTrack(publication.track, true);
+    }
+    screenStream?.getTracks().forEach(mediaTrack => mediaTrack.stop());
+    setScreenStream(null);
+    if (sessionId) update.mutate({ taskId, sessionId, action: "screen_ended" });
+  };
+
+  const endVoice = async () => {
+    setStatus("ending");
+    try {
+      await endScreen();
+      room?.disconnect();
+    } finally {
+      if (sessionId) update.mutate({ taskId, sessionId, action: "ended" });
+      setRoom(null);
+      setSessionId(null);
+      setStatus("ready");
+    }
+  };
+
+  useEffect(() => {
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      void endVoice();
+      onClose();
+    };
+    window.addEventListener("keydown", closeOnEscape);
+    return () => window.removeEventListener("keydown", closeOnEscape);
+  });
+
+  useEffect(() => () => {
+    screenStream?.getTracks().forEach(mediaTrack => mediaTrack.stop());
+    room?.disconnect();
+  }, [room, screenStream]);
+
+  const beginVoice = async () => {
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setError("Voice Mode requires browser microphone access in a secure, supported browser.");
+      return;
+    }
+    setError(null);
+    setStatus("connecting");
+    let createdSessionId: string | null = null;
+    try {
+      const join = await start.mutateAsync({ taskId, settings });
+      createdSessionId = join.sessionId;
+      const nextRoom = new Room({ adaptiveStream: true, dynacast: true, audioCaptureDefaults: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } });
+      nextRoom.on(RoomEvent.TranscriptionReceived, (segments, participant) => {
+        const finalSegments = segments.filter(segment => segment.final && segment.text.trim() && !transcriptIdsRef.current.has(segment.id));
+        finalSegments.forEach(segment => transcriptIdsRef.current.add(segment.id));
+        const content = finalSegments.map(segment => segment.text.trim()).join(" ");
+        if (content) recordTranscript.mutate({
+          taskId,
+          sessionId: join.sessionId,
+          role: participant?.identity === join.participantIdentity ? "user" : "agent",
+          content,
+        });
+      });
+      nextRoom.on(RoomEvent.Disconnected, () => {
+        update.mutate({ taskId, sessionId: join.sessionId, action: "ended" });
+        setRoom(null);
+        setSessionId(null);
+        setStatus("ready");
+      });
+      await nextRoom.connect(join.url, join.token);
+      await nextRoom.localParticipant.setMicrophoneEnabled(true);
+      transcriptIdsRef.current.clear();
+      setRoom(nextRoom);
+      setSessionId(join.sessionId);
+      setStatus("live");
+      update.mutate({ taskId, sessionId: join.sessionId, action: "connected" });
+    } catch (reason) {
+      const message = reason instanceof Error ? reason.message : "Voice Mode could not connect.";
+      if (createdSessionId) update.mutate({ taskId, sessionId: createdSessionId, action: "failed", failureReason: "Browser microphone or realtime transport connection was unavailable." });
+      setError(message.includes("Permission") || message.includes("NotAllowed") ? "Microphone permission was not granted. Voice Mode has not started." : message);
+      setStatus("ready");
+    }
+  };
+
+  const beginScreen = async () => {
+    if (!room || !sessionId) return;
+    if (!navigator.mediaDevices?.getDisplayMedia) {
+      setError("Screen sharing is not supported in this browser. No screen content was shared.");
+      return;
+    }
+    setError(null);
+    try {
+      const display = await navigator.mediaDevices.getDisplayMedia({ video: { frameRate: { ideal: 5, max: 10 } }, audio: false });
+      const displayTrack = display.getVideoTracks()[0];
+      if (!displayTrack) throw new Error("No display video track was selected.");
+      displayTrack.addEventListener("ended", () => { void endScreen(); }, { once: true });
+      await room.localParticipant.publishTrack(displayTrack, { source: Track.Source.ScreenShare, videoEncoding: { maxBitrate: 500_000, maxFramerate: 10 } });
+      setScreenStream(display);
+      update.mutate({ taskId, sessionId, action: "screen_started" });
+    } catch (reason) {
+      const message = reason instanceof Error ? reason.message : "Screen sharing could not start.";
+      setError(message.includes("Permission") || message.includes("NotAllowed") ? "Screen sharing was not granted. Nothing was shared." : message);
+    }
+  };
+
+  const unavailable = !availability.data?.available;
+  return <div className="synthia-voice-backdrop" role="presentation">
+    <section role="dialog" aria-modal="true" aria-labelledby="voice-mode-title" className="synthia-voice-dialog">
+      <header className="flex items-start justify-between gap-4">
+        <div>
+          <p className="text-[10px] font-semibold uppercase tracking-[.16em] text-cyan-300">Voice Mode</p>
+          <h2 id="voice-mode-title" className="mt-1 text-base font-semibold text-[#effaf7]">Talk with Synthia in this task</h2>
+          <p className="mt-1 text-xs leading-5 text-[#9ab2ad]">Voice and screen sharing begin only after you select the controls below. You can stop either at any time.</p>
+        </div>
+        <button type="button" onClick={() => { void endVoice(); onClose(); }} aria-label="Close Voice Mode" className="rounded-md p-1 text-[#9ab2ad] hover:bg-white/8 hover:text-white"><X size={17} /></button>
+      </header>
+      {unavailable ? <div className="mt-5 rounded-lg border border-amber-300/20 bg-amber-300/[.06] p-3 text-xs leading-5 text-amber-100"><strong>Voice Mode is not configured.</strong><p className="mt-1 text-[#d8c7a6]">{availability.data?.reason ?? "Checking the realtime service configuration…"}</p></div> : <>
+        <div className="mt-5 grid gap-3 sm:grid-cols-3">
+          <VoiceSettingSelect label="Voice" value={settings.voiceId} disabled={status !== "ready"} onChange={value => setSettings(current => ({ ...current, voiceId: value as VoiceModeSettings["voiceId"] }))} options={["synthia", "lumen", "calm", "expressive"]} />
+          <VoiceSettingSelect label="Conversation style" value={settings.personality} disabled={status !== "ready"} onChange={value => setSettings(current => ({ ...current, personality: value as VoiceModeSettings["personality"] }))} options={["clear", "warm", "precise", "creative"]} />
+          <VoiceSettingSelect label="Speech speed" value={String(settings.speechRate)} disabled={status !== "ready"} onChange={value => setSettings(current => ({ ...current, speechRate: Number(value) }))} options={["0.85", "1", "1.15"]} labels={["Slower", "Natural", "Faster"]} />
+        </div>
+        <div className="mt-5 rounded-xl border border-cyan-300/16 bg-[#0c1715] p-4">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2"><span className={cn("h-2 w-2 rounded-full", status === "live" ? "bg-emerald-400 animate-pulse" : "bg-[#607a73]")} /><span className="text-xs font-medium text-[#e5f2ef]">{status === "live" ? "Live voice conversation" : status === "connecting" ? "Requesting microphone access…" : "Ready when you are"}</span></div>
+            {status === "live" ? <Button size="sm" onClick={() => void endVoice()} className="bg-rose-400 px-3 text-xs text-[#2d0707] hover:bg-rose-300"><Square size={13} />End voice</Button> : <Button size="sm" onClick={() => void beginVoice()} disabled={status !== "ready" || start.isPending} className="bg-teal-400 px-3 text-xs text-[#062a26] hover:bg-cyan-300"><AudioLines size={14} />Start voice</Button>}
+          </div>
+          <p className="mt-3 text-[11px] leading-5 text-[#91a7a1]">Starting requests browser microphone permission. The voice worker uses the active task context; finalized transcripts return to this task thread.</p>
+        </div>
+        {status === "live" ? <div className="mt-3 rounded-xl border border-white/10 bg-white/[.025] p-3">
+          <div className="flex items-center justify-between gap-3"><div><p className="text-xs font-medium text-[#e5f2ef]">Share your screen</p><p className="mt-0.5 text-[11px] text-[#91a7a1]">Choose a tab, window, or display using your browser’s native chooser.</p></div>{screenStream ? <Button size="sm" variant="outline" onClick={() => void endScreen()} className="border-rose-300/25 bg-transparent text-rose-200 hover:bg-rose-300/10"><Square size={13} />Stop sharing</Button> : <Button size="sm" variant="outline" onClick={() => void beginScreen()} className="border-cyan-300/25 bg-transparent text-cyan-100 hover:bg-cyan-300/10"><MonitorDot size={13} />Share screen</Button>}</div>
+          {screenStream ? <div className="mt-3 overflow-hidden rounded-lg border border-cyan-300/16 bg-black"><video ref={previewRef} autoPlay muted playsInline className="max-h-52 w-full object-contain" aria-label="Local screen-sharing preview" /></div> : null}
+        </div> : null}
+      </>}
+      {error ? <p role="alert" className="mt-4 rounded-md border border-rose-300/18 bg-rose-300/[.06] px-3 py-2 text-xs text-rose-100">{error}</p> : null}
+      <footer className="mt-5 border-t border-white/8 pt-3 text-[10px] leading-4 text-[#718580]">Do not share passwords, recovery codes, payment details, or private material you do not intend to include in the live session.</footer>
+    </section>
+  </div>;
+}
+
+function VoiceSettingSelect({ label, value, disabled, onChange, options, labels = options }: { label: string; value: string; disabled: boolean; onChange: (value: string) => void; options: string[]; labels?: string[] }) {
+  return <label className="text-[11px] text-[#9ab2ad]">{label}<select value={value} disabled={disabled} onChange={event => onChange(event.target.value)} className="synthia-voice-select">{options.map((option, index) => <option key={option} value={option}>{labels[index]}</option>)}</select></label>;
 }
 
 export function WorkspaceReturnNavigation({ onNavigate }: { onNavigate: (path: string) => void }) {
@@ -216,5 +382,18 @@ export function ArtifactOpenButton({ taskId, deliverable }: { taskId: string; de
 }
 
 function FilesPanel({ taskId, deliverables }: { taskId: string; deliverables: Array<any> }) { return <div>{deliverables.length === 0 ? <div className="rounded-xl border border-dashed border-white/12 p-6 text-sm text-[#91a7a1]">No deliverables have been published by this task.</div> : <div className="space-y-2">{deliverables.map(item => <article key={item.id} className="flex items-center gap-3 rounded-xl border border-white/8 bg-white/[.025] p-3 hover:border-teal-300/25"><FileText className="text-cyan-300" size={17} /><span className="min-w-0 flex-1"><b className="block truncate text-sm text-[#e5f2ef]">{item.filename}</b><small className="text-xs text-[#778985]">{item.fileType}</small></span><ArtifactOpenButton taskId={taskId} deliverable={item} /></article>)}</div>}</div>; }
-function TimelinePanel({ events, allEvents, replayMode, replayCursor, setReplayCursor }: { events: Array<any>; allEvents: Array<any>; replayMode: boolean; replayCursor: number | undefined; setReplayCursor: (value: number | undefined) => void }) { return <div>{replayMode && allEvents.length > 0 ? <div className="mb-5 rounded-xl border border-teal-300/15 bg-teal-300/[.04] p-3"><label className="text-xs text-cyan-100">Replay through event {replayCursor ?? allEvents.at(-1)?.sequenceNumber}</label><input className="mt-3 w-full accent-teal-400" type="range" min={allEvents[0]?.sequenceNumber} max={allEvents.at(-1)?.sequenceNumber} value={replayCursor ?? allEvents.at(-1)?.sequenceNumber} onChange={event => setReplayCursor(Number(event.target.value))} /></div> : null}{events.length === 0 ? <div className="rounded-xl border border-dashed border-white/12 p-6 text-sm text-[#91a7a1]">No task events are available yet.</div> : <ol className="relative ml-2 border-l border-white/10 pl-5">{events.map(event => <li key={event.id} className="relative pb-5"><span className="absolute -left-[1.63rem] top-1.5 h-2 w-2 rounded-full bg-teal-400" /><p className="text-xs font-medium text-[#e5f2ef]">#{event.sequenceNumber} · {event.type.replace(/_/g, " ")}</p><p className="mt-1 text-xs leading-5 text-[#91a7a1]">{timelinePayload(event)}</p><time className="mt-1 block text-[10px] text-[#778985]">{localTime(event.createdAt)}</time></li>)}</ol>}</div>; }
-function PlanPanel({ plan }: { plan: Array<any> }) { return <ol className="space-y-3">{plan.map((step, index) => <li key={step.id} className="flex gap-3 rounded-xl border border-white/8 bg-white/[.02] p-3"><span className={cn("grid h-6 w-6 shrink-0 place-items-center rounded-full text-xs", step.state === "done" ? "bg-emerald-400/15 text-emerald-300" : step.state === "active" ? "bg-teal-400/15 text-cyan-200" : "bg-white/5 text-[#91a7a1]")}>{index + 1}</span><span><b className="block text-sm font-medium text-[#e5f2ef]">{step.title}</b><small className="mt-1 block text-xs text-[#91a7a1]">{step.state}</small></span></li>)}</ol>; }
+function TimelinePanel({ events, allEvents, replayMode, replayCursor, setReplayCursor }: { events: Array<any>; allEvents: Array<any>; replayMode: boolean; replayCursor: number | undefined; setReplayCursor: (value: number | undefined) => void }) {
+  return <div>
+    {replayMode && allEvents.length > 0 ? <div className="mb-5 rounded-xl border border-teal-300/15 bg-teal-300/[.04] p-3"><label className="text-xs text-cyan-100">Replay through event {replayCursor ?? allEvents.at(-1)?.sequenceNumber}</label><input className="mt-3 w-full accent-teal-400" type="range" min={allEvents[0]?.sequenceNumber} max={allEvents.at(-1)?.sequenceNumber} value={replayCursor ?? allEvents.at(-1)?.sequenceNumber} onChange={event => setReplayCursor(Number(event.target.value))} /></div> : null}
+    {events.length === 0 ? <div className="rounded-xl border border-dashed border-white/12 p-6 text-sm text-[#91a7a1]">No task events are available yet.</div> : <ol className="relative ml-2 border-l border-white/10 pl-5">{events.map(event => <li key={event.id} className="relative pb-5"><span className="absolute -left-[1.63rem] top-1.5 h-2 w-2 rounded-full bg-teal-400" /><p className="text-xs font-medium text-[#e5f2ef]">#{event.sequenceNumber} · {event.type.replace(/_/g, " ")}</p><p className="mt-1 text-xs leading-5 text-[#91a7a1]">{timelinePayload(event)}</p><time className="mt-1 block text-[10px] text-[#778985]">{localTime(event.createdAt)}</time></li>)}</ol>}
+  </div>;
+}
+
+function PlanPanel({ plan }: { plan: Array<any> }) {
+  return <ol className="space-y-3">
+    {plan.map((step, index) => <li key={step.id} className="flex gap-3 rounded-xl border border-white/8 bg-white/[.02] p-3">
+      <span className={cn("grid h-6 w-6 shrink-0 place-items-center rounded-full text-xs", step.state === "done" ? "bg-emerald-400/15 text-emerald-300" : step.state === "active" ? "bg-teal-400/15 text-cyan-200" : "bg-white/5 text-[#91a7a1]")}>{index + 1}</span>
+      <span><b className="block text-sm font-medium text-[#e5f2ef]">{step.title}</b><small className="mt-1 block text-xs text-[#91a7a1]">{step.state}</small></span>
+    </li>)}
+  </ol>;
+}

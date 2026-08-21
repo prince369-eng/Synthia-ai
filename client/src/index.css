@@ -345,6 +345,9 @@ p[role="alert"].text-amber-200 { --synthia-amber-allowed: 1; }
   .synthia-computer-skeleton span:nth-child(2) { @apply w-4/5; }
   .synthia-computer-skeleton span:nth-child(3) { @apply w-3/5; }
   .synthia-computer-skeleton span:nth-child(4) { @apply w-2/5; }
+  .synthia-voice-backdrop { @apply fixed inset-0 z-60 grid place-items-center bg-[#07100f]/78 p-4 backdrop-blur-md; }
+  .synthia-voice-dialog { width: min(100%, 42rem); max-height: min(44rem, calc(100vh - 2rem)); @apply overflow-y-auto rounded-2xl border border-cyan-300/20 bg-[#0d1816] p-4 shadow-2xl sm:p-6; background: linear-gradient(150deg, #11201d, #0b1513 78%); }
+  .synthia-voice-select { @apply mt-1.5 block w-full rounded-lg border border-white/12 bg-[#0c1715] px-2.5 py-2 text-xs text-[#d9f5ee] outline-none focus-visible:ring-2 focus-visible:ring-cyan-300 disabled:cursor-not-allowed disabled:opacity-55; }
 }
 
 @keyframes synthia-skeleton-shimmer { from { background-position: 100% 0; } to { background-position: -100% 0; } }

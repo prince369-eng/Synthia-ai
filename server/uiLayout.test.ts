@@ -424,6 +424,32 @@ describe("compact workspace layout contract", () => {
     expect(css).toContain("@keyframes synthia-skeleton-shimmer");
   });
 
+  it("keeps Voice Mode user-started, task-scoped, and safe for local screen sharing", () => {
+    const workspace = readFileSync(new URL("../client/src/pages/TaskWorkspace.tsx", import.meta.url), "utf8");
+    const router = readFileSync(new URL("../server/routers.ts", import.meta.url), "utf8");
+    const realtime = readFileSync(new URL("../server/realtime/voiceMode.ts", import.meta.url), "utf8");
+    const css = readFileSync(new URL("../client/src/index.css", import.meta.url), "utf8");
+
+    expect(workspace).toContain('onClick={() => setVoiceModeOpen(true)}');
+    expect(workspace).toContain('role="dialog"');
+    expect(workspace).toContain('aria-modal="true"');
+    expect(workspace).toContain("getDisplayMedia({ video: { frameRate: { ideal: 5, max: 10 } }, audio: false })");
+    expect(workspace).toContain("Track.Source.ScreenShare");
+    expect(workspace).toContain("screenStream?.getTracks().forEach(mediaTrack => mediaTrack.stop())");
+    expect(workspace).toContain("RoomEvent.TranscriptionReceived");
+    expect(workspace).toContain("segment.final");
+    expect(workspace).toContain("recordTranscript.mutate");
+    expect(workspace).toContain("Do not share passwords, recovery codes, payment details");
+    expect(router).toContain("voiceModeAvailability: protectedProcedure");
+    expect(router).toContain("startVoiceMode: protectedProcedure");
+    expect(router).toContain("recordVoiceTranscript: protectedProcedure");
+    expect(router).toContain('await requireOwnedTask(input.taskId, ctx.user.id)');
+    expect(router).toContain('enforceUserMutationLimit(ctx.user.id, "voice-mode-start", 8, 3_600)');
+    expect(realtime).toContain("source.realtimeVoiceEnabled");
+    expect(realtime).toContain("Voice Mode is disabled until");
+    expect(css).toContain(".synthia-voice-dialog");
+  });
+
   it("keeps the compact dashboard and workspace hierarchy in cool Synthia neutrals", () => {
     const dashboard = readFileSync(new URL("../client/src/pages/TaskDashboard.tsx", import.meta.url), "utf8");
     const workspace = readFileSync(new URL("../client/src/pages/TaskWorkspace.tsx", import.meta.url), "utf8");

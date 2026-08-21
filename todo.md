@@ -348,8 +348,8 @@
 - [x] Voice-input unavailable/ready review
 - [x] Image and video-generation unavailable/ready review
 - [x] Task overflow action review
-- [ ] Save a checkpoint after all verified changes
-- [ ] GitHub push remains last and requires explicit user confirmation
+- [x] Save a checkpoint after all verified changes
+- [x] Retain GitHub push as the final action requiring explicit user confirmation
 > **Credential boundary:** Credentials will be requested through secure project configuration. No secrets will be written into source code, screenshots, or committed `.env` files.
 
 > **Provider boundary:** Image and video generation will remain unavailable in the UI until real provider adapters, model configuration, storage handling, and go-live credentials are verified.
@@ -363,8 +363,8 @@
 
 ## Center workspace completion status
 
-- [ ] Complete all center interface components and multimodal capability states.
-- [ ] Mark this expanded center-workspace scope complete only after authenticated desktop/mobile review and a saved checkpoint.
+- [x] Complete all center interface components and multimodal capability states.
+- [x] Mark this expanded center-workspace scope complete after authenticated desktop/mobile review and a saved checkpoint.
 
 ## User provider selection
 
@@ -389,10 +389,10 @@
 
 ## Expanded center scope acceptance
 
-- [ ] User-visible center UI matches the approved compact proportional layout.
-- [ ] Every enabled action has a real backend route or is explicitly unavailable.
-- [ ] No fabricated provider, model, generation, review, rating, or schedule data exists.
-- [ ] External credentials remain outside source control.
+- [x] User-visible center UI matches the approved compact proportional layout.
+- [x] Every enabled action has a real backend route or is explicitly unavailable.
+- [x] No fabricated provider, model, generation, review, rating, or schedule data exists.
+- [x] External credentials remain outside source control.
 - [ ] Production verification is complete after secrets and deployment.
 
 ## Modality readiness matrix
@@ -3102,3 +3102,12 @@
 - [x] Refine the public mobile navigation with explicit control linkage and Escape-key dismissal while preserving the existing sign-in and sign-up actions.
 - [x] Add a visible-on-focus skip link to the public landing page so keyboard users can bypass repeated navigation and reach the main task narrative.
 - [x] Refine Settings section search with an explicit clear action and current-section semantics while retaining existing filter and no-match behavior.
+
+## Consent-first real-time Voice Mode and local screen sharing
+
+- [x] Research and document the approved WebRTC, LiveKit, realtime-model, and browser screen-capture architecture, including latency, TURN, privacy, and hosting boundaries.
+- [x] Extend the existing task event system with user-owned voice-session lifecycle records and auditable voice and screen-share events, without creating a parallel conversation history.
+- [x] Add the task-workspace Voice Mode overlay with explicit start and stop controls, Voice/Personality/Speed settings, live transcript treatment, accessibility, and unavailable states.
+- [x] Add user-initiated browser-native `getDisplayMedia()` screen sharing with a local preview, persistent stop control, track cleanup, and no automatic frame persistence.
+- [x] Add provider-safe realtime session configuration and a LiveKit-compatible server boundary that remains disabled until deployment and credentials are explicitly configured.
+- [x] Add deterministic coverage and visual validation for consent prompts, permission denial, unsupported browsers, stop sharing, lifecycle event history, and responsive Voice Mode UI without invoking any live media, vision, or model workload.

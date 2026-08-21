@@ -28,6 +28,7 @@ import {
   type User,
   usageEvents,
   users,
+  voiceSessions,
 } from "../drizzle/schema";
 import { ENV } from "./_core/env";
 import { publishTaskEvent } from "./realtime/taskEventBus";
@@ -700,6 +701,94 @@ export async function recordAgentMessage(taskId: string, content: string) {
       content,
       eventId: event.id,
     });
+    return event;
+  });
+}
+
+export type VoiceSessionSettings = {
+  voiceId: string;
+  personality: string;
+  speechRate: number;
+};
+
+export async function createVoiceSessionForTask(input: {
+  taskId: string;
+  userId: number;
+  roomName: string;
+  participantIdentity: string;
+  settings: VoiceSessionSettings;
+}) {
+  const database = databaseRequired(await getDb());
+  const id = randomUUID();
+  const now = new Date();
+  await database.transaction(async transaction => {
+    await transaction.insert(voiceSessions).values({
+      id,
+      taskId: input.taskId,
+      userId: input.userId,
+      roomName: input.roomName,
+      participantIdentity: input.participantIdentity,
+      status: "starting",
+      voiceId: input.settings.voiceId,
+      personality: input.settings.personality,
+      speechRate: input.settings.speechRate,
+    });
+    await appendTaskEventInTransaction(transaction, input.taskId, {
+      type: "voice_session",
+      payload: { sessionId: id, action: "requested", voiceId: input.settings.voiceId, personality: input.settings.personality, speechRate: input.settings.speechRate, requestedAt: now.toISOString() },
+    });
+  });
+  return { id, roomName: input.roomName, participantIdentity: input.participantIdentity };
+}
+
+export async function updateVoiceSessionForUser(input: {
+  sessionId: string;
+  taskId: string;
+  userId: number;
+  action: "connected" | "ended" | "failed" | "screen_started" | "screen_ended";
+  failureReason?: string;
+}) {
+  const database = databaseRequired(await getDb());
+  const now = new Date();
+  return database.transaction(async transaction => {
+    const [session] = await transaction.select().from(voiceSessions).where(and(eq(voiceSessions.id, input.sessionId), eq(voiceSessions.taskId, input.taskId), eq(voiceSessions.userId, input.userId))).limit(1);
+    if (!session) return undefined;
+    const patch = input.action === "connected"
+      ? { status: "active" as const, updatedAt: now, failureReason: null }
+      : input.action === "ended"
+        ? { status: "ended" as const, endedAt: now, updatedAt: now }
+        : input.action === "failed"
+          ? { status: "failed" as const, endedAt: now, updatedAt: now, failureReason: input.failureReason?.slice(0, 180) ?? "The realtime connection ended unexpectedly." }
+          : input.action === "screen_started"
+            ? { screenShareStartedAt: now, screenShareEndedAt: null, updatedAt: now }
+            : { screenShareEndedAt: now, updatedAt: now };
+    await transaction.update(voiceSessions).set(patch).where(eq(voiceSessions.id, session.id));
+    await appendTaskEventInTransaction(transaction, input.taskId, {
+      type: input.action.startsWith("screen_") ? "screen_share" : "voice_session",
+      payload: { sessionId: session.id, action: input.action, occurredAt: now.toISOString(), ...(input.failureReason ? { failureReason: input.failureReason.slice(0, 180) } : {}) },
+    });
+    return { ...session, ...patch };
+  });
+}
+
+export async function recordVoiceTranscriptForTask(input: {
+  taskId: string;
+  userId: number;
+  sessionId: string;
+  role: "user" | "agent";
+  content: string;
+}) {
+  const database = databaseRequired(await getDb());
+  const content = input.content.trim();
+  if (!content) throw new Error("A finalized voice transcript cannot be empty.");
+  return database.transaction(async transaction => {
+    const [session] = await transaction.select({ id: voiceSessions.id }).from(voiceSessions).where(and(eq(voiceSessions.id, input.sessionId), eq(voiceSessions.taskId, input.taskId), eq(voiceSessions.userId, input.userId))).limit(1);
+    if (!session) throw new Error("The Voice Mode session is unavailable.");
+    const event = await appendTaskEventInTransaction(transaction, input.taskId, {
+      type: "voice_transcript",
+      payload: { sessionId: input.sessionId, role: input.role, content, finalized: true },
+    });
+    await transaction.insert(taskMessages).values({ id: randomUUID(), taskId: input.taskId, role: input.role, content, eventId: event.id });
     return event;
   });
 }

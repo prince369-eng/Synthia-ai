@@ -142,4 +142,13 @@ export const ENV = {
   resendApiKey: process.env.RESEND_API_KEY ?? "",
   postmarkServerToken: process.env.POSTMARK_SERVER_TOKEN ?? "",
   postmarkMessageStream: process.env.POSTMARK_MESSAGE_STREAM ?? "outbound",
+  realtimeVoiceEnabled: process.env.SYNTHIA_REALTIME_VOICE_ENABLED === "true",
+  realtimeProvider: process.env.SYNTHIA_REALTIME_PROVIDER ?? "gemini_live",
+  realtimeModel: process.env.SYNTHIA_REALTIME_MODEL ?? "gemini-2.5-flash-native-audio-preview-12-2025",
+  realtimeDefaultVoice: process.env.SYNTHIA_REALTIME_DEFAULT_VOICE ?? "Aoede",
+  realtimeVoiceWorkerReady: process.env.SYNTHIA_REALTIME_VOICE_WORKER_READY === "true",
+  livekitUrl: process.env.LIVEKIT_URL ?? "",
+  livekitApiKey: process.env.LIVEKIT_API_KEY ?? "",
+  livekitApiSecret: process.env.LIVEKIT_API_SECRET ?? "",
+  livekitAgentName: process.env.LIVEKIT_AGENT_NAME ?? "synthia-voice",
 };

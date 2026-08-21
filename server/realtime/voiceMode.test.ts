@@ -1,0 +1,43 @@
+import { describe, expect, it } from "vitest";
+import { ENV } from "../_core/env";
+import { getVoiceModeAvailability } from "./voiceMode";
+
+function configuredRealtime(overrides: Record<string, unknown> = {}) {
+  return {
+    ...ENV,
+    realtimeVoiceEnabled: true,
+    realtimeProvider: "gemini_live",
+    realtimeVoiceWorkerReady: true,
+    livekitUrl: "wss://example.livekit.cloud",
+    livekitApiKey: "livekit-key",
+    livekitApiSecret: "livekit-secret",
+    geminiApiKey: "gemini-key",
+    ...overrides,
+  } as typeof ENV;
+}
+
+describe("Voice Mode availability gate", () => {
+  it("remains disabled unless an operator explicitly enables realtime Voice Mode", () => {
+    const availability = getVoiceModeAvailability(configuredRealtime({ realtimeVoiceEnabled: false }));
+
+    expect(availability).toMatchObject({ available: false, provider: "gemini_live", transport: "livekit" });
+    expect(availability.reason).toContain("disabled");
+  });
+
+  it("refuses an incomplete deployment before a browser can request a room token", () => {
+    const workerMissing = getVoiceModeAvailability(configuredRealtime({ realtimeVoiceWorkerReady: false }));
+    const credentialsMissing = getVoiceModeAvailability(configuredRealtime({ livekitApiSecret: "" }));
+    const providerMismatch = getVoiceModeAvailability(configuredRealtime({ realtimeProvider: "other" }));
+
+    expect(workerMissing.available).toBe(false);
+    expect(workerMissing.reason).toContain("always-on agent worker");
+    expect(credentialsMissing.available).toBe(false);
+    expect(credentialsMissing.reason).toContain("LiveKit URL, API key, and API secret");
+    expect(providerMismatch.available).toBe(false);
+    expect(providerMismatch.reason).toContain("Gemini Live");
+  });
+
+  it("reports an eligible realtime boundary only when every server-side prerequisite is deliberate", () => {
+    expect(getVoiceModeAvailability(configuredRealtime())).toEqual({ available: true, provider: "gemini_live", transport: "livekit" });
+  });
+});

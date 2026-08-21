@@ -78,6 +78,13 @@
       "when": 1787289192535,
       "tag": "0010_misty_chronomancer",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1787293936943,
+      "tag": "0011_left_thunderbird",
+      "breakpoints": true
     }
   ]
 }

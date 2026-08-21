@@ -49,10 +49,12 @@ import {
   softDeleteSkillForUser,
   updateSkillForUser,
   createScheduledWorkflowForUser,
+  recordVoiceTranscriptForTask,
   getScheduledWorkflowForUser,
   listScheduledWorkflowsForUser,
   softDeleteScheduledWorkflowForUser,
   updateScheduledWorkflowForUser,
+  updateVoiceSessionForUser,
 } from "./db";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
@@ -73,6 +75,7 @@ import { resolveAutomaticTaskRoute } from "@shared/automaticTaskRouting";
 import { executeTaskMedia, TaskMediaRequestError } from "./media/taskMedia";
 import { captureLiveComputerScreen, listLiveComputerFiles, liveComputerAvailability, readLiveComputerSource } from "./agent/liveComputer";
 import { generateWithFallback, parseStructuredModelOutput } from "./agent/llm";
+import { createVoiceModeJoinCredentials, getVoiceModeAvailability } from "./realtime/voiceMode";
 
 const taskIdSchema = z.object({ taskId: z.string().uuid() });
 const taskTitleSchema = z.string().trim().min(1).max(180);
@@ -144,6 +147,17 @@ const mediaGenerationSchema = taskIdSchema.extend({
 });
 const liveComputerSourceSchema = taskIdSchema.extend({
   path: z.string().trim().min(12).max(512),
+});
+const voiceModeSettingsSchema = z.object({
+  voiceId: z.enum(["synthia", "lumen", "calm", "expressive"]).default("synthia"),
+  personality: z.enum(["clear", "warm", "precise", "creative"]).default("clear"),
+  speechRate: z.number().min(0.7).max(1.3).default(1),
+});
+const voiceModeStartSchema = taskIdSchema.extend({ settings: voiceModeSettingsSchema });
+const voiceModeSessionSchema = taskIdSchema.extend({ sessionId: z.string().uuid() });
+const voiceModeTranscriptSchema = voiceModeSessionSchema.extend({
+  role: z.enum(["user", "agent"]),
+  content: z.string().trim().min(1).max(8_000),
 });
 export const attachmentMimeSchema = z.string().trim().min(3).max(100).regex(
   /^(application\/(pdf|json|zip|x-7z-compressed|x-tar|vnd\.(openxmlformats-officedocument\.(wordprocessingml\.document|spreadsheetml\.sheet)|ms-excel|msword))|text\/(plain|csv|markdown)|image\/(png|jpeg|webp)|video\/(mp4|webm|quicktime))$/,
@@ -629,6 +643,40 @@ export const appRouter = router({
         } catch (error) {
           console.error(JSON.stringify({ event: "live_computer_screen_failed", taskId: input.taskId, userId: ctx.user.id, provider: sandbox.provider, message: error instanceof Error ? error.message : "unknown" }));
           throw new TRPCError({ code: "PRECONDITION_FAILED", message: "The task screen is not available for capture." });
+        }
+      }),
+    voiceModeAvailability: protectedProcedure.query(() => getVoiceModeAvailability()),
+    startVoiceMode: protectedProcedure
+      .input(voiceModeStartSchema)
+      .mutation(async ({ ctx, input }) => {
+        await enforceUserMutationLimit(ctx.user.id, "voice-mode-start", 8, 3_600);
+        const task = await requireOwnedTask(input.taskId, ctx.user.id);
+        try {
+          return await createVoiceModeJoinCredentials({ taskId: task.id, userId: ctx.user.id, settings: input.settings });
+        } catch (error) {
+          const message = error instanceof Error ? error.message : "Voice Mode could not be started.";
+          const code = message.includes("disabled") || message.includes("needs") ? "PRECONDITION_FAILED" : "INTERNAL_SERVER_ERROR";
+          throw new TRPCError({ code, message: code === "PRECONDITION_FAILED" ? message : "Voice Mode could not be started. Please retry shortly." });
+        }
+      }),
+    updateVoiceModeSession: protectedProcedure
+      .input(voiceModeSessionSchema.extend({ action: z.enum(["connected", "ended", "failed", "screen_started", "screen_ended"]), failureReason: z.string().trim().min(1).max(180).optional() }))
+      .mutation(async ({ ctx, input }) => {
+        await requireOwnedTask(input.taskId, ctx.user.id);
+        const session = await updateVoiceSessionForUser({ ...input, userId: ctx.user.id });
+        if (!session) throw new TRPCError({ code: "NOT_FOUND", message: "That Voice Mode session is unavailable." });
+        return { ok: true };
+      }),
+    recordVoiceTranscript: protectedProcedure
+      .input(voiceModeTranscriptSchema)
+      .mutation(async ({ ctx, input }) => {
+        await enforceUserMutationLimit(ctx.user.id, "voice-mode-transcript", 120, 3_600);
+        await requireOwnedTask(input.taskId, ctx.user.id);
+        try {
+          await recordVoiceTranscriptForTask({ ...input, userId: ctx.user.id });
+          return { ok: true };
+        } catch {
+          throw new TRPCError({ code: "NOT_FOUND", message: "That Voice Mode session is unavailable." });
         }
       }),
     generateMedia: protectedProcedure.input(mediaGenerationSchema).mutation(async ({ ctx, input }) => {

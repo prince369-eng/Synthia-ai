@@ -5,7 +5,7 @@
   "license": "MIT",
   "scripts": {
     "dev": "pnpm build && SYNTHIA_STATIC_PREVIEW=true NODE_ENV=development tsx watch server/_core/index.ts",
-    "build": "vite build && esbuild client/src/main.tsx --bundle --format=iife --platform=browser --target=es2020 --jsx=automatic --conditions=style --external:tailwindcss --external:tw-animate-css --loader:.css=empty --outfile=dist/public/synthia-preview.js && esbuild server/_core/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist && esbuild server/agent/worker.ts --platform=node --packages=external --bundle --format=esm --outfile=dist/worker.js",
+    "build": "vite build && esbuild client/src/main.tsx --bundle --format=iife --platform=browser --target=es2020 --jsx=automatic --conditions=style --external:tailwindcss --external:tw-animate-css --loader:.css=empty --outfile=dist/public/synthia-preview.js && esbuild server/_core/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist && esbuild server/agent/worker.ts --platform=node --packages=external --bundle --format=esm --outfile=dist/worker.js && esbuild server/realtime/voiceAgent.ts --platform=node --packages=external --bundle --format=esm --outfile=dist/voice-agent.js",
     "start": "NODE_ENV=production node dist/index.js",
     "check": "tsc --noEmit",
     "format": "prettier --write .",
@@ -14,7 +14,9 @@
     "db:migrate": "drizzle-kit migrate",
     "compose:validate": "python3 scripts/validate_compose.py",
     "worker": "NODE_ENV=production node dist/worker.js",
-    "worker:dev": "NODE_ENV=development tsx server/agent/worker.ts"
+    "worker:dev": "NODE_ENV=development tsx server/agent/worker.ts",
+    "voice-worker": "NODE_ENV=production node dist/voice-agent.js",
+    "voice-worker:dev": "NODE_ENV=development tsx server/realtime/voiceAgent.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.693.0",
@@ -23,6 +25,8 @@
     "@hookform/resolvers": "^5.2.2",
     "@hopx-ai/sdk": "0.5.1",
     "@hyperbrowser/sdk": "^0.92.3",
+    "@livekit/agents": "^1.7.0",
+    "@livekit/agents-plugin-google": "^1.7.0",
     "@radix-ui/react-accordion": "^1.2.12",
     "@radix-ui/react-alert-dialog": "^1.1.15",
     "@radix-ui/react-aspect-ratio": "^1.1.7",
@@ -69,6 +73,8 @@
     "input-otp": "^1.4.2",
     "ioredis": "^6.0.0",
     "jose": "6.1.0",
+    "livekit-client": "^2.16.0",
+    "livekit-server-sdk": "^2.18.0",
     "lucide-react": "^0.453.0",
     "mysql2": "^3.15.0",
     "nanoid": "^5.1.5",

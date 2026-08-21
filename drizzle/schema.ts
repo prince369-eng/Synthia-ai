@@ -17,8 +17,9 @@ import {
 const userRoleEnum = pgEnum("user_role", ["user", "admin"]);
 const taskStatusEnum = pgEnum("task_status", ["queued", "booting", "planning", "running", "needs_input", "paused", "completed", "failed", "cancelled"]);
 const estimateBandEnum = pgEnum("estimate_band", ["quick", "standard", "extensive"]);
-const eventTypeEnum = pgEnum("event_type", ["user_message", "agent_message", "clarifying_question", "plan_update", "tool_call", "tool_result", "approval_request", "approval_response", "screenshot", "error", "status_change", "context_summary", "user_file_edit", "user_terminal_command", "task_metadata", "skill_loaded"]);
+const eventTypeEnum = pgEnum("event_type", ["user_message", "agent_message", "clarifying_question", "plan_update", "tool_call", "tool_result", "approval_request", "approval_response", "screenshot", "error", "status_change", "context_summary", "user_file_edit", "user_terminal_command", "task_metadata", "skill_loaded", "voice_session", "voice_transcript", "screen_share"]);
 const messageRoleEnum = pgEnum("message_role", ["user", "agent"]);
+const voiceSessionStatusEnum = pgEnum("voice_session_status", ["starting", "active", "ended", "failed"]);
 const sandboxProviderEnum = pgEnum("sandbox_provider", ["docker", "e2b", "hopx"]);
 const sandboxStatusEnum = pgEnum("sandbox_status", ["booting", "active", "checkpointed", "destroyed"]);
 const riskLevelEnum = pgEnum("risk_level", ["low", "medium", "high"]);
@@ -47,7 +48,7 @@ export const users = pgTable("users", {
 });
 
 export const taskStatuses = ["queued", "booting", "planning", "running", "needs_input", "paused", "completed", "failed", "cancelled"] as const;
-export const eventTypes = ["user_message", "agent_message", "clarifying_question", "plan_update", "tool_call", "tool_result", "approval_request", "approval_response", "screenshot", "error", "status_change", "context_summary", "user_file_edit", "user_terminal_command", "task_metadata", "skill_loaded"] as const;
+export const eventTypes = ["user_message", "agent_message", "clarifying_question", "plan_update", "tool_call", "tool_result", "approval_request", "approval_response", "screenshot", "error", "status_change", "context_summary", "user_file_edit", "user_terminal_command", "task_metadata", "skill_loaded", "voice_session", "voice_transcript", "screen_share"] as const;
 
 export const projects = pgTable("projects", {
   id: varchar("id", { length: 36 }).primaryKey(),
@@ -153,6 +154,32 @@ export const taskMessages = pgTable("task_messages", {
   eventId: varchar("event_id", { length: 36 }).references(() => taskEvents.id, { onDelete: "set null" }),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 }, table => [index("task_messages_task_created_idx").on(table.taskId, table.createdAt)]);
+
+/**
+ * Voice sessions are transport metadata only. Audio, screen frames, and provider
+ * credentials are deliberately never persisted here; the task event stream remains
+ * the auditable history for explicit lifecycle and finalized transcript records.
+ */
+export const voiceSessions = pgTable("voice_sessions", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  taskId: varchar("task_id", { length: 36 }).notNull().references(() => tasks.id, { onDelete: "cascade" }),
+  userId: integer("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  roomName: varchar("room_name", { length: 120 }).notNull().unique(),
+  participantIdentity: varchar("participant_identity", { length: 160 }).notNull(),
+  status: voiceSessionStatusEnum("status").notNull().default("starting"),
+  voiceId: varchar("voice_id", { length: 80 }).notNull().default("calm"),
+  personality: varchar("personality", { length: 80 }).notNull().default("balanced"),
+  speechRate: integer("speech_rate").notNull().default(100),
+  screenShareStartedAt: timestamp("screen_share_started_at", { withTimezone: true }),
+  screenShareEndedAt: timestamp("screen_share_ended_at", { withTimezone: true }),
+  endedAt: timestamp("ended_at", { withTimezone: true }),
+  failureReason: varchar("failure_reason", { length: 180 }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+}, table => [
+  index("voice_sessions_task_created_idx").on(table.taskId, table.createdAt),
+  index("voice_sessions_user_status_updated_idx").on(table.userId, table.status, table.updatedAt),
+]);
 
 export const sandboxes = pgTable("sandboxes", {
   id: varchar("id", { length: 36 }).primaryKey(),
