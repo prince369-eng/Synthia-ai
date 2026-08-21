@@ -99,6 +99,9 @@ describe("compact workspace layout contract", () => {
     expect(authHook).toContain('EXPLICIT_SIGNED_OUT_STORAGE_KEY');
     expect(authHook).toContain('sessionStorage.setItem(EXPLICIT_SIGNED_OUT_STORAGE_KEY, "1")');
     expect(authHook).toContain('sessionStorage.removeItem("manus-cookie")');
+    expect(authHook).toContain('enabled: !isExplicitlySignedOut');
+    expect(authHook).toContain('user: isExplicitlySignedOut ? null : meQuery.data ?? null');
+    expect(authHook).toContain('if (isExplicitlySignedOut) return;');
     expect(bootstrap).toContain('sessionStorage.getItem(EXPLICIT_SIGNED_OUT_STORAGE_KEY) === "1"');
     expect(bootstrap).toContain('if (sessionStorage.getItem(EXPLICIT_SIGNED_OUT_STORAGE_KEY) === "1") return;');
     expect(authEntry).toContain('clearExplicitSignedOutState();');

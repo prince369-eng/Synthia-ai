@@ -15,8 +15,20 @@ export function useAuth(options?: UseAuthOptions) {
   // desync it from an in-flight login's `state`.
   const { redirectOnUnauthenticated = false, redirectPath } = options ?? {};
   const utils = trpc.useUtils();
+  // `sessionStorage` is updated synchronously by logout(). The mutation's
+  // pending/settled transitions cause a render, so reading it here makes the
+  // public signed-out state authoritative even when an older auth.me request
+  // completes after sign-out.
+  const isExplicitlySignedOut = (() => {
+    try {
+      return sessionStorage.getItem(EXPLICIT_SIGNED_OUT_STORAGE_KEY) === "1";
+    } catch {
+      return false;
+    }
+  })();
 
   const meQuery = trpc.auth.me.useQuery(undefined, {
+    enabled: !isExplicitlySignedOut,
     retry: false,
     refetchOnWindowFocus: false,
   });
@@ -36,6 +48,9 @@ export function useAuth(options?: UseAuthOptions) {
       sessionStorage.removeItem("manus-cookie");
       localStorage.removeItem("manus-runtime-user-info");
     } catch {}
+    // Evict the cached identity before the logout request settles. This keeps
+    // the shell public even if an earlier auth.me response resolves late.
+    utils.auth.me.setData(undefined, null);
     try {
       await logoutMutation.mutateAsync();
     } catch (error: unknown) {
@@ -51,22 +66,24 @@ export function useAuth(options?: UseAuthOptions) {
       // header-based sessions (Safari ITP / WebView) are logged out too. The
       // backend cookie is cleared by the logout mutation.
       utils.auth.me.setData(undefined, null);
-      await utils.auth.me.invalidate();
     }
   }, [logoutMutation, utils]);
 
   const state = useMemo(() => {
-    localStorage.setItem(
-      "manus-runtime-user-info",
-      JSON.stringify(meQuery.data)
-    );
+    if (!isExplicitlySignedOut) {
+      localStorage.setItem(
+        "manus-runtime-user-info",
+        JSON.stringify(meQuery.data)
+      );
+    }
     return {
-      user: meQuery.data ?? null,
-      loading: meQuery.isLoading || logoutMutation.isPending,
+      user: isExplicitlySignedOut ? null : meQuery.data ?? null,
+      loading: (!isExplicitlySignedOut && meQuery.isLoading) || logoutMutation.isPending,
       error: meQuery.error ?? logoutMutation.error ?? null,
-      isAuthenticated: Boolean(meQuery.data),
+      isAuthenticated: !isExplicitlySignedOut && Boolean(meQuery.data),
     };
   }, [
+    isExplicitlySignedOut,
     meQuery.data,
     meQuery.error,
     meQuery.isLoading,
@@ -78,6 +95,7 @@ export function useAuth(options?: UseAuthOptions) {
     if (!redirectOnUnauthenticated) return;
     if (meQuery.isLoading || logoutMutation.isPending) return;
     if (state.user) return;
+    if (isExplicitlySignedOut) return;
     if (typeof window === "undefined") return;
     if (redirectPath && window.location.pathname === redirectPath) return;
 
@@ -92,6 +110,7 @@ export function useAuth(options?: UseAuthOptions) {
     redirectPath,
     logoutMutation.isPending,
     meQuery.isLoading,
+    isExplicitlySignedOut,
     state.user,
   ]);
 

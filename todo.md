@@ -3097,3 +3097,5 @@
 - [x] Align Plugins search and connector-state controls with the established teal/cyan workspace tokens while retaining truthful unavailable and empty states.
 - [x] Refine the Library search and zero-deliverable state with shared controls and a clear task-workspace escape path without creating a task automatically.
 - [x] Refine the Projects zero-state with a clear task-workspace route while retaining the single user-controlled New project action.
+- [x] Reproduce and fix the reported sign-out auto-return loop so logout remains stable until the user explicitly chooses to sign in again.
+- [ ] Refine Settings section search with an explicit clear action and current-section semantics while retaining existing filter and no-match behavior.

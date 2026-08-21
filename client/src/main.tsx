@@ -56,6 +56,12 @@ const trpcClient = trpc.createClient({
         // session into sessionStorage so we can forward it as a Bearer token.
         // The regular OAuth cookie flow keeps working and takes priority server-side.
         try {
+          // An explicit logout must also suppress the preview bearer fallback.
+          // Otherwise a stale mirrored token can authenticate the very next
+          // auth.me request after the server cookie has been cleared.
+          if (sessionStorage.getItem(EXPLICIT_SIGNED_OUT_STORAGE_KEY) === "1") {
+            return {};
+          }
           const raw = sessionStorage.getItem("manus-cookie");
           if (raw) {
             const prefix = `${COOKIE_NAME}=`;

@@ -90,6 +90,17 @@ describe("Synthia navigation behavior", () => {
     expect(onNavigate).toHaveBeenCalledWith("/settings/developer");
   });
 
+  it("clears Settings section search and exposes the current section semantically", async () => {
+    const user = userEvent.setup();
+    render(<SettingsSectionNav section="general" onNavigate={vi.fn()} />);
+
+    expect(screen.getByRole("button", { name: "General" }).getAttribute("aria-current")).toBe("page");
+    await user.type(screen.getByRole("textbox", { name: "Search settings" }), "developer");
+    await user.click(screen.getByRole("button", { name: "Clear settings search" }));
+    expect(screen.getByRole("button", { name: "General" })).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Clear settings search" })).toBeNull();
+  });
+
   it("provides an explicit accessible Settings close control that returns to tasks", async () => {
     const user = userEvent.setup();
     const onClose = vi.fn();
