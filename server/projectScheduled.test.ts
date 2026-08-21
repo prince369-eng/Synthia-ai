@@ -1,6 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import * as db from "./db";
-import * as heartbeat from "./_core/heartbeat";
 import * as rateLimit from "./security/rateLimit";
 import * as queue from "./agent/queue";
 import { appRouter } from "./routers";
@@ -113,14 +112,14 @@ describe("projects and scheduled router procedures", () => {
     expect(result).toEqual({ task: createdTask, executionQueued: true });
   });
 
-  it("forwards only the caller's decoded session to scheduled-job listing", async () => {
-    const listed = { total: 1, actorUserId: "project-owner", jobs: [] };
-    vi.spyOn(heartbeat, "listHeartbeatJobs").mockResolvedValue(listed);
+  it("lists only the caller's user-owned scheduled workflows without querying raw Heartbeat jobs", async () => {
+    const workflows = [{ id: projectId, userId: 7, name: "Morning review", status: "paused" }];
+    vi.spyOn(db, "listScheduledWorkflowsForUser").mockResolvedValue(workflows as never);
 
     const result = await appRouter.createCaller(createContext("app_session_id=decoded-session; other=value")).scheduled.list();
 
-    expect(heartbeat.listHeartbeatJobs).toHaveBeenCalledWith("decoded-session", { page: 1, pageSize: 50 });
-    expect(result).toEqual(listed);
+    expect(db.listScheduledWorkflowsForUser).toHaveBeenCalledWith(7);
+    expect(result).toEqual({ available: false, workflows });
   });
 
   it("returns the durable event replay already ordered by the owned task data contract", async () => {

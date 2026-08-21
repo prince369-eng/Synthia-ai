@@ -48,6 +48,11 @@ import {
   setSkillInstallEnabledForUser,
   softDeleteSkillForUser,
   updateSkillForUser,
+  createScheduledWorkflowForUser,
+  getScheduledWorkflowForUser,
+  listScheduledWorkflowsForUser,
+  softDeleteScheduledWorkflowForUser,
+  updateScheduledWorkflowForUser,
 } from "./db";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
@@ -58,7 +63,7 @@ import { serviceReadinessForUser } from "./integrations/catalog";
 import { estimateTaskCredits } from "./agent/creditEstimate";
 import { encryptSecret } from "./security/encryption";
 import { getTaskArtifactUrl } from "./agent/artifactStorage";
-import { listHeartbeatJobs } from "./_core/heartbeat";
+import { createHeartbeatJob, deleteHeartbeatJob, updateHeartbeatJob } from "./_core/heartbeat";
 import { storageGetSignedUrl, storagePut } from "./storage";
 import { ENV } from "./_core/env";
 import { mediaReadiness } from "./mediaCapabilities";
@@ -93,6 +98,12 @@ const planSchema = z.array(
 
 const MAX_ATTACHMENT_BYTES = 10 * 1024 * 1024;
 const MAX_ATTACHMENT_BASE64_LENGTH = Math.ceil(MAX_ATTACHMENT_BYTES / 3) * 4;
+const heartbeatCronSchema = z.string().trim().min(9).max(120).superRefine((value, ctx) => {
+  const parts = value.split(/\s+/).filter(Boolean);
+  if (parts.length !== 6 || parts[0] !== "0") {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Use a six-field UTC cron with seconds set to 0 (for example: 0 0 9 * * *)." });
+  }
+});
 const MAX_SKILL_RESOURCE_BYTES = 3 * 1024 * 1024;
 const MAX_SKILL_RESOURCE_BASE64_LENGTH = Math.ceil(MAX_SKILL_RESOURCE_BYTES / 3) * 4;
 const MAX_VOICE_BYTES = 16 * 1024 * 1024;
@@ -270,6 +281,19 @@ function userSessionFromRequest(cookieHeader: string | undefined): string {
   return parseCookieHeader(cookieHeader ?? "")[COOKIE_NAME] ?? "";
 }
 
+function isScheduleDeploymentReady(): boolean {
+  return ENV.isProduction;
+}
+
+function requireScheduleDeployment(): void {
+  if (!isScheduleDeploymentReady()) {
+    throw new TRPCError({
+      code: "PRECONDITION_FAILED",
+      message: "Schedules activate after Synthia is published. You can review this workflow in the Scheduled area, but no job is created from preview or development.",
+    });
+  }
+}
+
 async function enforceUserMutationLimit(userId: number, scope: string, limit: number, windowSeconds: number) {
   try {
     await enforceRateLimit({ subject: String(userId), scope, limit, windowSeconds });
@@ -308,9 +332,80 @@ export const appRouter = router({
       }),
   }),
   scheduled: router({
-    list: protectedProcedure.query(({ ctx }) =>
-      listHeartbeatJobs(userSessionFromRequest(ctx.req.headers.cookie), { page: 1, pageSize: 50 }),
-    ),
+    status: protectedProcedure.query(() => ({
+      available: isScheduleDeploymentReady(),
+      reason: isScheduleDeploymentReady()
+        ? null
+        : "Schedules activate after Synthia is published. Preview never creates Heartbeat jobs.",
+    })),
+    list: protectedProcedure.query(async ({ ctx }) => ({
+      available: isScheduleDeploymentReady(),
+      workflows: await listScheduledWorkflowsForUser(ctx.user.id),
+    })),
+    create: protectedProcedure
+      .input(z.object({
+        name: z.string().trim().min(2).max(120),
+        goal: z.string().trim().min(12).max(8_000),
+        cron: heartbeatCronSchema,
+      }))
+      .mutation(async ({ ctx, input }) => {
+        requireScheduleDeployment();
+        await enforceUserMutationLimit(ctx.user.id, "scheduled-create", 12, 3_600);
+        const session = userSessionFromRequest(ctx.req.headers.cookie);
+        const heartbeat = await createHeartbeatJob({
+          name: `synthia-${ctx.user.id}-${randomUUID()}`.slice(0, 120),
+          cron: input.cron,
+          path: "/api/scheduled/workflow",
+          method: "POST",
+          description: `Synthia scheduled workflow: ${input.name}`.slice(0, 500),
+        }, session);
+        try {
+          return await createScheduledWorkflowForUser({
+            userId: ctx.user.id,
+            name: input.name,
+            goal: input.goal,
+            cronExpression: input.cron,
+            autonomySettings: DEFAULT_AUTONOMY_SETTINGS,
+            scheduleCronTaskUid: heartbeat.taskUid,
+            callbackPath: "/api/scheduled/workflow",
+            status: "active",
+            nextExecutionAt: heartbeat.nextExecutionAt ? new Date(heartbeat.nextExecutionAt) : null,
+          });
+        } catch (error) {
+          await deleteHeartbeatJob(heartbeat.taskUid, session).catch(() => undefined);
+          throw error;
+        }
+      }),
+    setEnabled: protectedProcedure
+      .input(z.object({ workflowId: z.string().uuid(), enabled: z.boolean() }))
+      .mutation(async ({ ctx, input }) => {
+        requireScheduleDeployment();
+        await enforceUserMutationLimit(ctx.user.id, "scheduled-toggle", 30, 3_600);
+        const workflow = await getScheduledWorkflowForUser(input.workflowId, ctx.user.id);
+        if (!workflow) throw new TRPCError({ code: "NOT_FOUND", message: "Scheduled workflow not found." });
+        if (!workflow.scheduleCronTaskUid) throw new TRPCError({ code: "PRECONDITION_FAILED", message: "This scheduled workflow has no Heartbeat job." });
+        const update = await updateHeartbeatJob(
+          workflow.scheduleCronTaskUid,
+          { enable: input.enabled },
+          userSessionFromRequest(ctx.req.headers.cookie),
+        );
+        return updateScheduledWorkflowForUser(workflow.id, ctx.user.id, {
+          status: input.enabled ? "active" : "paused",
+          nextExecutionAt: update.nextExecutionAt ? new Date(update.nextExecutionAt) : null,
+        });
+      }),
+    delete: protectedProcedure
+      .input(z.object({ workflowId: z.string().uuid() }))
+      .mutation(async ({ ctx, input }) => {
+        requireScheduleDeployment();
+        await enforceUserMutationLimit(ctx.user.id, "scheduled-delete", 30, 3_600);
+        const workflow = await getScheduledWorkflowForUser(input.workflowId, ctx.user.id);
+        if (!workflow) throw new TRPCError({ code: "NOT_FOUND", message: "Scheduled workflow not found." });
+        if (!workflow.scheduleCronTaskUid) throw new TRPCError({ code: "PRECONDITION_FAILED", message: "This scheduled workflow has no Heartbeat job." });
+        await deleteHeartbeatJob(workflow.scheduleCronTaskUid, userSessionFromRequest(ctx.req.headers.cookie));
+        await softDeleteScheduledWorkflowForUser(workflow.id, ctx.user.id);
+        return { success: true } as const;
+      }),
   }),
   library: router({
     list: protectedProcedure.query(({ ctx }) => listLibraryDeliverablesForUser(ctx.user.id)),

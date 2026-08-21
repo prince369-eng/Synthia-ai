@@ -10,6 +10,7 @@ import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
 import { ENV } from "./env";
 import { registerTaskEventStream } from "../realtime/taskEventStream";
+import { runScheduledWorkflow } from "../scheduledWorkflows";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -66,6 +67,7 @@ async function startServer() {
   registerStorageProxy(app);
   registerOAuthRoutes(app);
   registerTaskEventStream(app);
+  app.post("/api/scheduled/workflow", runScheduledWorkflow);
   // tRPC API
   app.use(
     "/api/trpc",

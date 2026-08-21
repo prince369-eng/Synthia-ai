@@ -13,6 +13,8 @@ import {
   personalizationMemories,
   projects,
   sandboxes,
+  scheduledWorkflowRuns,
+  scheduledWorkflows,
   skillInstalls,
   skills,
   taskAttachments,
@@ -54,6 +56,20 @@ export type TaskAttachmentInput = {
   storageUrl: string;
   sourceType: "upload" | "library";
   sourceDeliverableId?: string;
+};
+
+export type ScheduledWorkflowStatus = "active" | "paused" | "deleted";
+
+export type ScheduledWorkflowInput = {
+  userId: number;
+  name: string;
+  goal: string;
+  autonomySettings: AutonomySettings;
+  cronExpression: string;
+  callbackPath: string;
+  scheduleCronTaskUid: string;
+  status: Extract<ScheduledWorkflowStatus, "active" | "paused">;
+  nextExecutionAt?: Date | null;
 };
 
 export const DEFAULT_AUTONOMY_SETTINGS: AutonomySettings = {
@@ -295,6 +311,110 @@ export async function createTaskForUser(input: {
     });
   });
   return getTaskForUser(id, input.userId);
+}
+
+export async function listScheduledWorkflowsForUser(userId: number) {
+  const database = databaseRequired(await getDb());
+  return database
+    .select()
+    .from(scheduledWorkflows)
+    .where(and(eq(scheduledWorkflows.userId, userId), sql`${scheduledWorkflows.status} <> 'deleted'`))
+    .orderBy(desc(scheduledWorkflows.updatedAt));
+}
+
+export async function getScheduledWorkflowForUser(workflowId: string, userId: number) {
+  const database = databaseRequired(await getDb());
+  const rows = await database
+    .select()
+    .from(scheduledWorkflows)
+    .where(and(
+      eq(scheduledWorkflows.id, workflowId),
+      eq(scheduledWorkflows.userId, userId),
+      sql`${scheduledWorkflows.status} <> 'deleted'`,
+    ))
+    .limit(1);
+  return rows[0];
+}
+
+export async function createScheduledWorkflowForUser(input: ScheduledWorkflowInput) {
+  const database = databaseRequired(await getDb());
+  const id = randomUUID();
+  const [workflow] = await database.insert(scheduledWorkflows).values({
+    id,
+    userId: input.userId,
+    name: input.name,
+    goal: input.goal,
+    autonomySettings: input.autonomySettings,
+    cronExpression: input.cronExpression,
+    callbackPath: input.callbackPath,
+    scheduleCronTaskUid: input.scheduleCronTaskUid,
+    status: input.status,
+    nextExecutionAt: input.nextExecutionAt ?? null,
+  }).returning();
+  if (!workflow) throw new Error("The scheduled workflow could not be created.");
+  return workflow;
+}
+
+export async function updateScheduledWorkflowForUser(
+  workflowId: string,
+  userId: number,
+  patch: Partial<Pick<typeof scheduledWorkflows.$inferInsert, "status" | "cronExpression" | "nextExecutionAt" | "lastExecutedAt">>,
+) {
+  const database = databaseRequired(await getDb());
+  const [workflow] = await database
+    .update(scheduledWorkflows)
+    .set({ ...patch, updatedAt: new Date() })
+    .where(and(
+      eq(scheduledWorkflows.id, workflowId),
+      eq(scheduledWorkflows.userId, userId),
+      sql`${scheduledWorkflows.status} <> 'deleted'`,
+    ))
+    .returning();
+  return workflow;
+}
+
+export async function softDeleteScheduledWorkflowForUser(workflowId: string, userId: number) {
+  return updateScheduledWorkflowForUser(workflowId, userId, { status: "deleted", nextExecutionAt: null });
+}
+
+/** Atomically claims a scheduler minute slot so callback retries cannot duplicate a task. */
+export async function claimScheduledWorkflowRun(cronTaskUid: string, runSlot: Date) {
+  const database = databaseRequired(await getDb());
+  return database.transaction(async transaction => {
+    const rows = await transaction
+      .select()
+      .from(scheduledWorkflows)
+      .where(and(eq(scheduledWorkflows.scheduleCronTaskUid, cronTaskUid), eq(scheduledWorkflows.status, "active")))
+      .limit(1);
+    const workflow = rows[0];
+    if (!workflow) return { workflow: undefined, accepted: false as const, runId: undefined };
+    const runId = randomUUID();
+    const inserted = await transaction
+      .insert(scheduledWorkflowRuns)
+      .values({ id: runId, workflowId: workflow.id, runSlot })
+      .onConflictDoNothing()
+      .returning({ id: scheduledWorkflowRuns.id });
+    return { workflow, accepted: Boolean(inserted[0]), runId: inserted[0]?.id };
+  });
+}
+
+export async function attachScheduledWorkflowRunTask(input: {
+  runId: string;
+  workflowId: string;
+  taskId: string;
+  executedAt: Date;
+}) {
+  const database = databaseRequired(await getDb());
+  await database.transaction(async transaction => {
+    await transaction
+      .update(scheduledWorkflowRuns)
+      .set({ taskId: input.taskId })
+      .where(and(eq(scheduledWorkflowRuns.id, input.runId), eq(scheduledWorkflowRuns.workflowId, input.workflowId)));
+    await transaction
+      .update(scheduledWorkflows)
+      .set({ lastExecutedAt: input.executedAt, updatedAt: input.executedAt })
+      .where(eq(scheduledWorkflows.id, input.workflowId));
+  });
 }
 
 async function appendTaskEventInTransaction(

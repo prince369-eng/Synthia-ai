@@ -3088,3 +3088,7 @@
 - [x] Add security, ownership, resource, task-suggestion, relevance, visibility, and responsive UI regression coverage; validate without external workloads.
 - [x] Diagnose and repair the reported sign-out auto-login loop so a signed-out user remains on the public entry screen until they explicitly choose to sign in.
 - [x] Add regression coverage for logout session clearing, public-route persistence, and suppression of unintended OAuth re-entry.
+- [x] Audit current scheduling, task ownership, and Heartbeat boundaries for a deployment-gated user schedule workflow.
+- [x] Add user-owned schedule persistence and deployment-gated Heartbeat lifecycle APIs without creating any jobs in development.
+- [x] Build an accessible Scheduled interface with accurate pre-deployment guidance and safe schedule-management controls.
+- [x] Add schedule ownership, cron validation, deployment gating, idempotency, and responsive UI regression coverage without creating external jobs.

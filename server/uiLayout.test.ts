@@ -9,7 +9,6 @@ import {
   WORKSPACE_RETURN_ROUTES,
 } from "../client/src/lib/workspaceLayout";
 import { filterLibraryItems } from "../client/src/pages/Library";
-import { normalizeScheduledJobs } from "../client/src/pages/Scheduled";
 import { isScreenCapture, isWebsiteArtifact } from "../client/src/pages/TaskWorkspace";
 
 describe("compact workspace layout contract", () => {
@@ -128,10 +127,27 @@ describe("compact workspace layout contract", () => {
     expect(workspace).toContain("Reviewed Skills available for this task");
   });
 
-  it("normalizes an unavailable or malformed scheduled-job list into the compact empty state", () => {
-    expect(normalizeScheduledJobs(undefined)).toEqual([]);
-    expect(normalizeScheduledJobs({ jobs: "invalid" })).toEqual([]);
-    expect(normalizeScheduledJobs({ jobs: [{ taskUid: "job-1", name: "Morning review" }] })).toEqual([{ taskUid: "job-1", name: "Morning review" }]);
+  it("keeps schedules deployment-gated, user-owned, and safe from preview job creation", () => {
+    const scheduled = readFileSync(new URL("../client/src/pages/Scheduled.tsx", import.meta.url), "utf8");
+    const styles = readFileSync(new URL("../client/src/index.css", import.meta.url), "utf8");
+    const router = readFileSync(new URL("../server/routers.ts", import.meta.url), "utf8");
+    const callback = readFileSync(new URL("../server/scheduledWorkflows.ts", import.meta.url), "utf8");
+
+    expect(scheduled).toContain("Schedules are ready after publishing");
+    expect(scheduled).toContain("Creation is disabled in preview.");
+    expect(scheduled).toContain("Creates an owned Synthia task");
+    expect(scheduled).toContain('className="synthia-schedule-form"');
+    expect(scheduled).toContain("grid grid-cols-1 gap-3 md:grid-cols-2");
+    expect(styles).toContain(".synthia-schedule-form { @apply my-3 flex w-full flex-col gap-3");
+    expect(styles).toContain(".synthia-input { @apply block min-h-9 w-full");
+    expect(router).toContain("function requireScheduleDeployment");
+    expect(router).toContain("Preview never creates Heartbeat jobs.");
+    expect(router).toContain("createHeartbeatJob");
+    expect(router).toContain("deleteHeartbeatJob(heartbeat.taskUid, session).catch");
+    expect(callback).toContain("if (!user.isCron || !user.taskUid)");
+    expect(callback).toContain("claimScheduledWorkflowRun");
+    expect(callback).toContain("isQueueConfigured()");
+    expect(callback).toContain("roundedMinute");
   });
 
   it("filters real library items by task context and final-output state without inventing records", () => {

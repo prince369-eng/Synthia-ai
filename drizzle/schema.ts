@@ -29,6 +29,7 @@ const skillOwnerTypeEnum = pgEnum("skill_owner_type", ["platform", "user", "work
 const skillCategoryEnum = pgEnum("skill_category", ["document_style", "coding_practice", "domain_workflow", "data_analysis", "network_ops", "security_research", "other"]);
 const skillVisibilityEnum = pgEnum("skill_visibility", ["private", "workspace", "public_platform"]);
 const skillInstallScopeEnum = pgEnum("skill_install_scope", ["personal", "workspace"]);
+const scheduledWorkflowStatusEnum = pgEnum("scheduled_workflow_status", ["active", "paused", "deleted"]);
 
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
@@ -104,6 +105,38 @@ export const taskEvents = pgTable("task_events", {
 }, table => [
   uniqueIndex("task_events_sequence_unique").on(table.taskId, table.sequenceNumber),
   index("task_events_task_created_idx").on(table.taskId, table.createdAt),
+]);
+
+/** A user-owned recurring task template keyed from Heartbeat's trusted task UID. */
+export const scheduledWorkflows = pgTable("scheduled_workflows", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  name: varchar("name", { length: 120 }).notNull(),
+  goal: text("goal").notNull(),
+  autonomySettings: jsonb("autonomy_settings").notNull(),
+  cronExpression: varchar("cron_expression", { length: 80 }).notNull(),
+  callbackPath: varchar("callback_path", { length: 160 }).notNull(),
+  scheduleCronTaskUid: varchar("schedule_cron_task_uid", { length: 65 }).unique(),
+  status: scheduledWorkflowStatusEnum("status").notNull().default("paused"),
+  lastExecutedAt: timestamp("last_executed_at", { withTimezone: true }),
+  nextExecutionAt: timestamp("next_execution_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+}, table => [
+  index("scheduled_workflows_user_status_idx").on(table.userId, table.status, table.updatedAt),
+  index("scheduled_workflows_cron_task_uid_idx").on(table.scheduleCronTaskUid),
+]);
+
+/** A unique time-slot claim makes retries create at most one task per minute. */
+export const scheduledWorkflowRuns = pgTable("scheduled_workflow_runs", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  workflowId: varchar("workflow_id", { length: 36 }).notNull().references(() => scheduledWorkflows.id, { onDelete: "cascade" }),
+  runSlot: timestamp("run_slot", { withTimezone: true }).notNull(),
+  taskId: varchar("task_id", { length: 36 }).references(() => tasks.id, { onDelete: "set null" }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, table => [
+  uniqueIndex("scheduled_workflow_runs_slot_unique").on(table.workflowId, table.runSlot),
+  index("scheduled_workflow_runs_workflow_created_idx").on(table.workflowId, table.createdAt),
 ]);
 
 export const taskEventSequences = pgTable("task_event_sequences", {
