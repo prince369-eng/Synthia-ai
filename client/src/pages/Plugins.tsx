@@ -1,18 +1,17 @@
-import { Cable, CheckCircle2, CircleDashed, Link2Off, Loader2, Search, Settings2 } from "lucide-react";
+import { AppWindow, Cable, CheckCircle2, ChevronRight, Link2Off, Loader2, Search, Settings2, ShieldCheck, SlidersHorizontal, X } from "lucide-react";
 import React, { useMemo, useState } from "react";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { AppConnectorCard, type AppConnectorState } from "@/components/AppConnectorCard";
 import { trpc } from "@/lib/trpc";
-import { GOVERNED_CONNECTED_APPS, governedAppReadiness } from "@/lib/governedConnectedApps";
-
-export function providerStatusCopy(status: string) {
-  if (status === "connected") return "Connected for this account";
-  if (status === "ready_to_connect") return "Available to connect";
-  return "Not available in this workspace";
-}
 
 export type PluginService = { id: string; label: string; category: string; configured: boolean; status: string };
+
+export function providerStatusCopy(status: string) {
+  if (status === "ready_to_connect" || status === "connected") return "Available to connect";
+  return "Not available in this workspace";
+}
 
 export function filterPluginServices(services: PluginService[], query: string, view: "all" | "configured" | "connected") {
   const normalized = query.trim().toLowerCase();
@@ -24,23 +23,59 @@ export function filterPluginServices(services: PluginService[], query: string, v
 }
 
 export function ConnectedIntegrationRow({ integration, pending, onDisconnect }: { integration: { id: string; label: string; provider: string; availableToAllTasks: boolean }; pending: boolean; onDisconnect: (integrationId: string) => void }) {
-  return <article className="synthia-connected-integration"><div><b>{integration.label}</b><p>{integration.provider} · {integration.availableToAllTasks ? "Available to all tasks" : "Select per task"}</p></div><Button variant="ghost" size="sm" disabled={pending} onClick={() => onDisconnect(integration.id)} className="text-rose-300"><Link2Off size={14} />Disconnect</Button></article>;
+  return <article className="synthia-connected-integration"><span className="synthia-connected-app-mark"><CheckCircle2 size={15} /></span><div><b>{integration.label}</b><p>{integration.availableToAllTasks ? "Available for approved task proposals" : "Select when proposing an app action"}</p></div><Button variant="ghost" size="sm" disabled={pending} onClick={() => onDisconnect(integration.id)} className="text-rose-300"><Link2Off size={14} />Disconnect</Button></article>;
+}
+
+function connectorProviderId(provider: AppConnectorState["provider"]) {
+  return provider === "pipedream" ? "pipedream_connect" : "composio";
 }
 
 export default function Plugins() {
   const [query, setQuery] = useState("");
   const [view, setView] = useState<"all" | "configured" | "connected">("all");
+  const [managerOpen, setManagerOpen] = useState(false);
   const [, setLocation] = useLocation();
-  const services = trpc.workspace.serviceReadiness.useQuery();
+  const connectorReadiness = trpc.integrations.appReadiness.useQuery();
   const integrations = trpc.workspace.integrations.useQuery(undefined, { retry: false });
   const removeIntegration = trpc.integrations.remove.useMutation({ onSuccess: () => void integrations.refetch() });
-  const connectorApps = useMemo(() => (services.data ?? []).filter(service => service.category === "integration"), [services.data]);
-  const filteredServices = useMemo(() => filterPluginServices(connectorApps, query, view), [query, connectorApps, view]);
-  const serviceById = useMemo(() => new Map((services.data ?? []).map(service => [service.id, service])), [services.data]);
-  return <section className="synthia-page"><header className="synthia-page-head"><div><p className="synthia-eyebrow">Connections</p><h1>Connectors</h1><p>Add the apps you want Synthia to use for approved task work, then review or remove them whenever you need.</p></div><button className="synthia-page-link" type="button" onClick={() => setLocation("/settings/services")}>Manage connectors</button></header><div className="mt-5 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"><div className="relative w-full max-w-lg"><Search className="absolute left-3 top-2.5 text-[#6c817c]" size={15} /><Input aria-label="Search connectors" value={query} onChange={event => setQuery(event.target.value)} placeholder="Search connectors" className="synthia-input h-9 pl-9 text-xs" /></div><div className="synthia-plugin-tabs" role="tablist" aria-label="Connector filters">{(["all", "configured", "connected"] as const).map(item => <button type="button" role="tab" aria-selected={view === item} key={item} onClick={() => setView(item)}>{item === "all" ? "All apps" : item === "configured" ? "Available" : "Connected"}</button>)}</div></div>
-    {services.isLoading ? <div className="synthia-empty-state"><Loader2 className="animate-spin" size={16} /> Loading connectors…</div> : services.isError ? <div className="synthia-empty-state">Connectors are temporarily unavailable.</div> : <div className="synthia-compact-grid mt-4">{filteredServices.map(service => <article className="synthia-compact-card" key={service.id}><div><b>{service.label}</b><p>{providerStatusCopy(service.status)}</p></div>{service.status === "connected" ? <CheckCircle2 className="text-emerald-400" size={17} /> : <CircleDashed className="text-zinc-400" size={17} />}</article>)}</div>}
-    {!services.isLoading && !services.isError && filteredServices.length === 0 ? <div className="synthia-empty-state">No connectors match this filter.</div> : null}
-    <section className="mt-6" aria-labelledby="governed-apps-title"><div className="synthia-section-heading"><div><p className="synthia-eyebrow">Future connections</p><h2 id="governed-apps-title">Governed connected apps</h2></div><button type="button" className="synthia-inline-link" onClick={() => setLocation("/settings/integrations")}><Settings2 size={14} />Review setup</button></div><p className="mt-2 max-w-3xl text-xs leading-5 text-[#938477]">These routes are not connected in Synthia yet. A connection needs your direct authorization, and every consequential app action remains a reviewable task proposal.</p><div className="mt-3 grid gap-2 lg:grid-cols-2">{GOVERNED_CONNECTED_APPS.map(app => { const service = app.serviceId ? serviceById.get(app.serviceId) : undefined; const readiness = governedAppReadiness(service?.configured); return <article className="synthia-governed-app" key={app.id}><div className="flex min-w-0 items-start justify-between gap-3"><div><b>{app.label}</b><p>{app.integrationModel}</p></div><span className="synthia-status-pill">{readiness}</span></div><p className="mt-2">{app.description}</p><small>{app.connectionBoundary}</small><div className="mt-3 flex flex-wrap items-center justify-between gap-2"><button type="button" onClick={() => setLocation("/settings/integrations")}>Review secure setup</button><span>Actions stay approval-gated</span></div></article>; })}</div></section>
-    <section className="mt-6"><div className="synthia-section-heading"><div><p className="synthia-eyebrow">Your apps</p><h2>Connected to this workspace</h2></div><button type="button" className="synthia-inline-link" onClick={() => setLocation("/settings/integrations")}><Settings2 size={14} />Connection settings</button></div>{integrations.isLoading ? <div className="synthia-empty-state mt-3"><Loader2 className="animate-spin" size={16} /> Loading connected apps…</div> : integrations.isError ? <div className="synthia-empty-state mt-3">Connected apps are temporarily unavailable.</div> : integrations.data?.length ? <div className="mt-3 grid gap-2">{integrations.data.map(integration => <ConnectedIntegrationRow key={integration.id} integration={integration} pending={removeIntegration.isPending} onDisconnect={integrationId => removeIntegration.mutate({ integrationId })} />)}</div> : <div className="synthia-empty-state mt-3"><Cable size={17} /> No apps are connected yet.</div>}</section>
+  const startAuthorization = trpc.integrations.startAuthorization.useMutation();
+  const verifyPipedream = trpc.integrations.verifyPipedream.useMutation({ onSuccess: () => void integrations.refetch() });
+  const verifyComposio = trpc.integrations.verifyComposio.useMutation({ onSuccess: () => void integrations.refetch() });
+  const search = query.trim().toLowerCase();
+  const visibleIntegrations = useMemo(() => (integrations.data ?? []).filter(item => ["pipedream_connect", "composio"].includes(item.provider)), [integrations.data]);
+  const enabledConnectors = useMemo(() => (connectorReadiness.data ?? []).filter(item => item.provider === "pipedream" || item.provider === "composio") as AppConnectorState[], [connectorReadiness.data]);
+  const matchedConnectors = useMemo(() => enabledConnectors.filter(connector => {
+    const connected = visibleIntegrations.some(item => item.provider === connectorProviderId(connector.provider));
+    const searchText = `${connector.label} ${connector.description} ${connector.provider}`.toLowerCase();
+    return (!search || searchText.includes(search)) && (view === "all" || (view === "configured" && connector.configured) || (view === "connected" && connected));
+  }), [enabledConnectors, search, view, visibleIntegrations]);
+  const returnProvider = new URLSearchParams(window.location.search).get("connector");
+  const returnCancelled = new URLSearchParams(window.location.search).get("authorization") === "cancelled";
+  const connectorError = startAuthorization.error?.message || verifyPipedream.error?.message || verifyComposio.error?.message;
+  const readyCount = enabledConnectors.filter(item => item.configured).length;
+  const pending = startAuthorization.isPending || verifyPipedream.isPending || verifyComposio.isPending;
+  const begin = async (provider: "pipedream" | "composio") => {
+    const result = await startAuthorization.mutateAsync({ provider });
+    if (result.mode === "redirect") window.location.assign(result.authorizationUrl);
+  };
+
+  return <section className="synthia-page synthia-connectors-page">
+    <header className="synthia-page-head synthia-connectors-head">
+      <div><p className="synthia-eyebrow">Plugins</p><h1>App connections</h1><p>Connect only the apps you want Synthia to use. Every consequential app action remains a reviewable task proposal.</p></div>
+      <div className="flex shrink-0 items-center gap-2"><button type="button" className="synthia-page-link" onClick={() => setManagerOpen(true)}><SlidersHorizontal size={14} />Manage apps</button><button type="button" aria-label="Open connector settings" className="synthia-header-action" onClick={() => setLocation("/settings/integrations")}><Settings2 size={16} /></button></div>
+    </header>
+    <section className="synthia-connector-overview" aria-label="App connection overview">
+      <article><span className="synthia-connector-overview-icon"><AppWindow size={16} /></span><div><b>{readyCount}</b><small>available connection routes</small></div></article>
+      <article><span className="synthia-connector-overview-icon"><CheckCircle2 size={16} /></span><div><b>{visibleIntegrations.length}</b><small>apps connected to this workspace</small></div></article>
+      <article><span className="synthia-connector-overview-icon"><ShieldCheck size={16} /></span><div><b>Review first</b><small>before an app can change anything</small></div></article>
+    </section>
+    <section className="synthia-connector-discovery" aria-labelledby="connector-discovery-title">
+      <div className="synthia-connector-discovery-heading"><div><p className="synthia-eyebrow">Discover</p><h2 id="connector-discovery-title">Available app connections</h2></div><span>Private connection details stay with the app provider.</span></div>
+      <div className="synthia-connector-toolbar"><div className="relative min-w-0 flex-1"><Search className="absolute left-3 top-2.5 text-[#6c817c]" size={15} /><Input aria-label="Search app connectors" value={query} onChange={event => setQuery(event.target.value)} placeholder="Search your available apps" className="synthia-input h-9 pl-9 text-xs" /></div><div className="synthia-plugin-tabs" role="tablist" aria-label="App connector filters">{([ ["all", "All"], ["configured", "Available"], ["connected", "Connected"] ] as const).map(([value, label]) => <button type="button" role="tab" aria-selected={view === value} key={value} onClick={() => setView(value)}>{label}</button>)}</div></div>
+      {connectorError ? <p role="alert" className="mt-3 text-xs text-rose-300">{connectorError}</p> : null}{returnCancelled ? <p role="status" className="mt-3 text-xs text-[#91a7a1]">Authorization was cancelled. No app connection was added.</p> : null}
+      {connectorReadiness.isLoading ? <div className="synthia-empty-state mt-3"><Loader2 className="animate-spin" size={16} /> Loading available apps…</div> : connectorReadiness.isError ? <div className="synthia-empty-state mt-3">Available apps are temporarily unavailable.</div> : matchedConnectors.length ? <div className="synthia-app-connector-grid">{matchedConnectors.map(connector => { const connected = visibleIntegrations.some(item => item.provider === connectorProviderId(connector.provider)); const returning = returnProvider === connector.provider && !returnCancelled; return <AppConnectorCard key={connector.provider} connector={connector} connected={connected} returning={returning} pending={pending} onConnect={() => void begin(connector.provider)} onVerify={() => connector.provider === "pipedream" ? verifyPipedream.mutate() : verifyComposio.mutate()} />; })}</div> : <div className="synthia-empty-state mt-3">No available app connector matches this filter.</div>}
+    </section>
+    <section className="synthia-connector-safety-note"><ShieldCheck size={15} /><div><b>Connection does not mean automatic control.</b><p>App access is owner-scoped. Synthia must show a task proposal and receive your approval before consequential work uses a connected app.</p></div><button type="button" onClick={() => setManagerOpen(true)}>Manage connections <ChevronRight size={13} /></button></section>
+    {managerOpen ? <section className="synthia-connector-manager" aria-labelledby="connector-manager-title"><div className="synthia-connector-manager-head"><div><p className="synthia-eyebrow">Manage</p><h2 id="connector-manager-title">Your app connections</h2><p>Review or remove app access from this workspace.</p></div><button type="button" aria-label="Close app connection management" onClick={() => setManagerOpen(false)}><X size={16} /></button></div>{integrations.isLoading ? <div className="synthia-empty-state"><Loader2 className="animate-spin" size={16} /> Loading app connections…</div> : integrations.isError ? <div className="synthia-empty-state">App connections are temporarily unavailable.</div> : visibleIntegrations.length ? <div className="mt-3 grid gap-2">{visibleIntegrations.map(integration => <ConnectedIntegrationRow key={integration.id} integration={integration} pending={removeIntegration.isPending} onDisconnect={integrationId => removeIntegration.mutate({ integrationId })} />)}</div> : <div className="synthia-empty-state mt-3"><Cable size={17} /><b>No apps connected yet</b><span>Choose an available app above to begin a provider-hosted authorization flow.</span></div>}<button type="button" className="synthia-inline-link mt-4" onClick={() => setLocation("/settings/integrations")}>Open connector settings <ChevronRight size={13} /></button></section> : null}
   </section>;
 }

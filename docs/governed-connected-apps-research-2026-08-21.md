@@ -34,8 +34,31 @@ Synthia should first expose a **provider-neutral connected-app catalog** and an 
 
 The first product increment is deliberately **non-executing**. It contains a catalog of prospective connection providers, transparent readiness states, and consent-first “connect when configured” controls. It does not request OAuth, call a provider, execute an app action, or store a third-party credential. This lets the user understand which integration route is appropriate before Synthia’s external-action authority expands.
 
+## Provider-specific activation contracts
+
+| Provider | User-facing authorization method | Synthia server requirement | Action boundary |
+| --- | --- | --- | --- |
+| **Zapier MCP Embed** | The provider-managed embed produces a user-specific MCP server URL after the user completes connection. | Store that URL only against its owner and keep the embed secret server-side; restrict the embed to Synthia’s configured domain. | Synthia can inspect available tools only after connection. Every consequential tool call remains a task proposal requiring approval. |
+| **Pipedream Connect** | A user is redirected through Connect Link or opens the provider SDK using a short-lived, single-use Connect token. | Generate the user-scoped token only on the server from Pipedream OAuth credentials; never expose those credentials to the browser. | A connected account is not an execution grant. Tool or workflow requests remain owner-scoped and approval-gated. |
+| **Composio Connect Link** | The provider-hosted link completes a user-scoped authentication flow against a configured Auth Config. | Create the link on the server with Synthia’s service credential, owner identifier, Auth Config ID, and a validated callback URL. | Keep token refresh and credential injection at the provider/server boundary; Synthia must not return credential material to the client. |
+
+Zapier documents that its embed configuration uses allowed domains and a rotatable embed secret, then emits a user-specific server URL for the host application to store against that user. [4] Pipedream documents server-created short-lived tokens, a user-facing SDK or hosted Connect Link, and server-side handling of OAuth credentials. [5] Composio documents Auth Config scope selection and a hosted Connect Link, while its connected-account API masks sensitive credential fields by default. [6] [7]
+
+Pipedream’s official TypeScript SDK accepts server-side OAuth client credentials and creates a Connect token with an `externalUserId`, allowed origins, redirect locations, optional webhook, a maximum four-hour expiry, and narrowly selected scopes. The browser must obtain that token only through a backend callback. [8] [9]
+
+Composio’s hosted link endpoint is `POST /api/v3.1/connected_accounts/link`. Its server-only request needs an API key plus `auth_config_id` and stable `user_id`; it may include a validated callback URL. Its response carries `redirect_url`, `connected_account_id`, and expiry metadata, which must be handled as connection-session metadata rather than exposed credential material. [10]
+
+> Synthia will present connection availability and user authorization only. It will not display internal LLM, media, sandbox, browser, database, storage, queue, or service-provider configuration in the user-facing Connectors area.
+
 ## References
 
 [1]: https://docs.zapier.com/mcp/manage/security "Zapier MCP security: SOC 2 access controls & compliance"
 [2]: https://pipedream.com/docs/connect "Pipedream Connect overview"
 [3]: https://docs.composio.dev/docs/authentication "Composio authentication"
+[4]: https://docs.zapier.com/mcp/embed/getting-started "Get started with Zapier MCP Embed"
+[5]: https://pipedream.com/docs/connect/managed-auth/quickstart "Pipedream Connect managed auth quickstart"
+[6]: https://docs.composio.dev/docs/tools-direct/authenticating-tools "Composio authenticating tools"
+[7]: https://docs.composio.dev/docs/auth-configuration/connected-accounts "Composio connected accounts"
+[8]: https://pipedream.com/docs/connect/api-reference/sdks "Pipedream Connect SDKs"
+[9]: https://pipedream.com/docs/connect/api-reference/create-connect-token "Create Pipedream Connect token"
+[10]: https://docs.composio.dev/reference/api-reference/connected-accounts/postConnectedAccountsLink "Create Composio auth link session"

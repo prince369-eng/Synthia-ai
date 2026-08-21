@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { trpc } from "@/lib/trpc";
-import { BookOpenText, ClipboardCheck, FileText } from "lucide-react";
+import { BarChart3, BookOpenText, ClipboardCheck, FileText } from "lucide-react";
 import { useState } from "react";
 
 export function TaskOfficeExportMenu({ taskId }: { taskId: string }) {
@@ -50,6 +50,51 @@ export function TaskLearningPanel({ taskId, pendingLessons, readOnly }: { taskId
     <div className="rounded-xl border border-teal-300/15 bg-teal-300/[.04] p-3"><div className="flex items-start gap-2"><BookOpenText size={16} className="mt-0.5 shrink-0 text-cyan-300" /><div><h2 className="text-xs font-semibold text-[#e5f2ef]">Review before Synthia learns</h2><p className="mt-1 text-[11px] leading-5 text-[#a8bbb6]">Record a bounded lesson from this task, then explicitly approve or discard it. Only approved lessons are added to future planning context; nothing changes the agent’s code, tools, or permissions.</p></div></div></div>
     {readOnly ? <p className="rounded-lg border border-white/8 bg-white/[.03] p-3 text-[11px] text-[#a8bbb6]">Replay mode is read-only. Open the live task to propose or review a lesson.</p> : <form onSubmit={event => { event.preventDefault(); if (lesson.trim()) propose.mutate({ taskId, lesson: lesson.trim(), confidence: 0.7 }); }} className="rounded-xl border border-white/8 bg-[#14201e] p-3"><label htmlFor="task-lesson" className="text-[11px] font-semibold text-[#dcece7]">Proposed lesson</label><textarea id="task-lesson" value={lesson} onChange={event => setLesson(event.target.value)} maxLength={1200} placeholder="Example: Confirm spreadsheet column mappings before writing rows." className="mt-2 min-h-24 w-full resize-y rounded-lg border border-white/10 bg-[#0e1716] p-2 text-xs leading-5 text-[#e5f2ef] outline-none placeholder:text-[#6d837d] focus:border-cyan-300/45" /><div className="mt-2 flex items-center justify-between"><span className="text-[10px] text-[#778985]">{lesson.length}/1200 · saved as pending review</span><Button type="submit" size="sm" disabled={lesson.trim().length < 20 || propose.isPending} className="h-7 bg-teal-400 px-2 text-[11px] text-[#072a27] hover:bg-cyan-300">Propose lesson</Button></div>{propose.isError ? <p role="alert" className="mt-2 text-[11px] text-rose-300">{propose.error.message}</p> : null}</form>}
     <div className="space-y-2">{pendingLessons.length === 0 ? <p className="rounded-lg border border-dashed border-white/12 p-3 text-[11px] text-[#91a7a1]">No pending lessons. Synthia does not infer or activate cross-task learning automatically.</p> : pendingLessons.map(item => <article key={item.id} className="rounded-lg border border-white/8 bg-white/[.025] p-3"><p className="text-xs leading-5 text-[#dcece7]">{item.factText}</p><p className="mt-1 text-[10px] text-[#91a7a1]">Proposed confidence: {Math.round(item.confidence * 100)}%</p>{!readOnly ? <div className="mt-2 flex gap-2"><Button size="sm" onClick={() => review.mutate({ taskId, memoryId: item.id, decision: "active" })} disabled={review.isPending} className="h-7 bg-teal-400 px-2 text-[11px] text-[#072a27] hover:bg-cyan-300">Approve for future tasks</Button><Button size="sm" variant="outline" onClick={() => review.mutate({ taskId, memoryId: item.id, decision: "archived" })} disabled={review.isPending} className="h-7 border-white/12 px-2 text-[11px] text-[#c7ddd7] hover:bg-white/5">Discard</Button></div> : null}</article>)}</div>
+  </section>;
+}
+
+type ComparisonMetric = {
+  taskId: string;
+  title: string;
+  status: string;
+  executionProfile: string;
+  creditsConsumed: number;
+  elapsedMinutes: number | null;
+  deliverableCount: number;
+  finalDeliverableCount: number;
+  proofCount: number;
+  corroboratedProofCount: number;
+  proofNeedsReviewCount: number;
+  latestVerdict: string | null;
+  errorEventCount: number;
+  pipelineDriftCount: number;
+  criticalPipelineSignalCount: number;
+};
+
+const comparisonRows: Array<{ label: string; value: (metric: ComparisonMetric) => string }> = [
+  { label: "Execution profile", value: metric => metric.executionProfile },
+  { label: "Recorded credits", value: metric => metric.creditsConsumed.toFixed(1) },
+  { label: "Elapsed time", value: metric => metric.elapsedMinutes === null ? "Not available" : `${metric.elapsedMinutes} min` },
+  { label: "Final deliverables", value: metric => `${metric.finalDeliverableCount}/${metric.deliverableCount}` },
+  { label: "Corroborated proof", value: metric => `${metric.corroboratedProofCount}/${metric.proofCount}` },
+  { label: "Proof needing review", value: metric => String(metric.proofNeedsReviewCount) },
+  { label: "Latest review verdict", value: metric => metric.latestVerdict?.replace(/_/g, " ") ?? "No stored verdict" },
+  { label: "Recorded errors", value: metric => String(metric.errorEventCount) },
+  { label: "Pipeline drift signals", value: metric => `${metric.pipelineDriftCount} (${metric.criticalPipelineSignalCount} critical)` },
+];
+
+/** Renders persisted comparison facts only; no action is proposed or executed here. */
+export function TaskRunComparisonPanel({ taskId }: { taskId: string }) {
+  const [comparisonTaskId, setComparisonTaskId] = useState("");
+  const comparison = trpc.tasks.compare.useQuery({ taskId, ...(comparisonTaskId ? { comparisonTaskId } : {}) });
+  const data = comparison.data;
+  const current = data?.current as ComparisonMetric | undefined;
+  const baseline = data?.baseline as ComparisonMetric | null | undefined;
+  return <section className="space-y-3" aria-label="Run comparison and drift dashboard">
+    <div className="rounded-xl border border-teal-300/15 bg-teal-300/[.04] p-3"><div className="flex items-start gap-2"><BarChart3 size={16} className="mt-0.5 shrink-0 text-cyan-300" /><div><h2 className="text-xs font-semibold text-[#e5f2ef]">Run comparison</h2><p className="mt-1 text-[11px] leading-5 text-[#a8bbb6]">Compare recorded task facts to identify changes worth reviewing. This dashboard is read-only: it never reruns work or changes models, Skills, tools, policies, prompts, lessons, or approvals.</p></div></div></div>
+    {comparison.isLoading ? <p className="rounded-lg border border-white/8 bg-white/[.03] p-3 text-[11px] text-[#a8bbb6]">Loading owner-scoped comparison records…</p> : null}
+    {comparison.isError ? <p role="alert" className="rounded-lg border border-rose-300/20 bg-rose-300/[.05] p-3 text-[11px] text-rose-200">{comparison.error.message}</p> : null}
+    {data && current ? <><label className="block text-[11px] text-[#a8bbb6]" htmlFor="comparison-baseline">Compare against<select id="comparison-baseline" value={comparisonTaskId || baseline?.taskId || ""} onChange={event => setComparisonTaskId(event.target.value)} className="mt-1.5 w-full rounded-lg border border-white/10 bg-[#0e1716] px-2 py-1.5 text-xs text-[#e5f2ef] outline-none focus:border-cyan-300/45"><option value="">Most recent completed task</option>{data.availableBaselines.map(task => <option key={task.id} value={task.id}>{task.title} · {task.status.replace(/_/g, " ")}</option>)}</select></label>{!baseline ? <p className="rounded-lg border border-dashed border-white/12 p-3 text-[11px] leading-5 text-[#91a7a1]">No other owner-scoped task is available yet. Complete another task to compare persisted outcomes; Synthia will not invent a baseline or start one for you.</p> : <><div className="overflow-x-auto rounded-lg border border-white/8"><table className="w-full min-w-[420px] text-left text-[11px]"><thead className="bg-white/[.03] text-[#91a7a1]"><tr><th className="px-3 py-2 font-medium">Metric</th><th className="px-3 py-2 font-medium">This task</th><th className="px-3 py-2 font-medium">Comparison task</th></tr></thead><tbody>{comparisonRows.map(row => <tr key={row.label} className="border-t border-white/6"><th className="px-3 py-2 font-medium text-[#c7ddd7]">{row.label}</th><td className="px-3 py-2 text-cyan-100">{row.value(current)}</td><td className="px-3 py-2 text-[#a8bbb6]">{row.value(baseline)}</td></tr>)}</tbody></table></div><div className="space-y-2">{data.signals.length === 0 ? <p className="rounded-lg border border-dashed border-white/12 p-3 text-[11px] text-[#91a7a1]">No review signals crossed the dashboard threshold. This is not a quality guarantee; inspect the evidence and evaluation records when relevant.</p> : data.signals.map(signal => <article key={signal.id} className="rounded-lg border border-amber-300/15 bg-amber-300/[.035] p-3"><p className="text-[11px] font-semibold text-amber-100">{signal.title}</p><p className="mt-1 text-[11px] leading-5 text-[#c7bca8]">{signal.detail}</p></article>)}</div></>}</> : null}
   </section>;
 }
 

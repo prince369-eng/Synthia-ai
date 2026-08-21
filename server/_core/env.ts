@@ -151,4 +151,11 @@ export const ENV = {
   livekitApiKey: process.env.LIVEKIT_API_KEY ?? "",
   livekitApiSecret: process.env.LIVEKIT_API_SECRET ?? "",
   livekitAgentName: process.env.LIVEKIT_AGENT_NAME ?? "synthia-voice",
+  zapierMcpEmbedId: process.env.ZAPIER_MCP_EMBED_ID ?? "",
+  pipedreamClientId: process.env.PIPEDREAM_CLIENT_ID ?? "",
+  pipedreamClientSecret: process.env.PIPEDREAM_CLIENT_SECRET ?? "",
+  pipedreamProjectId: process.env.PIPEDREAM_PROJECT_ID ?? "",
+  composioApiKey: process.env.COMPOSIO_API_KEY ?? "",
+  composioAuthConfigId: process.env.COMPOSIO_AUTH_CONFIG_ID ?? "",
+  composioBaseUrl: process.env.COMPOSIO_BASE_URL ?? "https://backend.composio.dev",
 };

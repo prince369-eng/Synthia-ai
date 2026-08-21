@@ -4,14 +4,14 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { cn } from "@/lib/utils";
 import { trpc } from "@/lib/trpc";
 import { useTaskEventStream } from "@/hooks/useTaskEventStream";
-import { TaskEvaluationPanel, TaskLearningPanel, TaskOfficeExportMenu } from "@/components/TaskOfficeControls";
-import { AlertTriangle, Archive, AudioLines, BookOpenText, Bot, CalendarClock, Check, ChevronLeft, CirclePause, ClipboardCheck, Code2, ExternalLink, FileCode2, FileText, FolderTree, Globe2, ImagePlus, ListTree, Loader2, Maximize2, Minimize2, MoreHorizontal, MonitorDot, Pencil, Pin, Play, Send, ShieldCheck, Square, Star, TerminalSquare, Trash2, Video, Wand2, X } from "lucide-react";
+import { TaskEvaluationPanel, TaskLearningPanel, TaskOfficeExportMenu, TaskRunComparisonPanel } from "@/components/TaskOfficeControls";
+import { AlertTriangle, Archive, AudioLines, BarChart3, BookOpenText, Bot, CalendarClock, Check, ChevronLeft, CirclePause, ClipboardCheck, Code2, ExternalLink, FileCode2, FileText, FolderTree, Globe2, ImagePlus, ListTree, Loader2, Maximize2, Minimize2, MoreHorizontal, MonitorDot, Pencil, Pin, Play, Send, ShieldCheck, Square, Star, TerminalSquare, Trash2, Video, Wand2, X } from "lucide-react";
 import { Room, RoomEvent, Track } from "livekit-client";
 import { WORKSPACE_RETURN_ROUTES } from "@/lib/workspaceLayout";
 import React, { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation, useRoute } from "wouter";
 
-type WorkspaceTab = "screen" | "website" | "code" | "terminal" | "files" | "timeline" | "plan" | "proof" | "learning" | "evaluation" | "operations";
+type WorkspaceTab = "screen" | "website" | "code" | "terminal" | "files" | "timeline" | "plan" | "proof" | "learning" | "evaluation" | "compare" | "operations";
 
 const statusColor: Record<string, string> = { queued: "text-teal-300", booting: "text-teal-300", planning: "text-cyan-300", running: "text-cyan-300", needs_input: "text-rose-300", paused: "text-[#a5b6b1]", completed: "text-emerald-300", failed: "text-rose-300", cancelled: "text-[#a5b6b1]" };
 
@@ -57,7 +57,7 @@ export default function TaskWorkspace({ replayMode = false }: { replayMode?: boo
   if (snapshot.isLoading) return <div className="grid min-h-screen place-items-center text-sm text-[#91a7a1]"><Loader2 className="mr-2 animate-spin" size={16} />Loading task workspace…</div>;
   if (snapshot.isError || !task || !taskId) return <main className="p-8"><Link href={WORKSPACE_RETURN_ROUTES.dashboard} className="text-sm text-cyan-300">← Back to tasks</Link><p role="alert" className="mt-5 text-rose-300">{snapshot.error?.message ?? "The requested task is unavailable."}</p></main>;
 
-  const tabs: Array<{ id: WorkspaceTab; label: string; icon: typeof Code2 }> = [{ id: "screen", label: "Screen", icon: MonitorDot }, { id: "website", label: "Website", icon: Globe2 }, { id: "code", label: "Code", icon: Code2 }, { id: "terminal", label: "Terminal", icon: TerminalSquare }, { id: "files", label: "Files", icon: FolderTree }, { id: "timeline", label: "Timeline", icon: ListTree }, { id: "plan", label: "Plan", icon: FileText }, { id: "proof", label: "Proof", icon: ShieldCheck }, { id: "learning", label: "Review", icon: BookOpenText }, { id: "evaluation", label: "Evaluate", icon: ClipboardCheck }, { id: "operations", label: "Operations", icon: AlertTriangle }];
+  const tabs: Array<{ id: WorkspaceTab; label: string; icon: typeof Code2 }> = [{ id: "screen", label: "Screen", icon: MonitorDot }, { id: "website", label: "Website", icon: Globe2 }, { id: "code", label: "Code", icon: Code2 }, { id: "terminal", label: "Terminal", icon: TerminalSquare }, { id: "files", label: "Files", icon: FolderTree }, { id: "timeline", label: "Timeline", icon: ListTree }, { id: "plan", label: "Plan", icon: FileText }, { id: "proof", label: "Proof", icon: ShieldCheck }, { id: "learning", label: "Review", icon: BookOpenText }, { id: "evaluation", label: "Evaluate", icon: ClipboardCheck }, { id: "compare", label: "Compare", icon: BarChart3 }, { id: "operations", label: "Operations", icon: AlertTriangle }];
   const activeApprovals = data.approvals.filter(approval => approval.status === "pending");
   const planSteps = Array.isArray(task.plan) ? task.plan.filter(step => step && typeof step === "object") as Array<{ state?: string; title?: string }> : [];
   const completedPlanSteps = planSteps.filter(step => step.state === "completed" || step.state === "done").length;
@@ -96,6 +96,7 @@ export default function TaskWorkspace({ replayMode = false }: { replayMode?: boo
           {!panelPending && tab === "proof" ? <ProofPanel taskId={taskId} proofRecords={data.proofRecords} readOnly={replayMode} /> : null}
           {!panelPending && tab === "learning" ? <TaskLearningPanel taskId={taskId} pendingLessons={data.pendingTaskLessons} readOnly={replayMode} /> : null}
           {!panelPending && tab === "evaluation" ? <TaskEvaluationPanel taskId={taskId} evaluationPacks={data.evaluationPacks} evaluationResults={data.evaluationResults} readOnly={replayMode} /> : null}
+          {!panelPending && tab === "compare" ? <TaskRunComparisonPanel taskId={taskId} /> : null}
           {!panelPending && tab === "operations" ? <OperationsPanel taskId={taskId} healthSignals={data.pipelineHealthSignals} remediationProposals={data.remediationProposals} delegations={data.delegations} readOnly={replayMode} /> : null}
         </div>
       </aside>

@@ -3205,3 +3205,27 @@
 - [x] Dismiss or replace the Live Voice empty-goal hint once it has been read or the composer state changes, without requesting media permissions.
 - [x] Implement a connector catalog and consent-first connected-app controls that do not store third-party secrets, execute actions, or imply a connection before user authorization.
 - [x] Add deterministic regression coverage, safe-use documentation, type validation, production-build validation, and a checkpoint for guided prompting and governed connected apps.
+
+## Read-only run comparison and drift dashboard
+
+- [x] Map existing owner-scoped task, usage, proof, lesson, and evaluation records into non-executing comparison metrics.
+- [x] Add owner-scoped read-only task-comparison and drift-analysis contracts that cannot promote, rerun, mutate, or reconfigure agents.
+- [x] Render a responsive workspace comparison panel with transparent metric definitions, empty states, and human review guidance.
+- [x] Add deterministic regression coverage, safe-use documentation, type validation, production-build validation, and a checkpoint for the reliability dashboard.
+
+## User-facing app connectors
+
+- [x] Inspect current connector configuration and official authorization models for Zapier, Pipedream, and Composio before enabling any external connection.
+- [x] Remove internal model, media, browser, database, sandbox, and service-provider readiness details from the user-facing Connectors area.
+- [x] Implement secure server-side connection readiness and consent contracts for Zapier, Pipedream, and Composio without storing or exposing third-party secrets in the client.
+- [x] Build user-facing app-only cards with clear authorization, scope, status, disconnect, and proposal-before-action boundaries.
+- [x] Add deterministic safety coverage, documentation, validation, and a checkpoint; defer live OAuth until the user supplies the required provider credentials.
+- [x] Validate Pipedream and Composio with non-connection configuration checks; keep Zapier disabled until its Embed ID is supplied.
+
+## Connector discovery redesign
+
+- [x] Redesign the Plugins page around compact app discovery, a single search field, clear app categories, and connected versus available states.
+- [x] Present only user-authorizable app connectors; do not display internal model, media, browser, storage, database, sandbox, or provider configuration.
+- [x] Add a focused connector management view for connected apps, available apps, scope explanations, and explicit approval-before-action guidance.
+- [x] Simplify related Settings connector content so it links to app management rather than repeating provider or backend readiness details.
+- [x] Add responsive UI regression coverage, validation, and a checkpoint for the privacy-preserving connector redesign.

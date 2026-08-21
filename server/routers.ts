@@ -21,6 +21,7 @@ import {
   DEFAULT_AUTONOMY_SETTINGS,
   type TaskPlanStep,
   getLibraryDeliverableForUser,
+  getTaskRunComparisonForUser,
   getTaskForUser,
   getTaskSkillSelectionsForUser,
   getPersonalizationProfile,
@@ -92,6 +93,7 @@ import { captureLiveComputerScreen, listLiveComputerFiles, liveComputerAvailabil
 import { generateWithFallback, parseStructuredModelOutput } from "./agent/llm";
 import { createVoiceModeJoinCredentials, getVoiceModeAvailability } from "./realtime/voiceMode";
 import { buildTaskOfficeExport, OFFICE_EXPORT_FORMATS } from "./office/taskOfficeExport";
+import { appConnectorProviders, appConnectorReadiness, completeZapierMcpAuthorization, startAppConnectorAuthorization, verifyComposioAuthorization, verifyPipedreamAuthorization } from "./integrations/appConnectors";
 
 const taskIdSchema = z.object({ taskId: z.string().uuid() });
 const taskTitleSchema = z.string().trim().min(1).max(180);
@@ -649,6 +651,11 @@ export const appRouter = router({
   }),
   tasks: router({
     list: protectedProcedure.input(z.object({ includeArchived: z.boolean().optional() }).optional()).query(async ({ ctx, input }) => listTasksForUser(ctx.user.id, input?.includeArchived)),
+    compare: protectedProcedure.input(z.object({ taskId: z.string().uuid(), comparisonTaskId: z.string().uuid().optional() })).query(async ({ ctx, input }) => {
+      await requireOwnedTask(input.taskId, ctx.user.id);
+      if (input.comparisonTaskId) await requireOwnedTask(input.comparisonTaskId, ctx.user.id);
+      return getTaskRunComparisonForUser({ taskId: input.taskId, userId: ctx.user.id, comparisonTaskId: input.comparisonTaskId });
+    }),
     get: protectedProcedure.input(taskIdSchema).query(async ({ ctx, input }) => {
       const task = await requireOwnedTask(input.taskId, ctx.user.id);
       const [events, messages, approvals, deliverables, attachments, sandboxRows, skillSelections, proofRecords, pipelineHealthSignals, remediationProposals, delegations, pendingTaskLessons, evaluationPacks, evaluationResults] = await Promise.all([
@@ -1196,6 +1203,29 @@ export const appRouter = router({
       }),
   }),
   integrations: router({
+    appReadiness: protectedProcedure.query(() => appConnectorReadiness()),
+    startAuthorization: protectedProcedure
+      .input(z.object({ provider: z.enum(appConnectorProviders) }))
+      .mutation(async ({ ctx, input }) => {
+        await enforceUserMutationLimit(ctx.user.id, `app-connector-start:${input.provider}`, 10, 3_600);
+        return startAppConnectorAuthorization({ provider: input.provider, userId: ctx.user.id, requestOrigin: requestOrigin(ctx.req) });
+      }),
+    completeZapierMcp: protectedProcedure
+      .input(z.object({ mcpServerUrl: z.string().url().max(2_000) }))
+      .mutation(async ({ ctx, input }) => {
+        await enforceUserMutationLimit(ctx.user.id, "app-connector-complete:zapier", 10, 3_600);
+        return completeZapierMcpAuthorization({ userId: ctx.user.id, mcpServerUrl: input.mcpServerUrl });
+      }),
+    verifyPipedream: protectedProcedure
+      .mutation(async ({ ctx }) => {
+        await enforceUserMutationLimit(ctx.user.id, "app-connector-verify:pipedream", 10, 3_600);
+        return verifyPipedreamAuthorization({ userId: ctx.user.id });
+      }),
+    verifyComposio: protectedProcedure
+      .mutation(async ({ ctx }) => {
+        await enforceUserMutationLimit(ctx.user.id, "app-connector-verify:composio", 10, 3_600);
+        return verifyComposioAuthorization({ userId: ctx.user.id });
+      }),
     save: protectedProcedure
       .input(z.object({
         provider: z.string().trim().min(2).max(64).regex(/^[a-z0-9_-]+$/i),

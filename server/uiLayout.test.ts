@@ -52,15 +52,35 @@ describe("compact workspace layout contract", () => {
     expect(guidance).not.toContain("fetch(");
   });
 
-  it("shows prospective connected apps as consent-first routes rather than connected execution authority", () => {
+  it("keeps the Connectors surface app-only and approval-gated without exposing internal service readiness", () => {
     const plugins = readFileSync(new URL("../client/src/pages/Plugins.tsx", import.meta.url), "utf8");
-    const catalog = readFileSync(new URL("../client/src/lib/governedConnectedApps.ts", import.meta.url), "utf8");
+    const settings = readFileSync(new URL("../client/src/pages/Settings.tsx", import.meta.url), "utf8");
 
-    expect(plugins).toContain('Governed connected apps');
-    expect(plugins).toContain('Actions stay approval-gated');
-    expect(plugins).toContain('setLocation("/settings/integrations")');
-    expect(catalog).toContain('"zapier" | "pipedream" | "composio" | "github"');
-    expect(catalog).toContain("Synthia must still show an action proposal before any tool call.");
+    expect(plugins).toContain("trpc.integrations.appReadiness.useQuery()");
+    expect(plugins).toContain("Available app connections");
+    expect(plugins).toContain("Private connection details stay with the app provider.");
+    expect(readFileSync(new URL("../client/src/components/AppConnectorCard.tsx", import.meta.url), "utf8")).toContain("Approval required");
+    expect(plugins).toContain('window.location.assign(result.authorizationUrl)');
+    expect(plugins).not.toContain("trpc.workspace.serviceReadiness.useQuery()");
+    expect(plugins).not.toContain("GOVERNED_CONNECTED_APPS");
+    expect(settings).toContain("Synthia does not expose its internal service configuration here.");
+    expect(settings).toContain("Only your connected apps are listed here.");
+  });
+
+  it("renders an owner-scoped read-only comparison tab without a run, promotion, or configuration mutation", () => {
+    const workspace = readFileSync(new URL("../client/src/pages/TaskWorkspace.tsx", import.meta.url), "utf8");
+    const controls = readFileSync(new URL("../client/src/components/TaskOfficeControls.tsx", import.meta.url), "utf8");
+    const db = readFileSync(new URL("../server/db.ts", import.meta.url), "utf8");
+    const routers = readFileSync(new URL("../server/routers.ts", import.meta.url), "utf8");
+
+    expect(workspace).toContain('id: "compare", label: "Compare"');
+    expect(workspace).toContain('<TaskRunComparisonPanel taskId={taskId} />');
+    expect(controls).toContain('aria-label="Run comparison and drift dashboard"');
+    expect(controls).toContain("This dashboard is read-only");
+    expect(controls).toContain("Synthia will not invent a baseline or start one for you.");
+    expect(db).toContain("export async function getTaskRunComparisonForUser");
+    expect(db).toContain("neither invokes a provider nor mutates any agent state");
+    expect(routers).toContain("compare: protectedProcedure");
   });
 
   it("does not delay the unavailable state when the external task store is absent", () => {
@@ -407,7 +427,7 @@ describe("compact workspace layout contract", () => {
     expect(agent.match(/<AgentNavigationControls/g)).toHaveLength(1);
     expect(settings).toContain('title="Connectors"');
     expect(settings).toContain('title="Skills"');
-    expect(settings).toContain("Add the apps you want Synthia to use for your tasks");
+    expect(settings).toContain("Choose apps you want to authorize for approved task work.");
     expect(settings).not.toContain("server-side configuration but never exposes credential values");
     expect(settings).not.toContain("Task notifications use configured server-side mail providers");
   });
@@ -415,7 +435,7 @@ describe("compact workspace layout contract", () => {
   it("keeps the Plugins search control within the shared teal and cyan workspace system", () => {
     const plugins = readFileSync(new URL("../client/src/pages/Plugins.tsx", import.meta.url), "utf8");
 
-    expect(plugins).toContain('aria-label="Search connectors"');
+    expect(plugins).toContain('aria-label="Search app connectors"');
     expect(plugins).toContain('className="synthia-input h-9 pl-9 text-xs"');
     expect(plugins).toContain('text-[#6c817c]');
     expect(plugins).not.toContain('bg-[#1d1611]');

@@ -147,6 +147,34 @@ export type CreateTaskEvaluationResultInput = {
   proposedLesson?: string;
 };
 
+export type TaskRunComparisonMetric = {
+  taskId: string;
+  title: string;
+  status: Task["status"];
+  updatedAt: Date;
+  completedAt: Date | null;
+  executionProfile: string;
+  creditsConsumed: number;
+  elapsedMinutes: number | null;
+  deliverableCount: number;
+  finalDeliverableCount: number;
+  proofCount: number;
+  corroboratedProofCount: number;
+  proofNeedsReviewCount: number;
+  evaluationCount: number;
+  latestVerdict: string | null;
+  errorEventCount: number;
+  pipelineDriftCount: number;
+  criticalPipelineSignalCount: number;
+};
+
+export type TaskRunComparisonSignal = {
+  id: "execution_profile" | "credits" | "elapsed_time" | "proof_coverage" | "evaluation" | "errors" | "pipeline_drift";
+  severity: "info" | "review";
+  title: string;
+  detail: string;
+};
+
 export const DEFAULT_PERSONALITY_DIMENSIONS: PersonalityDimensions = {
   warmth: 55,
   directness: 60,
@@ -291,6 +319,100 @@ export async function getTaskForUser(taskId: string, userId: number): Promise<Ta
     .where(and(eq(tasks.id, taskId), eq(tasks.userId, userId), isNull(tasks.deletedAt)))
     .limit(1);
   return result[0];
+}
+
+function comparisonRecord(value: unknown) {
+  return value && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : {};
+}
+
+function executionProfileForTask(task: Task) {
+  const settings = comparisonRecord(task.autonomySettings);
+  const selectedModel = comparisonRecord(settings.selectedModel);
+  const automaticRoute = comparisonRecord(settings.automaticRoute);
+  const provider = typeof selectedModel.provider === "string" ? selectedModel.provider : typeof automaticRoute.provider === "string" ? automaticRoute.provider : null;
+  const model = typeof selectedModel.model === "string" ? selectedModel.model : typeof automaticRoute.model === "string" ? automaticRoute.model : null;
+  return provider && model ? `${provider}/${model}` : "Automatic routing";
+}
+
+async function taskRunMetricsForOwner(task: Task, userId: number): Promise<TaskRunComparisonMetric> {
+  const database = databaseRequired(await getDb());
+  const [proofs, evaluations, signals, artifactCounts, errorCounts] = await Promise.all([
+    database.select({ verificationStatus: taskProofRecords.verificationStatus }).from(taskProofRecords).where(and(eq(taskProofRecords.taskId, task.id), eq(taskProofRecords.userId, userId))),
+    database.select({ verdict: taskEvaluationResults.verdict }).from(taskEvaluationResults).where(and(eq(taskEvaluationResults.taskId, task.id), eq(taskEvaluationResults.userId, userId))).orderBy(desc(taskEvaluationResults.createdAt)),
+    database.select({ driftType: taskPipelineHealthSignals.driftType, severity: taskPipelineHealthSignals.severity }).from(taskPipelineHealthSignals).where(and(eq(taskPipelineHealthSignals.taskId, task.id), eq(taskPipelineHealthSignals.userId, userId))),
+    database.select({ total: sql<number>`count(*)`, final: sql<number>`count(*) filter (where ${deliverables.isFinal})` }).from(deliverables).where(eq(deliverables.taskId, task.id)),
+    database.select({ total: sql<number>`count(*)` }).from(taskEvents).where(and(eq(taskEvents.taskId, task.id), eq(taskEvents.type, "error"))),
+  ]);
+  const finishedAt = task.completedAt ?? task.updatedAt;
+  const startedAt = task.startedAt ?? task.createdAt;
+  const elapsedMinutes = finishedAt.getTime() >= startedAt.getTime() ? Math.round((finishedAt.getTime() - startedAt.getTime()) / 60_000) : null;
+  const artifacts = artifactCounts[0];
+  return {
+    taskId: task.id,
+    title: task.title,
+    status: task.status,
+    updatedAt: task.updatedAt,
+    completedAt: task.completedAt,
+    executionProfile: executionProfileForTask(task),
+    creditsConsumed: Number(task.creditsConsumed ?? 0),
+    elapsedMinutes,
+    deliverableCount: Number(artifacts?.total ?? 0),
+    finalDeliverableCount: Number(artifacts?.final ?? 0),
+    proofCount: proofs.length,
+    corroboratedProofCount: proofs.filter(proof => proof.verificationStatus === "corroborated").length,
+    proofNeedsReviewCount: proofs.filter(proof => proof.verificationStatus === "needs_review" || proof.verificationStatus === "unverified").length,
+    evaluationCount: evaluations.length,
+    latestVerdict: evaluations[0]?.verdict ?? null,
+    errorEventCount: Number(errorCounts[0]?.total ?? 0),
+    pipelineDriftCount: signals.filter(signal => signal.driftType !== "none").length,
+    criticalPipelineSignalCount: signals.filter(signal => signal.severity === "critical").length,
+  };
+}
+
+function percentageDifference(current: number, baseline: number) {
+  if (baseline <= 0) return null;
+  return Math.round(((current - baseline) / baseline) * 100);
+}
+
+const comparisonVerdictRank: Record<string, number> = { fail: 0, needs_revision: 1, inconclusive: 2, pass: 3 };
+
+function createTaskRunComparisonSignals(current: TaskRunComparisonMetric, baseline: TaskRunComparisonMetric): TaskRunComparisonSignal[] {
+  const signals: TaskRunComparisonSignal[] = [];
+  if (current.executionProfile !== baseline.executionProfile) signals.push({ id: "execution_profile", severity: "info", title: "Execution profile differs", detail: `This task recorded ${current.executionProfile}; the comparison task recorded ${baseline.executionProfile}. This is context, not a recommendation to switch providers.` });
+  const creditDifference = percentageDifference(current.creditsConsumed, baseline.creditsConsumed);
+  if (creditDifference !== null && Math.abs(creditDifference) >= 25) signals.push({ id: "credits", severity: "review", title: "Credit use changed", detail: `Recorded credits are ${Math.abs(creditDifference)}% ${creditDifference > 0 ? "higher" : "lower"} than the comparison task. Review scope and evidence before drawing a conclusion.` });
+  const durationDifference = current.elapsedMinutes !== null && baseline.elapsedMinutes !== null ? percentageDifference(current.elapsedMinutes, baseline.elapsedMinutes) : null;
+  if (durationDifference !== null && Math.abs(durationDifference) >= 25) signals.push({ id: "elapsed_time", severity: "review", title: "Elapsed time changed", detail: `Recorded elapsed time is ${Math.abs(durationDifference)}% ${durationDifference > 0 ? "higher" : "lower"} than the comparison task. Active tasks use their latest update time.` });
+  const currentCoverage = current.proofCount ? current.corroboratedProofCount / current.proofCount : 0;
+  const baselineCoverage = baseline.proofCount ? baseline.corroboratedProofCount / baseline.proofCount : 0;
+  if (currentCoverage + 0.2 < baselineCoverage) signals.push({ id: "proof_coverage", severity: "review", title: "Corroborated proof coverage is lower", detail: `This task has ${current.corroboratedProofCount}/${current.proofCount} corroborated proof records versus ${baseline.corroboratedProofCount}/${baseline.proofCount}. Add or review evidence manually; no proof is created automatically.` });
+  const currentVerdictLabel = current.latestVerdict;
+  const baselineVerdictLabel = baseline.latestVerdict;
+  if (currentVerdictLabel && baselineVerdictLabel) {
+    const currentVerdict = comparisonVerdictRank[currentVerdictLabel];
+    const baselineVerdict = comparisonVerdictRank[baselineVerdictLabel];
+    if (currentVerdict !== undefined && baselineVerdict !== undefined && currentVerdict < baselineVerdict) signals.push({ id: "evaluation", severity: "review", title: "Reviewer verdict is less favorable", detail: `The latest stored verdict is ${currentVerdictLabel.replace(/_/g, " ")} compared with ${baselineVerdictLabel.replace(/_/g, " ")}. This record cannot change a task, lesson, model, or policy.` });
+  }
+  if (current.errorEventCount > baseline.errorEventCount) signals.push({ id: "errors", severity: "review", title: "More recorded error events", detail: `This task has ${current.errorEventCount} recorded error event${current.errorEventCount === 1 ? "" : "s"}, compared with ${baseline.errorEventCount}. Inspect the immutable task timeline before any follow-up.` });
+  if (current.pipelineDriftCount > baseline.pipelineDriftCount || current.criticalPipelineSignalCount > baseline.criticalPipelineSignalCount) signals.push({ id: "pipeline_drift", severity: "review", title: "More pipeline drift signals", detail: `This task has ${current.pipelineDriftCount} non-none drift signal${current.pipelineDriftCount === 1 ? "" : "s"} and ${current.criticalPipelineSignalCount} critical signal${current.criticalPipelineSignalCount === 1 ? "" : "s"}. Existing remediation proposals remain approval-gated.` });
+  return signals;
+}
+
+/** Compares persisted owner-scoped records only; it neither invokes a provider nor mutates any agent state. */
+export async function getTaskRunComparisonForUser(input: { taskId: string; userId: number; comparisonTaskId?: string }) {
+  const currentTask = await getTaskForUser(input.taskId, input.userId);
+  if (!currentTask) throw new Error("Task ownership could not be verified.");
+  const candidateTasks = (await listTasksForUser(input.userId, true)).filter(task => task.id !== currentTask.id);
+  const selectedBaseline = input.comparisonTaskId ? candidateTasks.find(task => task.id === input.comparisonTaskId) : candidateTasks.find(task => task.status === "completed") ?? candidateTasks[0];
+  const current = await taskRunMetricsForOwner(currentTask, input.userId);
+  const baseline = selectedBaseline ? await taskRunMetricsForOwner(selectedBaseline, input.userId) : null;
+  return {
+    current,
+    baseline,
+    availableBaselines: candidateTasks.slice(0, 24).map(task => ({ id: task.id, title: task.title, status: task.status, updatedAt: task.updatedAt })),
+    signals: baseline ? createTaskRunComparisonSignals(current, baseline) : [],
+    safeguards: ["Read-only comparison", "No task is rerun", "No provider, Skill, tool, or policy is changed", "Human review is required before any follow-up"],
+  };
 }
 
 export async function getTaskById(taskId: string): Promise<Task | undefined> {
