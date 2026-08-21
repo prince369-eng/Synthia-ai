@@ -3165,3 +3165,8 @@
 - [x] Compare the new dashboard screenshot with the active source bundle and determine why the Live control is absent while Media, Automatic, and microphone controls remain visible.
 - [x] Correct the dashboard composer rendering so the Live Voice control is visibly present and keyboard-accessible before the user creates a task.
 - [x] Add regression coverage and visual verification for the rendered dashboard control without opening a media session or enabling realtime Voice Mode.
+
+## Retained Autoscale hosting decision
+
+- [x] Record the user’s decision to retain Autoscale hosting and keep the Voice Mode worker deployment out of scope.
+- [x] Confirm that the existing LiveKit credential validation and disabled-by-default realtime flags preserve the selected safety boundary.

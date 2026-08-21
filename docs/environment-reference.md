@@ -43,6 +43,8 @@ Synthia validates a configured LiveKit project with the server SDK’s read-only
 
 On 2026-08-21, Synthia’s configured LiveKit project passed this SDK-based read-only authorization check. `SYNTHIA_REALTIME_VOICE_ENABLED` and `SYNTHIA_REALTIME_VOICE_WORKER_READY` remain unset, so the feature is still deliberately unavailable until the separate worker deployment is complete and explicitly declared healthy.
 
+The project owner chose to retain **Autoscale** hosting on 2026-08-21. Accordingly, Synthia will not deploy the long-lived Voice Mode worker or enable either realtime flag on the current deployment. The dashboard **Live** control continues to describe and route into the consent-first flow, but it cannot open a realtime room until a persistent worker deployment is explicitly approved in a future change.
+
 #### References
 
 [1]: https://docs.livekit.io/deploy/agents/secrets/ "LiveKit Agents: secrets management"
