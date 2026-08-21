@@ -79,6 +79,19 @@ describe("compact workspace layout contract", () => {
     expect(css).toContain("grid-template-columns: repeat(2, minmax(0, 1fr));");
   });
 
+  it("keeps an explicit logout on the public entry state instead of restarting OAuth from an in-flight unauthorized request", () => {
+    const authHook = readFileSync(new URL("../client/src/_core/hooks/useAuth.ts", import.meta.url), "utf8");
+    const bootstrap = readFileSync(new URL("../client/src/main.tsx", import.meta.url), "utf8");
+    const authEntry = readFileSync(new URL("../client/src/const.ts", import.meta.url), "utf8");
+
+    expect(authHook).toContain('EXPLICIT_SIGNED_OUT_STORAGE_KEY');
+    expect(authHook).toContain('sessionStorage.setItem(EXPLICIT_SIGNED_OUT_STORAGE_KEY, "1")');
+    expect(authHook).toContain('sessionStorage.removeItem("manus-cookie")');
+    expect(bootstrap).toContain('sessionStorage.getItem(EXPLICIT_SIGNED_OUT_STORAGE_KEY) === "1"');
+    expect(bootstrap).toContain('if (sessionStorage.getItem(EXPLICIT_SIGNED_OUT_STORAGE_KEY) === "1") return;');
+    expect(authEntry).toContain('clearExplicitSignedOutState();');
+  });
+
   it("keeps user-authored Skills reviewed, separate from Connectors, and discoverable in Settings", () => {
     const settings = readFileSync(new URL("../client/src/pages/Settings.tsx", import.meta.url), "utf8");
     const router = readFileSync(new URL("../server/routers.ts", import.meta.url), "utf8");

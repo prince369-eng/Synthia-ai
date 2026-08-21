@@ -3086,3 +3086,5 @@
 - [x] Keep public-platform Skill sharing unavailable until a moderation workflow exists, and make this visibility boundary explicit in API validation and UI.
 - [x] Extend Skills Library and task-workspace audit interfaces for reviewed example/task creation paths and last-used usage visibility.
 - [x] Add security, ownership, resource, task-suggestion, relevance, visibility, and responsive UI regression coverage; validate without external workloads.
+- [x] Diagnose and repair the reported sign-out auto-login loop so a signed-out user remains on the public entry screen until they explicitly choose to sign in.
+- [x] Add regression coverage for logout session clearing, public-route persistence, and suppression of unintended OAuth re-entry.

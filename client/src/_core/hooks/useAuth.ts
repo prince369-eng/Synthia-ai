@@ -1,4 +1,4 @@
-import { startLogin } from "@/const";
+import { EXPLICIT_SIGNED_OUT_STORAGE_KEY, startLogin } from "@/const";
 import { trpc } from "@/lib/trpc";
 import { TRPCClientError } from "@trpc/client";
 import { useCallback, useEffect, useMemo } from "react";
@@ -28,6 +28,14 @@ export function useAuth(options?: UseAuthOptions) {
   });
 
   const logout = useCallback(async () => {
+    // Mark this browser as intentionally signed out before any in-flight
+    // protected request can fail and trigger the global unauthorized handler.
+    // The marker is removed only by an explicit sign-in action.
+    try {
+      sessionStorage.setItem(EXPLICIT_SIGNED_OUT_STORAGE_KEY, "1");
+      sessionStorage.removeItem("manus-cookie");
+      localStorage.removeItem("manus-runtime-user-info");
+    } catch {}
     try {
       await logoutMutation.mutateAsync();
     } catch (error: unknown) {
@@ -42,9 +50,6 @@ export function useAuth(options?: UseAuthOptions) {
       // Clear the Preview auto-login token mirrored into sessionStorage, so
       // header-based sessions (Safari ITP / WebView) are logged out too. The
       // backend cookie is cleared by the logout mutation.
-      try {
-        sessionStorage.removeItem("manus-cookie");
-      } catch {}
       utils.auth.me.setData(undefined, null);
       await utils.auth.me.invalidate();
     }

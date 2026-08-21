@@ -5,7 +5,7 @@ import { httpBatchLink, TRPCClientError } from "@trpc/client";
 import { createRoot } from "react-dom/client";
 import superjson from "superjson";
 import App from "./App";
-import { startLogin } from "./const";
+import { EXPLICIT_SIGNED_OUT_STORAGE_KEY, startLogin } from "./const";
 import "./index.css";
 
 const queryClient = new QueryClient();
@@ -17,6 +17,14 @@ const redirectToLoginIfUnauthorized = (error: unknown) => {
   const isUnauthorized = error.message === UNAUTHED_ERR_MSG;
 
   if (!isUnauthorized) return;
+
+  // A logout may race with outstanding protected queries. Remain on Synthia's
+  // public entry page instead of silently launching the SSO portal again.
+  try {
+    if (sessionStorage.getItem(EXPLICIT_SIGNED_OUT_STORAGE_KEY) === "1") return;
+  } catch {
+    // Fall through for browsers that do not expose session storage.
+  }
 
   startLogin();
 };

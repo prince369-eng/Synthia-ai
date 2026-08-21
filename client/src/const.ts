@@ -22,6 +22,15 @@ declare global {
 // with "invalid oauth state". It returns void by design, so there is no URL to
 // stash across renders.
 export type AuthEntryIntent = "signIn" | "signUp" | "google";
+export const EXPLICIT_SIGNED_OUT_STORAGE_KEY = "synthia:explicit-signed-out";
+
+export function clearExplicitSignedOutState() {
+  try {
+    sessionStorage.removeItem(EXPLICIT_SIGNED_OUT_STORAGE_KEY);
+  } catch {
+    // Storage can be unavailable in private or embedded browser contexts.
+  }
+}
 
 /**
  * Manus uses one verified `/app-auth?type=signIn` entry mode for SSO. Its
@@ -51,6 +60,9 @@ export const startLogin = (intent: AuthEntryIntent = "signIn") => {
     throw new Error("Synthia sign-in configuration is unavailable.");
   }
 
+  // A new OAuth flow is always an explicit user action. Allow it to replace
+  // the signed-out public state, but never let failed background requests do so.
+  clearExplicitSignedOutState();
   const nonce = crypto.randomUUID();
   document.cookie = `${OAUTH_STATE_COOKIE}=${nonce}; Path=/; Max-Age=600; SameSite=None; Secure`;
   window.location.href = buildAccountPortalUrl({ appId, oauthPortalUrl, origin: window.location.origin, nonce, intent }).toString();
