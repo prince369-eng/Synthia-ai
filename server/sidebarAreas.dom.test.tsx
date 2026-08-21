@@ -5,7 +5,7 @@ import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { AgentNavigationControls, agentTaskStateCopy, runtimeCapabilityCopy } from "../client/src/pages/Agent";
 import { ConnectedIntegrationRow, filterPluginServices, providerStatusCopy } from "../client/src/pages/Plugins";
-import { ProjectCreateForm, ProjectWorkspaceLink } from "../client/src/pages/Projects";
+import { ProjectCreateForm, ProjectsEmptyState, ProjectWorkspaceLink } from "../client/src/pages/Projects";
 import { ProfileMenu } from "../client/src/components/SynthiaAppShell";
 
 afterEach(cleanup);
@@ -24,6 +24,16 @@ describe("reference-led Synthia sidebar areas", () => {
 
     expect(onCreate).toHaveBeenCalledWith({ name: "Launch plan", description: "Quarterly research" });
     expect(onOpen).toHaveBeenCalledTimes(1);
+  });
+
+  it("keeps the Projects zero-state task route explicitly user-controlled", async () => {
+    const user = userEvent.setup();
+    const onOpenTasks = vi.fn();
+    render(<ProjectsEmptyState onOpenTasks={onOpenTasks} />);
+
+    expect(screen.getByRole("heading", { name: "No projects yet" })).toBeTruthy();
+    await user.click(screen.getByRole("button", { name: "Open tasks" }));
+    expect(onOpenTasks).toHaveBeenCalledTimes(1);
   });
 
   it("reports truthful Agent runtime states and preserves both primary navigation actions", async () => {

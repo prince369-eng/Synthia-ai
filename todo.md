@@ -3096,3 +3096,4 @@
 - [x] Remove duplicated Agent route controls while preserving the primary task and capabilities navigation in a quiet, descriptive capability section.
 - [x] Align Plugins search and connector-state controls with the established teal/cyan workspace tokens while retaining truthful unavailable and empty states.
 - [x] Refine the Library search and zero-deliverable state with shared controls and a clear task-workspace escape path without creating a task automatically.
+- [x] Refine the Projects zero-state with a clear task-workspace route while retaining the single user-controlled New project action.

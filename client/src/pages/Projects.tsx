@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { FolderPlus, Loader2, Plus } from "lucide-react";
+import { ArrowRight, FolderPlus, Loader2, Plus } from "lucide-react";
 import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 
@@ -13,6 +13,10 @@ export function ProjectWorkspaceLink({ onOpen }: { onOpen: () => void }) {
   return <button type="button" onClick={onOpen}>Open tasks</button>;
 }
 
+export function ProjectsEmptyState({ onOpenTasks }: { onOpenTasks: () => void }) {
+  return <section className="synthia-empty-state synthia-project-empty" aria-labelledby="projects-empty-heading"><FolderPlus size={18} /><div><h2 id="projects-empty-heading">No projects yet</h2><span>Create a focused context when it helps, then start tasks from your dashboard.</span></div><button type="button" className="synthia-button-secondary" onClick={onOpenTasks}>Open tasks <ArrowRight size={13} /></button></section>;
+}
+
 export default function Projects() {
   const [, setLocation] = useLocation();
   const utils = trpc.useUtils();
@@ -23,7 +27,7 @@ export default function Projects() {
     {showForm ? <ProjectCreateForm pending={create.isPending} onCreate={input => create.mutate(input)} /> : null}
     {projects.isLoading ? <div className="synthia-empty-state"><Loader2 className="animate-spin" size={16} /> Loading projects…</div> : null}
     {projects.isError ? <div className="synthia-empty-state">Projects will become available after the external Synthia PostgreSQL store is configured.</div> : null}
-    {!projects.isLoading && !projects.isError && projects.data?.length === 0 ? <div className="synthia-empty-state"><FolderPlus size={18} /><b>No projects yet</b><span>Create a focused context, then start tasks from your dashboard.</span></div> : null}
+    {!projects.isLoading && !projects.isError && projects.data?.length === 0 ? <ProjectsEmptyState onOpenTasks={() => setLocation("/")} /> : null}
     <div className="synthia-compact-grid">{projects.data?.map(project => <article className="synthia-compact-card" key={project.id}><div><b>{project.name}</b><p>{project.description || "No project context added."}</p></div><ProjectWorkspaceLink onOpen={() => setLocation("/")} /></article>)}</div>
   </section>;
 }
