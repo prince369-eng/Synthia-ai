@@ -3127,3 +3127,12 @@
 - [x] Add additive persistence, protected APIs, and task-event integration for proof records while preserving task ownership and ordered history.
 - [x] Add a task-workspace proof view with clear evidence provenance, verifier status, confidence, recovery options, responsive behavior, and empty/error states.
 - [x] Add deterministic regression coverage and validate the Proof-Carrying Tasks experience without invoking a model, provider, browser, sandbox, media, or storage workload.
+
+## Governed self-healing pipelines and multi-agent collaboration
+
+- [x] Audit Synthia’s existing task retry, worker recovery, task-event, approval, and Skills capabilities against governed pipeline healing and specialist-agent delegation requirements.
+- [x] Research current standards and primary guidance for observable data-pipeline recovery, schema-drift handling, least-privilege repair actions, and multi-agent coordination.
+- [x] Add a user-owned operational runbook model with health signals, diagnosis, bounded remediation proposals, approval requirements, and durable audit events; never auto-execute a repair.
+- [x] Add task-scoped specialist-agent roles and delegation records so a coordinator can propose decomposed researcher, analyst, writer, coder, and reviewer work with shared task context and explicit user approval.
+- [x] Add inspectable workspace controls for pipeline health, repair proposals, delegation status, empty states, and unavailable states without simulating an active repair or agent run.
+- [x] Add deterministic coverage and validate the governed repair and multi-agent UI/API paths without invoking model, provider, browser, sandbox, storage, data-pipeline, or repair workloads.

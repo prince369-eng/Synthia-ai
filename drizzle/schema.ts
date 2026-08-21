@@ -17,10 +17,16 @@ import {
 const userRoleEnum = pgEnum("user_role", ["user", "admin"]);
 const taskStatusEnum = pgEnum("task_status", ["queued", "booting", "planning", "running", "needs_input", "paused", "completed", "failed", "cancelled"]);
 const estimateBandEnum = pgEnum("estimate_band", ["quick", "standard", "extensive"]);
-const eventTypeEnum = pgEnum("event_type", ["user_message", "agent_message", "clarifying_question", "plan_update", "tool_call", "tool_result", "approval_request", "approval_response", "screenshot", "error", "status_change", "context_summary", "user_file_edit", "user_terminal_command", "task_metadata", "skill_loaded", "voice_session", "voice_transcript", "screen_share", "proof_record"]);
+const eventTypeEnum = pgEnum("event_type", ["user_message", "agent_message", "clarifying_question", "plan_update", "tool_call", "tool_result", "approval_request", "approval_response", "screenshot", "error", "status_change", "context_summary", "user_file_edit", "user_terminal_command", "task_metadata", "skill_loaded", "voice_session", "voice_transcript", "screen_share", "proof_record", "pipeline_health", "remediation_proposal", "delegation"]);
 const messageRoleEnum = pgEnum("message_role", ["user", "agent"]);
 const voiceSessionStatusEnum = pgEnum("voice_session_status", ["starting", "active", "ended", "failed"]);
 const proofVerificationStatusEnum = pgEnum("proof_verification_status", ["self_attested", "unverified", "corroborated", "contradicted", "needs_review"]);
+const pipelineHealthStatusEnum = pgEnum("pipeline_health_status", ["healthy", "degraded", "unhealthy", "unknown"]);
+const pipelineSeverityEnum = pgEnum("pipeline_severity", ["info", "warning", "critical"]);
+const schemaDriftTypeEnum = pgEnum("schema_drift_type", ["none", "additive", "breaking", "type_change", "nullability_change", "semantic"]);
+const remediationStatusEnum = pgEnum("remediation_status", ["draft", "proposed", "approved", "rejected", "applied", "failed", "expired"]);
+const specialistRoleEnum = pgEnum("specialist_role", ["coordinator", "researcher", "analyst", "writer", "coder", "reviewer"]);
+const delegationStatusEnum = pgEnum("delegation_status", ["proposed", "approved", "queued", "running", "blocked", "completed", "failed", "cancelled"]);
 const sandboxProviderEnum = pgEnum("sandbox_provider", ["docker", "e2b", "hopx"]);
 const sandboxStatusEnum = pgEnum("sandbox_status", ["booting", "active", "checkpointed", "destroyed"]);
 const riskLevelEnum = pgEnum("risk_level", ["low", "medium", "high"]);
@@ -49,7 +55,7 @@ export const users = pgTable("users", {
 });
 
 export const taskStatuses = ["queued", "booting", "planning", "running", "needs_input", "paused", "completed", "failed", "cancelled"] as const;
-export const eventTypes = ["user_message", "agent_message", "clarifying_question", "plan_update", "tool_call", "tool_result", "approval_request", "approval_response", "screenshot", "error", "status_change", "context_summary", "user_file_edit", "user_terminal_command", "task_metadata", "skill_loaded", "voice_session", "voice_transcript", "screen_share", "proof_record"] as const;
+export const eventTypes = ["user_message", "agent_message", "clarifying_question", "plan_update", "tool_call", "tool_result", "approval_request", "approval_response", "screenshot", "error", "status_change", "context_summary", "user_file_edit", "user_terminal_command", "task_metadata", "skill_loaded", "voice_session", "voice_transcript", "screen_share", "proof_record", "pipeline_health", "remediation_proposal", "delegation"] as const;
 
 export const projects = pgTable("projects", {
   id: varchar("id", { length: 36 }).primaryKey(),
@@ -348,6 +354,84 @@ export const personalityProfiles = pgTable("personality_profiles", {
   longTermMemoryEnabled: boolean("long_term_memory_enabled").notNull().default(true),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 });
+
+/**
+ * User-recorded pipeline health observations. The record intentionally stores
+ * bounded observability metadata, never source rows, credentials, or an active
+ * monitoring connection.
+ */
+export const taskPipelineHealthSignals = pgTable("task_pipeline_health_signals", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  taskId: varchar("task_id", { length: 36 }).notNull().references(() => tasks.id, { onDelete: "cascade" }),
+  userId: integer("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  eventId: varchar("event_id", { length: 36 }).notNull().references(() => taskEvents.id, { onDelete: "cascade" }),
+  sourceName: varchar("source_name", { length: 120 }).notNull(),
+  signalType: varchar("signal_type", { length: 80 }).notNull(),
+  healthStatus: pipelineHealthStatusEnum("health_status").notNull().default("unknown"),
+  severity: pipelineSeverityEnum("severity").notNull().default("info"),
+  driftType: schemaDriftTypeEnum("drift_type").notNull().default("none"),
+  summary: text("summary").notNull(),
+  expectedFingerprint: varchar("expected_fingerprint", { length: 160 }),
+  observedFingerprint: varchar("observed_fingerprint", { length: 160 }),
+  observedAt: timestamp("observed_at", { withTimezone: true }).notNull(),
+  metadata: jsonb("metadata").notNull().default({}),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, table => [
+  index("task_pipeline_health_task_observed_idx").on(table.taskId, table.observedAt),
+  index("task_pipeline_health_user_created_idx").on(table.userId, table.createdAt),
+  uniqueIndex("task_pipeline_health_event_unique").on(table.eventId),
+]);
+
+/**
+ * A bounded, reviewable repair proposal. All proposals start without an
+ * executable integration action and remain subject to explicit approval.
+ */
+export const taskRemediationProposals = pgTable("task_remediation_proposals", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  taskId: varchar("task_id", { length: 36 }).notNull().references(() => tasks.id, { onDelete: "cascade" }),
+  userId: integer("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  signalId: varchar("signal_id", { length: 36 }).references(() => taskPipelineHealthSignals.id, { onDelete: "set null" }),
+  eventId: varchar("event_id", { length: 36 }).notNull().references(() => taskEvents.id, { onDelete: "cascade" }),
+  status: remediationStatusEnum("status").notNull().default("draft"),
+  diagnosis: text("diagnosis").notNull(),
+  remediationPlan: jsonb("remediation_plan").notNull(),
+  dryRunSummary: text("dry_run_summary").notNull(),
+  rollbackGuidance: text("rollback_guidance").notNull(),
+  requiresApproval: boolean("requires_approval").notNull().default(true),
+  riskLevel: riskLevelEnum("risk_level").notNull().default("medium"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+}, table => [
+  index("task_remediation_task_created_idx").on(table.taskId, table.createdAt),
+  index("task_remediation_user_status_idx").on(table.userId, table.status, table.updatedAt),
+  uniqueIndex("task_remediation_event_unique").on(table.eventId),
+]);
+
+/**
+ * Specialist work proposed inside a task. Context is deliberately curated and
+ * dependencies remain declarative until a separately configured executor runs
+ * an explicitly approved delegation.
+ */
+export const taskDelegations = pgTable("task_delegations", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  taskId: varchar("task_id", { length: 36 }).notNull().references(() => tasks.id, { onDelete: "cascade" }),
+  userId: integer("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  parentDelegationId: varchar("parent_delegation_id", { length: 36 }),
+  eventId: varchar("event_id", { length: 36 }).notNull().references(() => taskEvents.id, { onDelete: "cascade" }),
+  role: specialistRoleEnum("role").notNull(),
+  status: delegationStatusEnum("status").notNull().default("proposed"),
+  title: varchar("title", { length: 180 }).notNull(),
+  scope: text("scope").notNull(),
+  contextSummary: text("context_summary").notNull(),
+  dependencyIds: jsonb("dependency_ids").notNull().default([]),
+  requiresApproval: boolean("requires_approval").notNull().default(true),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+}, table => [
+  index("task_delegations_task_created_idx").on(table.taskId, table.createdAt),
+  index("task_delegations_user_status_idx").on(table.userId, table.status, table.updatedAt),
+  uniqueIndex("task_delegations_event_unique").on(table.eventId),
+]);
 
 export const personalizationMemories = pgTable("personalization_memories", {
   id: varchar("id", { length: 36 }).primaryKey(),

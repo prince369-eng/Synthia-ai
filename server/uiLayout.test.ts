@@ -472,6 +472,33 @@ describe("compact workspace layout contract", () => {
     expect(schema).toContain('"proof_record"');
   });
 
+  it("keeps pipeline repair proposals and specialist delegation explicit, task-owned, and non-executing", () => {
+    const workspace = readFileSync(new URL("../client/src/pages/TaskWorkspace.tsx", import.meta.url), "utf8");
+    const router = readFileSync(new URL("../server/routers.ts", import.meta.url), "utf8");
+    const db = readFileSync(new URL("../server/db.ts", import.meta.url), "utf8");
+    const schema = readFileSync(new URL("../drizzle/schema.ts", import.meta.url), "utf8");
+
+    expect(workspace).toContain('id: "operations", label: "Operations", icon: AlertTriangle');
+    expect(workspace).toContain("Governed operations");
+    expect(workspace).toContain("These controls never monitor a source, run a repair, or start an agent automatically.");
+    expect(workspace).toContain('aria-label="Record pipeline health"');
+    expect(workspace).toContain('aria-label="Propose governed remediation"');
+    expect(workspace).toContain('aria-label="Delegate specialist work"');
+    expect(workspace).toContain("Save proposal — no repair runs");
+    expect(workspace).toContain("Save delegation proposal — no agent starts");
+    expect(router).toContain("recordPipelineHealth: protectedProcedure");
+    expect(router).toContain("proposeRemediation: protectedProcedure");
+    expect(router).toContain("proposeDelegation: protectedProcedure");
+    expect(router).toContain('await requireOwnedTask(input.taskId, ctx.user.id)');
+    expect(router).toContain('enforceUserMutationLimit(ctx.user.id, "pipeline-health-record", 60, 3_600)');
+    expect(db).toContain("createTaskPipelineHealthSignalForUser");
+    expect(db).toContain("createTaskRemediationProposalForUser");
+    expect(db).toContain("createTaskDelegationForUser");
+    expect(schema).toContain("taskPipelineHealthSignals");
+    expect(schema).toContain("taskRemediationProposals");
+    expect(schema).toContain("taskDelegations");
+  });
+
   it("keeps the compact dashboard and workspace hierarchy in cool Synthia neutrals", () => {
     const dashboard = readFileSync(new URL("../client/src/pages/TaskDashboard.tsx", import.meta.url), "utf8");
     const workspace = readFileSync(new URL("../client/src/pages/TaskWorkspace.tsx", import.meta.url), "utf8");

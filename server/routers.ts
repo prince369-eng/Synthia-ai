@@ -7,7 +7,10 @@ import {
   appendTaskEvent,
   clearSessionPersonalizationMemories,
   createPersonalizationMemory,
+  createTaskDelegationForUser,
+  createTaskPipelineHealthSignalForUser,
   createTaskProofRecordForUser,
+  createTaskRemediationProposalForUser,
   createDeliverable,
   createProjectForUser,
   createTaskForUser,
@@ -31,7 +34,10 @@ import {
   listTaskDeliverables,
   listTaskEvents,
   listTaskMessages,
+  listTaskDelegationsForUser,
+  listTaskPipelineHealthSignalsForUser,
   listTaskProofRecordsForUser,
+  listTaskRemediationProposalsForUser,
   listTaskSandboxes,
   listTasksForUser,
   recordUserMessage,
@@ -173,6 +179,36 @@ const createProofRecordSchema = taskIdSchema.extend({
   verificationStatus: z.enum(["self_attested", "unverified", "corroborated", "contradicted", "needs_review"]),
   confidence: z.number().int().min(0).max(100),
   recoveryGuidance: z.string().trim().min(4).max(1_200).optional(),
+});
+const pipelineHealthSignalSchema = taskIdSchema.extend({
+  sourceName: z.string().trim().min(2).max(120),
+  signalType: z.string().trim().min(2).max(80),
+  healthStatus: z.enum(["healthy", "degraded", "unhealthy", "unknown"]),
+  severity: z.enum(["info", "warning", "critical"]),
+  driftType: z.enum(["none", "additive", "breaking", "type_change", "nullability_change", "semantic"]),
+  summary: z.string().trim().min(8).max(1_500),
+  expectedFingerprint: z.string().trim().min(3).max(160).optional(),
+  observedFingerprint: z.string().trim().min(3).max(160).optional(),
+  observedAt: z.coerce.date().max(new Date(Date.now() + 60_000)),
+  metadata: z.record(z.string().min(1).max(80), z.union([z.string().max(240), z.number().finite(), z.boolean(), z.null()]))
+    .refine(value => Object.keys(value).length <= 12, "Provide no more than 12 health metadata fields.")
+    .optional(),
+});
+const remediationProposalSchema = taskIdSchema.extend({
+  signalId: z.string().uuid().optional(),
+  diagnosis: z.string().trim().min(12).max(2_000),
+  remediationPlan: z.array(z.string().trim().min(4).max(500)).min(1).max(12),
+  dryRunSummary: z.string().trim().min(12).max(1_500),
+  rollbackGuidance: z.string().trim().min(12).max(1_500),
+  riskLevel: z.enum(["low", "medium", "high"]),
+});
+const taskDelegationSchema = taskIdSchema.extend({
+  parentDelegationId: z.string().uuid().optional(),
+  role: z.enum(["coordinator", "researcher", "analyst", "writer", "coder", "reviewer"]),
+  title: z.string().trim().min(3).max(180),
+  scope: z.string().trim().min(12).max(1_500),
+  contextSummary: z.string().trim().min(12).max(3_000),
+  dependencyIds: z.array(z.string().uuid()).max(12).default([]),
 });
 export const attachmentMimeSchema = z.string().trim().min(3).max(100).regex(
   /^(application\/(pdf|json|zip|x-7z-compressed|x-tar|vnd\.(openxmlformats-officedocument\.(wordprocessingml\.document|spreadsheetml\.sheet)|ms-excel|msword))|text\/(plain|csv|markdown)|image\/(png|jpeg|webp)|video\/(mp4|webm|quicktime))$/,
@@ -587,7 +623,7 @@ export const appRouter = router({
     list: protectedProcedure.input(z.object({ includeArchived: z.boolean().optional() }).optional()).query(async ({ ctx, input }) => listTasksForUser(ctx.user.id, input?.includeArchived)),
     get: protectedProcedure.input(taskIdSchema).query(async ({ ctx, input }) => {
       const task = await requireOwnedTask(input.taskId, ctx.user.id);
-      const [events, messages, approvals, deliverables, attachments, sandboxRows, skillSelections, proofRecords] = await Promise.all([
+      const [events, messages, approvals, deliverables, attachments, sandboxRows, skillSelections, proofRecords, pipelineHealthSignals, remediationProposals, delegations] = await Promise.all([
         listTaskEvents(task.id),
         listTaskMessages(task.id),
         listTaskApprovals(task.id),
@@ -596,8 +632,11 @@ export const appRouter = router({
         listTaskSandboxes(task.id),
         getTaskSkillSelectionsForUser(task.id, ctx.user.id),
         listTaskProofRecordsForUser(task.id, ctx.user.id),
+        listTaskPipelineHealthSignalsForUser(task.id, ctx.user.id),
+        listTaskRemediationProposalsForUser(task.id, ctx.user.id),
+        listTaskDelegationsForUser(task.id, ctx.user.id),
       ]);
-      return { task, events, messages, approvals, deliverables, attachments, sandboxes: sandboxRows, skillSelections, proofRecords };
+      return { task, events, messages, approvals, deliverables, attachments, sandboxes: sandboxRows, skillSelections, proofRecords, pipelineHealthSignals, remediationProposals, delegations };
     }),
     artifactUrl: protectedProcedure
       .input(taskIdSchema.extend({ deliverableId: z.string().uuid() }))
@@ -705,6 +744,46 @@ export const appRouter = router({
         } catch (error) {
           console.error(JSON.stringify({ event: "task_proof_record_failed", taskId: input.taskId, userId: ctx.user.id, message: error instanceof Error ? error.message : "unknown" }));
           throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "The proof record could not be saved. Please retry." });
+        }
+      }),
+    recordPipelineHealth: protectedProcedure
+      .input(pipelineHealthSignalSchema)
+      .mutation(async ({ ctx, input }) => {
+        await enforceUserMutationLimit(ctx.user.id, "pipeline-health-record", 60, 3_600);
+        await requireOwnedTask(input.taskId, ctx.user.id);
+        try {
+          return await createTaskPipelineHealthSignalForUser({ ...input, userId: ctx.user.id });
+        } catch (error) {
+          console.error(JSON.stringify({ event: "pipeline_health_record_failed", taskId: input.taskId, userId: ctx.user.id, message: error instanceof Error ? error.message : "unknown" }));
+          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "The pipeline health signal could not be recorded. Please retry." });
+        }
+      }),
+    proposeRemediation: protectedProcedure
+      .input(remediationProposalSchema)
+      .mutation(async ({ ctx, input }) => {
+        await enforceUserMutationLimit(ctx.user.id, "remediation-proposal", 30, 3_600);
+        await requireOwnedTask(input.taskId, ctx.user.id);
+        try {
+          return await createTaskRemediationProposalForUser({ ...input, userId: ctx.user.id });
+        } catch (error) {
+          const message = error instanceof Error ? error.message : "The remediation proposal could not be saved.";
+          if (message.includes("signal")) throw new TRPCError({ code: "NOT_FOUND", message });
+          console.error(JSON.stringify({ event: "remediation_proposal_failed", taskId: input.taskId, userId: ctx.user.id, message }));
+          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "The remediation proposal could not be saved. Please retry." });
+        }
+      }),
+    proposeDelegation: protectedProcedure
+      .input(taskDelegationSchema)
+      .mutation(async ({ ctx, input }) => {
+        await enforceUserMutationLimit(ctx.user.id, "task-delegation-proposal", 40, 3_600);
+        await requireOwnedTask(input.taskId, ctx.user.id);
+        try {
+          return await createTaskDelegationForUser({ ...input, userId: ctx.user.id });
+        } catch (error) {
+          const message = error instanceof Error ? error.message : "The specialist delegation could not be saved.";
+          if (message.includes("delegation")) throw new TRPCError({ code: "NOT_FOUND", message });
+          console.error(JSON.stringify({ event: "task_delegation_proposal_failed", taskId: input.taskId, userId: ctx.user.id, message }));
+          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "The specialist delegation could not be saved. Please retry." });
         }
       }),
     generateMedia: protectedProcedure.input(mediaGenerationSchema).mutation(async ({ ctx, input }) => {

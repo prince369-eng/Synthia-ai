@@ -18,10 +18,13 @@ import {
   skillInstalls,
   skills,
   taskAttachments,
+  taskDelegations,
   taskEvents,
   taskEventSequences,
   taskMessages,
+  taskPipelineHealthSignals,
   taskProofRecords,
+  taskRemediationProposals,
   taskSkillSelections,
   tasks,
   type Project,
@@ -784,6 +787,198 @@ export type VoiceSessionSettings = {
   personality: string;
   speechRate: number;
 };
+
+export type PipelineHealthSignalInput = {
+  taskId: string;
+  userId: number;
+  sourceName: string;
+  signalType: string;
+  healthStatus: "healthy" | "degraded" | "unhealthy" | "unknown";
+  severity: "info" | "warning" | "critical";
+  driftType: "none" | "additive" | "breaking" | "type_change" | "nullability_change" | "semantic";
+  summary: string;
+  expectedFingerprint?: string;
+  observedFingerprint?: string;
+  observedAt: Date;
+  metadata?: Record<string, string | number | boolean | null>;
+};
+
+export type RemediationProposalInput = {
+  taskId: string;
+  userId: number;
+  signalId?: string;
+  diagnosis: string;
+  remediationPlan: string[];
+  dryRunSummary: string;
+  rollbackGuidance: string;
+  riskLevel: "low" | "medium" | "high";
+};
+
+export type TaskDelegationInput = {
+  taskId: string;
+  userId: number;
+  parentDelegationId?: string;
+  role: "coordinator" | "researcher" | "analyst" | "writer" | "coder" | "reviewer";
+  title: string;
+  scope: string;
+  contextSummary: string;
+  dependencyIds: string[];
+};
+
+export async function listTaskPipelineHealthSignalsForUser(taskId: string, userId: number) {
+  const database = databaseRequired(await getDb());
+  return database
+    .select()
+    .from(taskPipelineHealthSignals)
+    .where(and(eq(taskPipelineHealthSignals.taskId, taskId), eq(taskPipelineHealthSignals.userId, userId)))
+    .orderBy(desc(taskPipelineHealthSignals.observedAt), desc(taskPipelineHealthSignals.createdAt));
+}
+
+export async function listTaskRemediationProposalsForUser(taskId: string, userId: number) {
+  const database = databaseRequired(await getDb());
+  return database
+    .select()
+    .from(taskRemediationProposals)
+    .where(and(eq(taskRemediationProposals.taskId, taskId), eq(taskRemediationProposals.userId, userId)))
+    .orderBy(desc(taskRemediationProposals.createdAt));
+}
+
+export async function listTaskDelegationsForUser(taskId: string, userId: number) {
+  const database = databaseRequired(await getDb());
+  return database
+    .select()
+    .from(taskDelegations)
+    .where(and(eq(taskDelegations.taskId, taskId), eq(taskDelegations.userId, userId)))
+    .orderBy(asc(taskDelegations.createdAt));
+}
+
+export async function createTaskPipelineHealthSignalForUser(input: PipelineHealthSignalInput) {
+  const database = databaseRequired(await getDb());
+  return database.transaction(async transaction => {
+    const event = await appendTaskEventInTransaction(transaction, input.taskId, {
+      type: "pipeline_health",
+      payload: {
+        sourceName: input.sourceName,
+        signalType: input.signalType,
+        healthStatus: input.healthStatus,
+        severity: input.severity,
+        driftType: input.driftType,
+        summary: input.summary,
+        observedAt: input.observedAt.toISOString(),
+      },
+    });
+    const record = {
+      id: randomUUID(),
+      taskId: input.taskId,
+      userId: input.userId,
+      eventId: event.id,
+      sourceName: input.sourceName,
+      signalType: input.signalType,
+      healthStatus: input.healthStatus,
+      severity: input.severity,
+      driftType: input.driftType,
+      summary: input.summary,
+      expectedFingerprint: input.expectedFingerprint ?? null,
+      observedFingerprint: input.observedFingerprint ?? null,
+      observedAt: input.observedAt,
+      metadata: input.metadata ?? {},
+    };
+    await transaction.insert(taskPipelineHealthSignals).values(record);
+    return record;
+  });
+}
+
+export async function createTaskRemediationProposalForUser(input: RemediationProposalInput) {
+  const database = databaseRequired(await getDb());
+  return database.transaction(async transaction => {
+    if (input.signalId) {
+      const [signal] = await transaction
+        .select({ id: taskPipelineHealthSignals.id })
+        .from(taskPipelineHealthSignals)
+        .where(and(
+          eq(taskPipelineHealthSignals.id, input.signalId),
+          eq(taskPipelineHealthSignals.taskId, input.taskId),
+          eq(taskPipelineHealthSignals.userId, input.userId),
+        ))
+        .limit(1);
+      if (!signal) throw new Error("The selected health signal is unavailable.");
+    }
+    const event = await appendTaskEventInTransaction(transaction, input.taskId, {
+      type: "remediation_proposal",
+      payload: {
+        signalId: input.signalId ?? null,
+        status: "proposed",
+        riskLevel: input.riskLevel,
+        requiresApproval: true,
+        stepCount: input.remediationPlan.length,
+      },
+    });
+    const record = {
+      id: randomUUID(),
+      taskId: input.taskId,
+      userId: input.userId,
+      signalId: input.signalId ?? null,
+      eventId: event.id,
+      status: "proposed" as const,
+      diagnosis: input.diagnosis,
+      remediationPlan: input.remediationPlan,
+      dryRunSummary: input.dryRunSummary,
+      rollbackGuidance: input.rollbackGuidance,
+      requiresApproval: true,
+      riskLevel: input.riskLevel,
+    };
+    await transaction.insert(taskRemediationProposals).values(record);
+    return record;
+  });
+}
+
+export async function createTaskDelegationForUser(input: TaskDelegationInput) {
+  const database = databaseRequired(await getDb());
+  return database.transaction(async transaction => {
+    if (input.parentDelegationId) {
+      const [parent] = await transaction
+        .select({ id: taskDelegations.id })
+        .from(taskDelegations)
+        .where(and(eq(taskDelegations.id, input.parentDelegationId), eq(taskDelegations.taskId, input.taskId), eq(taskDelegations.userId, input.userId)))
+        .limit(1);
+      if (!parent) throw new Error("The parent delegation is unavailable.");
+    }
+    if (input.dependencyIds.length) {
+      const dependencies = await transaction
+        .select({ id: taskDelegations.id })
+        .from(taskDelegations)
+        .where(and(eq(taskDelegations.taskId, input.taskId), eq(taskDelegations.userId, input.userId)));
+      const ownedIds = new Set(dependencies.map(item => item.id));
+      if (input.dependencyIds.some(id => !ownedIds.has(id))) throw new Error("One or more delegation dependencies are unavailable.");
+    }
+    const event = await appendTaskEventInTransaction(transaction, input.taskId, {
+      type: "delegation",
+      payload: {
+        role: input.role,
+        status: "proposed",
+        title: input.title,
+        dependencyCount: input.dependencyIds.length,
+        requiresApproval: true,
+      },
+    });
+    const record = {
+      id: randomUUID(),
+      taskId: input.taskId,
+      userId: input.userId,
+      parentDelegationId: input.parentDelegationId ?? null,
+      eventId: event.id,
+      role: input.role,
+      status: "proposed" as const,
+      title: input.title,
+      scope: input.scope,
+      contextSummary: input.contextSummary,
+      dependencyIds: input.dependencyIds,
+      requiresApproval: true,
+    };
+    await transaction.insert(taskDelegations).values(record);
+    return record;
+  });
+}
 
 export async function createVoiceSessionForTask(input: {
   taskId: string;
