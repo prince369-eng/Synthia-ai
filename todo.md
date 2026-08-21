@@ -3136,3 +3136,8 @@
 - [x] Add task-scoped specialist-agent roles and delegation records so a coordinator can propose decomposed researcher, analyst, writer, coder, and reviewer work with shared task context and explicit user approval.
 - [x] Add inspectable workspace controls for pipeline health, repair proposals, delegation status, empty states, and unavailable states without simulating an active repair or agent run.
 - [x] Add deterministic coverage and validate the governed repair and multi-agent UI/API paths without invoking model, provider, browser, sandbox, storage, data-pipeline, or repair workloads.
+
+## Voice Mode and screen sharing readiness verification
+
+- [x] Verify the existing Voice Mode entry control, native local screen-sharing control, consent states, configuration gate, and deployment prerequisites against the requested interaction pattern without starting capture or a realtime provider workload.
+- [x] Document the verified availability status and only implement a user-visible control adjustment if the existing safe feature boundary is incomplete.
