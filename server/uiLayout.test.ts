@@ -53,6 +53,19 @@ describe("compact workspace layout contract", () => {
     expect(WORKSPACE_RETURN_ROUTES).toEqual({ dashboard: "/", library: "/library" });
   });
 
+  it("keeps the Docs resource actions balanced and reachable across responsive widths", () => {
+    const docs = readFileSync(new URL("../client/src/pages/Docs.tsx", import.meta.url), "utf8");
+    const css = readFileSync(new URL("../client/src/index.css", import.meta.url), "utf8");
+
+    expect(docs).toContain('className="synthia-docs-grid"');
+    expect(docs).toContain('className="synthia-compact-card synthia-docs-card"');
+    expect(docs).toContain('href="/docs/environment-reference.md"');
+    expect(docs).toContain('setLocation("/settings/integrations")');
+    expect(docs).toContain('setLocation("/")');
+    expect(css).toContain(".synthia-docs-grid { @apply grid gap-2 md:grid-cols-2 xl:grid-cols-3; }");
+    expect(css).toContain(".synthia-docs-card { @apply h-full; }");
+  });
+
   it("renders the profile menu, grouped settings navigation, and both workspace return actions", () => {
     const shell = readFileSync(new URL("../client/src/components/SynthiaAppShell.tsx", import.meta.url), "utf8");
     const settings = readFileSync(new URL("../client/src/pages/Settings.tsx", import.meta.url), "utf8");

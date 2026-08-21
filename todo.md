@@ -3092,3 +3092,4 @@
 - [x] Add user-owned schedule persistence and deployment-gated Heartbeat lifecycle APIs without creating any jobs in development.
 - [x] Build an accessible Scheduled interface with accurate pre-deployment guidance and safe schedule-management controls.
 - [x] Add schedule ownership, cron validation, deployment gating, idempotency, and responsive UI regression coverage without creating external jobs.
+- [x] Refine the Docs route into a balanced, responsive resource grid so its three real guidance actions retain clear hierarchy without sparse desktop space.

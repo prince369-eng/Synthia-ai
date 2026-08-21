@@ -113,7 +113,9 @@ button:not(:disabled):active { transform: scale(.97); }
   .synthia-empty-state b { @apply text-[#eadfd2]; }
   .synthia-empty-state span { @apply max-w-md leading-5; }
   .synthia-compact-grid { @apply grid gap-2 lg:grid-cols-2; }
+  .synthia-docs-grid { @apply grid gap-2 md:grid-cols-2 xl:grid-cols-3; }
   .synthia-compact-card { @apply flex min-h-18 items-center gap-3 rounded-lg border border-white/8 bg-[#17201f] px-3 py-2.5 text-left; }
+  .synthia-docs-card { @apply h-full; }
   .synthia-compact-card > div { @apply min-w-0 flex-1; }
   .synthia-compact-card b { @apply block truncate text-xs font-semibold text-[#eee3d7]; }
   .synthia-compact-card p { @apply mt-1 text-[11px] leading-4 text-[#938477]; }
