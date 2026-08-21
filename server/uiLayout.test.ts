@@ -66,6 +66,16 @@ describe("compact workspace layout contract", () => {
     expect(css).toContain(".synthia-docs-card { @apply h-full; }");
   });
 
+  it("provides a keyboard skip link that targets the public landing page main content", () => {
+    const home = readFileSync(new URL("../client/src/pages/Home.tsx", import.meta.url), "utf8");
+    const css = readFileSync(new URL("../client/src/index.css", import.meta.url), "utf8");
+
+    expect(home).toContain('className="synthia-skip-link" href="#synthia-main-content"');
+    expect(home).toContain('<main id="synthia-main-content" className="synthia-marketing">');
+    expect(css).toContain(".synthia-skip-link");
+    expect(css).toContain(".synthia-skip-link:focus-visible");
+  });
+
   it("renders the profile menu, grouped settings navigation, and both workspace return actions", () => {
     const shell = readFileSync(new URL("../client/src/components/SynthiaAppShell.tsx", import.meta.url), "utf8");
     const settings = readFileSync(new URL("../client/src/pages/Settings.tsx", import.meta.url), "utf8");

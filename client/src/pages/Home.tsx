@@ -60,7 +60,9 @@ export default function Home() {
   };
 
   return (
-    <main className="synthia-marketing">
+    <>
+      <a className="synthia-skip-link" href="#synthia-main-content">Skip to main content</a>
+      <main id="synthia-main-content" className="synthia-marketing">
       <div className="synthia-marketing-grid" aria-hidden="true" />
       <header className="synthia-marketing-nav">
         <button className="synthia-marketing-brand" type="button" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })} aria-label="Back to the top of Synthia AI">
@@ -185,7 +187,8 @@ export default function Home() {
         <button type="button" className="synthia-marketing-hero-primary" onClick={startSignup}>Open Synthia AI <ArrowRight size={16} /></button>
       </section>
 
-      <footer className="synthia-marketing-footer"><span>© {new Date().getFullYear()} Synthia AI</span><span>Autonomous work, under your control.</span></footer>
-    </main>
+        <footer className="synthia-marketing-footer"><span>© {new Date().getFullYear()} Synthia AI</span><span>Autonomous work, under your control.</span></footer>
+      </main>
+    </>
   );
 }

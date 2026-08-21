@@ -3099,4 +3099,5 @@
 - [x] Refine the Projects zero-state with a clear task-workspace route while retaining the single user-controlled New project action.
 - [x] Reproduce and fix the reported sign-out auto-return loop so logout remains stable until the user explicitly chooses to sign in again.
 - [x] Refine the public mobile navigation with explicit control linkage and Escape-key dismissal while preserving the existing sign-in and sign-up actions.
+- [x] Add a visible-on-focus skip link to the public landing page so keyboard users can bypass repeated navigation and reach the main task narrative.
 - [ ] Refine Settings section search with an explicit clear action and current-section semantics while retaining existing filter and no-match behavior.
