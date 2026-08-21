@@ -142,18 +142,18 @@ button:not(:disabled):active { transform: scale(.97); }
   .synthia-nav.collapsed .synthia-new-task, .synthia-nav.collapsed .synthia-nav-item { @apply justify-center px-0; }
   .synthia-dashboard { @apply min-h-screen bg-[#101716]; }
   .synthia-dashboard-header { @apply flex h-13 items-center justify-between gap-3 border-b border-white/[.055] px-5 sm:px-7; }
-  .synthia-dashboard-header-actions { @apply flex items-center gap-1.5 text-xs text-[#a99a8d]; }
+  .synthia-dashboard-header-actions { @apply flex items-center gap-1.5 text-xs text-[#91a7a1]; }
   .synthia-header-action { @apply grid h-7 w-7 place-items-center rounded-md text-[#758985] hover:bg-white/5 hover:text-cyan-100 disabled:cursor-not-allowed disabled:opacity-40; }
   .synthia-header-popover { @apply absolute right-0 top-[calc(100%+.45rem)] z-30 grid min-w-40 gap-1 rounded-lg border border-white/10 bg-[#1d2927] p-1.5 shadow-xl; }
-  .synthia-header-popover b { @apply px-1.5 pt-0.5 text-[11px] font-medium text-[#ede2d5]; }
-  .synthia-header-popover span { @apply px-1.5 pb-1 text-[10px] text-[#9b8b7d]; }
+  .synthia-header-popover b { @apply px-1.5 pt-0.5 text-[11px] font-medium text-[#e5f2ef]; }
+  .synthia-header-popover span { @apply px-1.5 pb-1 text-[10px] text-[#778985]; }
   .synthia-header-popover button { @apply rounded-md px-1.5 py-1.5 text-left text-[11px] text-[#cce0db] hover:bg-teal-400/10 hover:text-cyan-100; }
-  .synthia-control-plane { @apply ml-1 hidden items-center gap-1.5 text-[11px] text-[#8d8175] sm:inline-flex; }
+  .synthia-control-plane { @apply ml-1 hidden items-center gap-1.5 text-[11px] text-[#778985] sm:inline-flex; }
   .synthia-chat-stage { @apply mx-auto flex w-full max-w-[736px] flex-col items-center px-5 pb-16 pt-[clamp(3.25rem,8vh,6.25rem)] sm:px-8; }
-  .synthia-workspace-kicker { @apply mb-4 flex items-center gap-1.5 text-[10px] font-medium tracking-[.08em] text-[#938477]; }
+  .synthia-workspace-kicker { @apply mb-4 flex items-center gap-1.5 text-[10px] font-medium tracking-[.08em] text-[#91a7a1]; }
   .synthia-workspace-kicker svg { @apply text-cyan-300; }
-  .synthia-chat-stage h1 { font-family: Georgia, "Times New Roman", serif; @apply text-center text-[clamp(2rem,4vw,3rem)] leading-[1.08] tracking-[-.035em] text-[#f6ecdf]; }
-  .synthia-chat-intro { @apply mt-3 max-w-md text-center text-[13px] leading-5 text-[#948578]; }
+  .synthia-chat-stage h1 { font-family: Georgia, "Times New Roman", serif; @apply text-center text-[clamp(2rem,4vw,3rem)] leading-[1.08] tracking-[-.035em] text-[#e5f2ef]; }
+  .synthia-chat-intro { @apply mt-3 max-w-md text-center text-[13px] leading-5 text-[#91a7a1]; }
   .synthia-chat-composer { @apply mt-8 w-full rounded-xl border border-white/[.09] bg-[#17201f] p-3 shadow-[0_12px_38px_rgba(0,0,0,.18)]; }
   .synthia-chat-input { @apply min-h-26 w-full resize-none border-0 bg-transparent px-2 py-2 text-sm leading-6 text-[#eef9f6] placeholder:text-[#6e817d] focus-visible:ring-0; }
   .synthia-attachment-chips { @apply flex flex-wrap gap-1.5 px-2 pb-2; }
@@ -163,7 +163,7 @@ button:not(:disabled):active { transform: scale(.97); }
   .synthia-composer-actions { @apply flex flex-wrap items-center justify-between gap-2 border-t border-white/[.06] pt-2; }
   .synthia-composer-control-group { @apply flex min-w-0 items-center gap-1; }
   .synthia-composer-control-group-end { @apply ml-auto; }
-  .synthia-composer-toggle { @apply inline-flex h-7 shrink-0 items-center gap-1.5 rounded-md border border-transparent px-2 text-[11px] text-[#8f8173] hover:bg-white/[.045] hover:text-[#e9ddcf]; }
+  .synthia-composer-toggle { @apply inline-flex h-7 shrink-0 items-center gap-1.5 rounded-md border border-transparent px-2 text-[11px] text-[#91a7a1] hover:bg-white/[.045] hover:text-[#e5f2ef]; }
   .synthia-composer-toggle.active { @apply border-teal-300/25 bg-teal-400/10 text-cyan-200; }
   .synthia-composer-plus { @apply grid h-7 w-7 place-items-center rounded-md border border-white/9 bg-white/[.025] text-[#a7bbb7] hover:border-teal-300/30 hover:bg-teal-400/10 hover:text-cyan-100; }
   .synthia-composer-plus.active { @apply border-teal-300/35 bg-teal-400/12 text-cyan-100; }
@@ -172,39 +172,39 @@ button:not(:disabled):active { transform: scale(.97); }
   .synthia-attachment-menu button { @apply flex h-8 items-center gap-2 rounded-md px-2 text-left text-[11px] text-[#cce0db] hover:bg-teal-400/10 hover:text-cyan-100; }
   .synthia-project-select { @apply h-7 max-w-32 rounded-md border border-white/8 bg-[#141c1b] px-2 text-[10px] text-[#9cb2ad] outline-none hover:border-teal-300/25 focus:border-cyan-300/40; }
   .synthia-task-controls-menu { @apply absolute bottom-[calc(100%+.4rem)] left-0 z-30 grid w-64 gap-1 rounded-lg border border-white/10 bg-[#1d2927] p-1.5 shadow-xl; }
-  .synthia-task-controls-menu > p { @apply px-2 py-1 text-[9px] font-semibold uppercase tracking-[.14em] text-[#786b5e]; }
+  .synthia-task-controls-menu > p { @apply px-2 py-1 text-[9px] font-semibold uppercase tracking-[.14em] text-[#718580]; }
   .synthia-task-controls-menu > button { @apply flex items-start gap-2 rounded-md px-2 py-2 text-left hover:bg-teal-400/10; }
   .synthia-task-controls-menu > button svg { @apply mt-0.5 shrink-0 text-cyan-200; }
   .synthia-task-controls-menu > button span { @apply min-w-0; }
-  .synthia-task-controls-menu > button b { @apply block text-[11px] font-medium text-[#eee2d3]; }
-  .synthia-task-controls-menu > button small { @apply mt-0.5 block text-[10px] text-[#8e8073]; }
+  .synthia-task-controls-menu > button b { @apply block text-[11px] font-medium text-[#e5f2ef]; }
+  .synthia-task-controls-menu > button small { @apply mt-0.5 block text-[10px] text-[#91a7a1]; }
   .synthia-task-controls-menu > button.active { @apply bg-teal-400/10; }
   .synthia-control-choice-group { @apply mx-2 mt-1 border-t border-white/[.07] py-2; }
-  .synthia-control-choice-group > span { @apply mb-1.5 block text-[10px] text-[#8e8073]; }
-  .synthia-control-choice-group button { @apply mr-1.5 rounded-md border border-white/[.08] px-2 py-1 text-[10px] text-[#9f9081] hover:text-[#eee2d3]; }
+  .synthia-control-choice-group > span { @apply mb-1.5 block text-[10px] text-[#91a7a1]; }
+  .synthia-control-choice-group button { @apply mr-1.5 rounded-md border border-white/[.08] px-2 py-1 text-[10px] text-[#91a7a1] hover:text-[#e5f2ef]; }
   .synthia-control-choice-group button.active { @apply border-teal-300/25 bg-teal-400/10 text-cyan-100; }
-  .synthia-task-controls-menu label { @apply mx-2 mb-1 grid gap-1 border-t border-white/[.07] pt-2 text-[10px] text-[#8e8073]; }
+  .synthia-task-controls-menu label { @apply mx-2 mb-1 grid gap-1 border-t border-white/[.07] pt-2 text-[10px] text-[#91a7a1]; }
   .synthia-task-controls-menu select { @apply h-7 rounded-md border border-white/[.08] bg-[#141c1b] px-2 text-[10px] text-[#bed3ce] outline-none; }
   .synthia-model-trigger { @apply max-w-40; }
   .synthia-model-trigger span { @apply max-w-23 truncate; }
   .synthia-model-menu { @apply absolute bottom-[calc(100%+.4rem)] right-0 z-20 grid w-57 max-h-[min(16rem,calc(100dvh-8rem))] overflow-y-auto overscroll-contain rounded-lg border border-white/10 bg-[#1d2927] p-1 shadow-xl; scrollbar-color: rgb(34 211 238 / .6) transparent; scrollbar-gutter: stable; scrollbar-width: thin; }
   .synthia-model-menu button { @apply grid gap-0.5 rounded-md px-2 py-1.5 text-left hover:bg-teal-400/10; }
   .synthia-model-menu button.active { @apply bg-teal-400/10; }
-  .synthia-model-menu b { @apply truncate text-[11px] font-medium text-[#eee2d3]; }
-  .synthia-model-menu small, .synthia-model-menu p { @apply text-[10px] leading-4 text-[#8e8073]; }
+  .synthia-model-menu b { @apply truncate text-[11px] font-medium text-[#e5f2ef]; }
+  .synthia-model-menu small, .synthia-model-menu p { @apply text-[10px] leading-4 text-[#91a7a1]; }
   .synthia-model-menu p { @apply p-2; }
   .synthia-media-menu { @apply w-72 gap-1 p-1.5; }
   .synthia-media-capability { @apply flex items-start gap-2 rounded-md border border-white/6 bg-white/[.018] px-2 py-2; }
   .synthia-media-capability > svg { @apply mt-0.5 shrink-0 text-cyan-200; }
   .synthia-media-capability > span { @apply min-w-0 flex-1; }
-  .synthia-media-capability b { @apply block truncate text-[11px] font-medium text-[#eee2d3]; }
-  .synthia-media-capability small { @apply mt-0.5 block leading-4 text-[#8e8073]; }
+  .synthia-media-capability b { @apply block truncate text-[11px] font-medium text-[#e5f2ef]; }
+  .synthia-media-capability small { @apply mt-0.5 block leading-4 text-[#91a7a1]; }
   .synthia-media-capability em { @apply shrink-0 rounded-full border px-1.5 py-0.5 text-[9px] not-italic; }
   .synthia-media-capability em.ready { @apply border-emerald-300/20 bg-emerald-400/[.08] text-emerald-200; }
   .synthia-media-capability em.pending { @apply border-teal-300/20 bg-teal-400/[.08] text-cyan-200; }
   .synthia-mic-button { @apply grid w-7 place-items-center px-0; }
   .synthia-recording-dot { @apply h-1.5 w-1.5 rounded-full bg-rose-300; }
-  .synthia-estimate { @apply mt-2 px-1 text-[11px] text-[#7d6f62]; }
+  .synthia-estimate { @apply mt-2 px-1 text-[11px] text-[#778985]; }
   .synthia-estimate span { @apply text-cyan-200; }
   .synthia-route-preview { @apply mt-2 flex items-start gap-1.5 px-1 text-[11px] leading-4 text-cyan-100; }
   .synthia-route-preview svg { @apply mt-0.5 shrink-0 text-cyan-300; }
@@ -216,21 +216,21 @@ button:not(:disabled):active { transform: scale(.97); }
   .synthia-capability-menu button { @apply flex min-h-15 items-start gap-2 rounded-lg border border-transparent px-2.5 py-2 text-left hover:border-teal-300/15 hover:bg-teal-400/10; }
   .synthia-capability-menu button > svg { @apply mt-0.5 shrink-0 text-cyan-200; }
   .synthia-capability-menu button > span { @apply min-w-0; }
-  .synthia-capability-menu b { @apply block text-[11px] font-medium text-[#eee2d3]; }
-  .synthia-capability-menu small { @apply mt-0.5 block text-[10px] leading-4 text-[#8e8073]; }
-  .synthia-capability-menu p { @apply col-span-2 border-t border-white/7 px-2.5 pb-1 pt-2 text-[10px] leading-4 text-[#8e8073]; }
+  .synthia-capability-menu b { @apply block text-[11px] font-medium text-[#e5f2ef]; }
+  .synthia-capability-menu small { @apply mt-0.5 block text-[10px] leading-4 text-[#91a7a1]; }
+  .synthia-capability-menu p { @apply col-span-2 border-t border-white/7 px-2.5 pb-1 pt-2 text-[10px] leading-4 text-[#91a7a1]; }
   .synthia-model-menu::-webkit-scrollbar, .synthia-capability-menu::-webkit-scrollbar { width: .5rem; }
   .synthia-model-menu::-webkit-scrollbar-thumb, .synthia-capability-menu::-webkit-scrollbar-thumb { border: 2px solid #1d2927; border-radius: 999px; background: rgb(34 211 238 / .6); }
   .synthia-model-menu::-webkit-scrollbar-track, .synthia-capability-menu::-webkit-scrollbar-track { background: transparent; }
   .synthia-dashboard-tasks { @apply mt-12 w-full border-t border-white/[.055] pt-5; }
   .synthia-section-heading { @apply mb-2 flex items-center justify-between px-1; }
-  .synthia-section-heading h2 { @apply text-xs font-semibold text-[#eee3d7]; }
-  .synthia-section-heading span { @apply text-[11px] text-[#75685d]; }
-  .synthia-loading-row, .synthia-empty-tasks, .synthia-unavailable-note { @apply flex items-center gap-2 rounded-lg border border-white/7 bg-white/[.018] px-3 py-3 text-xs text-[#8e8073]; }
+  .synthia-section-heading h2 { @apply text-xs font-semibold text-[#e5f2ef]; }
+  .synthia-section-heading span { @apply text-[11px] text-[#778985]; }
+  .synthia-loading-row, .synthia-empty-tasks, .synthia-unavailable-note { @apply flex items-center gap-2 rounded-lg border border-white/7 bg-white/[.018] px-3 py-3 text-xs text-[#91a7a1]; }
   .synthia-unavailable-note { @apply border-teal-300/12 bg-teal-400/[.035] text-[#9ab5af]; }
   .synthia-task-row { @apply flex w-full items-center gap-3 rounded-lg border border-transparent px-2.5 py-2.5 text-left hover:border-white/[.07] hover:bg-white/[.02]; }
-  .synthia-task-row b { @apply block truncate text-xs font-medium text-[#eee3d7]; }
-  .synthia-task-row small { @apply mt-0.5 block truncate text-[11px] text-[#817368]; }
+  .synthia-task-row b { @apply block truncate text-xs font-medium text-[#e5f2ef]; }
+  .synthia-task-row small { @apply mt-0.5 block truncate text-[11px] text-[#778985]; }
   .synthia-workspace { @apply min-h-screen overflow-hidden bg-[#101817]; }
   .synthia-workspace-header { @apply flex h-14 items-center justify-between gap-3 border-b border-white/8 px-4 sm:px-5; }
   .synthia-workspace-return-nav { @apply flex items-center gap-1; }

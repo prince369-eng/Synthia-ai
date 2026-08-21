@@ -3053,10 +3053,10 @@
 - [x] Add deterministic UI, authorization, and responsive-layout regressions; verify the page without launching sandbox, browser, model, or media workloads.
 
 ## Compact workspace hierarchy refinement
-- [ ] Audit authenticated shell, dashboard, and task-workspace density against the requested calm Manus-style navigation hierarchy.
-- [ ] Refine sidebar, header, composer, task detail, and Live Computer spacing to preserve all controls while reducing visual noise and oversized surfaces.
-- [ ] Preserve the teal/cyan visual system, white-text contrast, and bounded cyan scroll affordances across desktop and mobile layouts.
-- [ ] Add source and responsive visual regressions, then verify dashboard and task workspace without provider workloads.
+- [x] Audit authenticated shell, dashboard, and task-workspace density against the requested calm Manus-style navigation hierarchy.
+- [x] Refine sidebar, header, composer, task detail, and Live Computer spacing to preserve all controls while reducing visual noise and oversized surfaces.
+- [x] Preserve the teal/cyan visual system, white-text contrast, and bounded cyan scroll affordances across desktop and mobile layouts.
+- [x] Add source and responsive visual regressions, then verify dashboard and task workspace without provider workloads.
 
 ## Live Computer and public-entry motion refinement
 - [x] Match the Live Computer hierarchy to the supplied Manus reference with task progress visible beside the active computer surface.
@@ -3068,3 +3068,5 @@
 - [x] Build the animated public Synthia AI landing page with branded hero, feature sections, use-case highlights, responsive navigation, and reduced-motion support.
 - [x] Refine sign-in and sign-up surfaces with Synthia motion, compact branded layout, accessible states, and authenticated redirect continuity.
 - [x] Verify Live Computer JSX integrity, split/focus behavior, tab skeleton transitions, and landing/auth responsive presentation.
+- [x] Audit and compact the authenticated dashboard and task workspace hierarchy across desktop and mobile without changing task or provider behavior.
+- [x] Add responsive regression coverage for the authenticated dashboard and task workspace density pass.

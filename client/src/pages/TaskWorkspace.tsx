@@ -38,7 +38,7 @@ export default function TaskWorkspace({ replayMode = false }: { replayMode?: boo
   const events = useMemo(() => replayCursor === undefined ? data?.events ?? [] : (data?.events ?? []).filter(event => event.sequenceNumber <= replayCursor), [data?.events, replayCursor]);
 
   function sendMessage(event: FormEvent) { event.preventDefault(); if (taskId && message.trim()) addMessage.mutate({ taskId, content: message.trim() }); }
-  if (snapshot.isLoading) return <div className="grid min-h-screen place-items-center text-sm text-[#a89889]"><Loader2 className="mr-2 animate-spin" size={16} />Loading task workspace…</div>;
+  if (snapshot.isLoading) return <div className="grid min-h-screen place-items-center text-sm text-[#91a7a1]"><Loader2 className="mr-2 animate-spin" size={16} />Loading task workspace…</div>;
   if (snapshot.isError || !task || !taskId) return <main className="p-8"><Link href={WORKSPACE_RETURN_ROUTES.dashboard} className="text-sm text-cyan-300">← Back to tasks</Link><p role="alert" className="mt-5 text-rose-300">{snapshot.error?.message ?? "The requested task is unavailable."}</p></main>;
 
   const tabs: Array<{ id: WorkspaceTab; label: string; icon: typeof Code2 }> = [{ id: "screen", label: "Screen", icon: MonitorDot }, { id: "website", label: "Website", icon: Globe2 }, { id: "code", label: "Code", icon: Code2 }, { id: "terminal", label: "Terminal", icon: TerminalSquare }, { id: "files", label: "Files", icon: FolderTree }, { id: "timeline", label: "Timeline", icon: ListTree }, { id: "plan", label: "Plan", icon: FileText }];

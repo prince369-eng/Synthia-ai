@@ -261,7 +261,7 @@ export default function TaskDashboard() {
   return (
     <div className="synthia-dashboard">
       <header className="synthia-dashboard-header">
-        <div className="flex items-center gap-2"><span className="text-sm font-semibold text-[#f5eadb]">Synthia AI</span><span className="hidden h-4 w-px bg-white/10 sm:block" /><span className="hidden text-xs text-[#8d7e70] sm:inline">Workspace</span></div>
+        <div className="flex items-center gap-2"><span className="text-sm font-semibold text-[#e5f2ef]">Synthia AI</span><span className="hidden h-4 w-px bg-white/10 sm:block" /><span className="hidden text-xs text-[#778985] sm:inline">Workspace</span></div>
         <div className="synthia-dashboard-header-actions">
           <div className="relative">
             <button type="button" className="synthia-header-action" aria-label="Usage summary" title="Usage" onClick={() => setHeaderMenu(value => value === "usage" ? null : "usage")}><Gauge size={15} /></button>
@@ -317,7 +317,7 @@ export default function TaskDashboard() {
           {goal.trim().length >= 8 ? <p className="synthia-route-preview" data-testid="automatic-route-preview"><Sparkles size={12} />{automaticRoutePreview(automaticRoute, Boolean(selectedModel))}</p> : null}
           {estimate.data ? <p className="synthia-estimate">Estimated: <span>{estimate.data.estimatedCreditsMin}–{estimate.data.estimatedCreditsMax} credits</span></p> : null}
           {visualInputBlocked ? <p role="alert" className="mt-2 px-1 text-xs text-amber-200">This task includes an image. Select a vision-capable model or return to Automatic routing before starting.</p> : null}
-          {attachmentError ? <div role="alert" className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 px-1 text-xs text-rose-300"><span>{attachmentError}</span>{voicePermissionBlocked ? <><button type="button" className="font-medium text-cyan-200 underline decoration-cyan-300/50 underline-offset-2 transition-colors hover:text-cyan-100" onClick={() => void toggleVoiceCapture()}>Try microphone again</button><button type="button" className="font-medium text-[#c4b8a6] underline decoration-white/20 underline-offset-2 transition-colors hover:text-[#f5eadb]" aria-label="Dismiss microphone warning" onClick={dismissVoiceWarning}>Dismiss</button></> : null}</div> : null}
+          {attachmentError ? <div role="alert" className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 px-1 text-xs text-rose-300"><span>{attachmentError}</span>{voicePermissionBlocked ? <><button type="button" className="font-medium text-cyan-200 underline decoration-cyan-300/50 underline-offset-2 transition-colors hover:text-cyan-100" onClick={() => void toggleVoiceCapture()}>Try microphone again</button><button type="button" className="font-medium text-[#91a7a1] underline decoration-white/20 underline-offset-2 transition-colors hover:text-[#e5f2ef]" aria-label="Dismiss microphone warning" onClick={dismissVoiceWarning}>Dismiss</button></> : null}</div> : null}
           {createTask.isError ? <p role="alert" className="mt-3 text-xs text-rose-300">{createTask.error.message}</p> : null}
           <input ref={fileInputRef} onChange={event => void chooseLocalFile(event)} className="sr-only" type="file" accept=".pdf,.txt,.md,.csv,.json,.doc,.docx,.xls,.xlsx,.zip,.7z,.tar,.png,.jpg,.jpeg,.webp,.mp4,.webm,.mov" />
         </form>

@@ -308,4 +308,16 @@ describe("compact workspace layout contract", () => {
     expect(css).toContain(".synthia-computer-skeleton");
     expect(css).toContain("@keyframes synthia-skeleton-shimmer");
   });
+
+  it("keeps the compact dashboard and workspace hierarchy in cool Synthia neutrals", () => {
+    const dashboard = readFileSync(new URL("../client/src/pages/TaskDashboard.tsx", import.meta.url), "utf8");
+    const workspace = readFileSync(new URL("../client/src/pages/TaskWorkspace.tsx", import.meta.url), "utf8");
+    const css = readFileSync(new URL("../client/src/index.css", import.meta.url), "utf8");
+
+    expect(dashboard).toContain('text-[#e5f2ef]">Synthia AI');
+    expect(workspace).toContain('text-[#91a7a1]"><Loader2');
+    expect(css).toContain(".synthia-chat-stage h1");
+    expect(css).toContain("text-[#e5f2ef]");
+    expect(css).not.toContain(".synthia-chat-stage h1 { font-family: Georgia, \"Times New Roman\", serif; @apply text-center text-[clamp(2rem,4vw,3rem)] leading-[1.08] tracking-[-.035em] text-[#f6ecdf]");
+  });
 });
