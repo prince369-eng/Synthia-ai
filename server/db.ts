@@ -415,6 +415,41 @@ export async function getTaskRunComparisonForUser(input: { taskId: string; userI
   };
 }
 
+/** Returns owner-scoped lineage metadata only. Artifact URLs, storage keys, event payloads, provider output, and credentials are deliberately excluded. */
+export async function getTaskProvenanceBundleForUser(input: { taskId: string; userId: number }) {
+  const task = await getTaskForUser(input.taskId, input.userId);
+  if (!task) throw new Error("Task ownership could not be verified.");
+  const [events, taskDeliverables, proofRecords] = await Promise.all([
+    listTaskEvents(task.id),
+    listTaskDeliverables(task.id),
+    listTaskProofRecordsForUser(task.id, input.userId),
+  ]);
+  return {
+    bundle: {
+      version: "synthia-provenance/v1",
+      generatedAt: new Date(),
+      task: {
+        id: task.id,
+        title: task.title,
+        status: task.status,
+        createdAt: task.createdAt,
+        startedAt: task.startedAt,
+        completedAt: task.completedAt,
+        updatedAt: task.updatedAt,
+      },
+      timeline: events.map(event => ({ sequenceNumber: event.sequenceNumber, type: event.type, createdAt: event.createdAt })),
+      deliverables: taskDeliverables.map(deliverable => ({ id: deliverable.id, sourceEventId: deliverable.eventId, filename: deliverable.filename, fileType: deliverable.fileType, isFinal: deliverable.isFinal, createdAt: deliverable.createdAt })),
+      proofRecords: proofRecords.map(proof => ({ id: proof.id, sourceEventId: proof.eventId, claim: proof.claim, verificationStatus: proof.verificationStatus, confidence: proof.confidence, createdAt: proof.createdAt })),
+    },
+    safeguards: [
+      "Owner-scoped metadata only",
+      "No artifact bytes, URLs, storage keys, event payloads, or credentials",
+      "No task, proof, evaluation, provider, policy, Skill, or approval is changed",
+      "Download is generated locally only after the owner selects it",
+    ],
+  };
+}
+
 export async function getTaskById(taskId: string): Promise<Task | undefined> {
   const database = databaseRequired(await getDb());
   const result = await database.select().from(tasks).where(eq(tasks.id, taskId)).limit(1);

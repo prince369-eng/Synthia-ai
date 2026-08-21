@@ -98,6 +98,29 @@ export function TaskRunComparisonPanel({ taskId }: { taskId: string }) {
   </section>;
 }
 
+/** Shows only durable owner-scoped lineage metadata; downloading remains a local, explicit browser action. */
+export function TaskProvenancePanel({ taskId }: { taskId: string }) {
+  const provenance = trpc.tasks.provenance.useQuery({ taskId });
+  const bundle = provenance.data?.bundle;
+  const safeguards = provenance.data?.safeguards ?? [];
+  const downloadMetadata = () => {
+    if (!bundle) return;
+    const blob = new Blob([JSON.stringify(bundle, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = `synthia-provenance-${taskId}.json`;
+    anchor.click();
+    URL.revokeObjectURL(url);
+  };
+  return <section className="space-y-3" aria-label="Artifact provenance bundle">
+    <div className="rounded-xl border border-teal-300/15 bg-teal-300/[.04] p-3"><div className="flex items-start gap-2"><FileText size={16} className="mt-0.5 shrink-0 text-cyan-300" /><div><h2 className="text-xs font-semibold text-[#e5f2ef]">Artifact provenance</h2><p className="mt-1 text-[11px] leading-5 text-[#a8bbb6]">Inspect the durable lineage of this task’s events, deliverables, and proof records. This bundle is metadata-only and never retrieves file bytes, event payloads, storage URLs, or credentials.</p></div></div></div>
+    {provenance.isLoading ? <p className="rounded-lg border border-white/8 bg-white/[.03] p-3 text-[11px] text-[#a8bbb6]">Loading owner-scoped provenance metadata…</p> : null}
+    {provenance.isError ? <p role="alert" className="rounded-lg border border-rose-300/20 bg-rose-300/[.05] p-3 text-[11px] text-rose-200">{provenance.error.message}</p> : null}
+    {bundle ? <><div className="grid gap-2 sm:grid-cols-3"><article className="rounded-lg border border-white/8 bg-white/[.025] p-3"><p className="text-[10px] uppercase tracking-[.12em] text-[#778985]">Timeline entries</p><p className="mt-1 text-lg font-semibold text-cyan-100">{bundle.timeline.length}</p></article><article className="rounded-lg border border-white/8 bg-white/[.025] p-3"><p className="text-[10px] uppercase tracking-[.12em] text-[#778985]">Deliverables</p><p className="mt-1 text-lg font-semibold text-cyan-100">{bundle.deliverables.length}</p></article><article className="rounded-lg border border-white/8 bg-white/[.025] p-3"><p className="text-[10px] uppercase tracking-[.12em] text-[#778985]">Proof records</p><p className="mt-1 text-lg font-semibold text-cyan-100">{bundle.proofRecords.length}</p></article></div><div className="rounded-lg border border-white/8 bg-[#14201e] p-3"><div className="flex flex-wrap items-center justify-between gap-2"><div><p className="text-[11px] font-semibold text-[#dcece7]">Metadata-only bundle</p><p className="mt-1 text-[10px] leading-4 text-[#91a7a1]">Created locally in your browser only when you select download. It cannot change this task or start work.</p></div><Button size="sm" variant="outline" onClick={downloadMetadata} className="h-7 border-cyan-300/20 bg-cyan-300/[.04] px-2 text-[11px] text-cyan-100 hover:bg-cyan-300/10">Download JSON</Button></div></div><div className="space-y-2"><p className="text-[11px] font-semibold text-[#dcece7]">Safeguards</p>{safeguards.map(safeguard => <p key={safeguard} className="rounded-md border border-white/8 bg-white/[.025] px-2.5 py-2 text-[11px] text-[#a8bbb6]">{safeguard}</p>)}</div>{bundle.deliverables.length === 0 && bundle.proofRecords.length === 0 ? <p className="rounded-lg border border-dashed border-white/12 p-3 text-[11px] leading-5 text-[#91a7a1]">No deliverable or proof metadata has been recorded for this task yet. Synthia will not fabricate lineage or create records automatically.</p> : null}</> : null}
+  </section>;
+}
+
 type EvaluationPack = {
   id: string;
   title: string;

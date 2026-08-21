@@ -3229,3 +3229,17 @@
 - [x] Add a focused connector management view for connected apps, available apps, scope explanations, and explicit approval-before-action guidance.
 - [x] Simplify related Settings connector content so it links to app management rather than repeating provider or backend readiness details.
 - [x] Add responsive UI regression coverage, validation, and a checkpoint for the privacy-preserving connector redesign.
+
+## App-first connector catalog
+
+- [ ] Replace Pipedream and Composio cards with user-facing app cards and map each app to a private eligible authorization route.
+- [ ] Show clear app capabilities, required user authorization, and approval-before-action limits without exposing connector-engine names or internal services.
+- [ ] Extend protected connection contracts to request an authorization session for a selected app only after an explicit user click.
+- [ ] Update connected-app management, deterministic coverage, documentation, validation, and a checkpoint for the app-first catalog.
+
+## Artifact provenance bundles
+
+- [x] Map owner-scoped task, deliverable, proof, and ordered event facts into a read-only provenance representation without retrieving artifact bytes.
+- [x] Add protected provenance bundle APIs that preserve ownership, exclude secrets and provider credentials, and cannot alter task state.
+- [x] Render a task-workspace provenance panel with transparent lineage fields, empty states, and an owner-triggered metadata-only download.
+- [x] Add deterministic authorization and non-mutation coverage, safe-use documentation, validation, and a checkpoint for provenance bundles.

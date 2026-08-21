@@ -22,6 +22,7 @@ import {
   type TaskPlanStep,
   getLibraryDeliverableForUser,
   getTaskRunComparisonForUser,
+  getTaskProvenanceBundleForUser,
   getTaskForUser,
   getTaskSkillSelectionsForUser,
   getPersonalizationProfile,
@@ -655,6 +656,10 @@ export const appRouter = router({
       await requireOwnedTask(input.taskId, ctx.user.id);
       if (input.comparisonTaskId) await requireOwnedTask(input.comparisonTaskId, ctx.user.id);
       return getTaskRunComparisonForUser({ taskId: input.taskId, userId: ctx.user.id, comparisonTaskId: input.comparisonTaskId });
+    }),
+    provenance: protectedProcedure.input(taskIdSchema).query(async ({ ctx, input }) => {
+      await requireOwnedTask(input.taskId, ctx.user.id);
+      return getTaskProvenanceBundleForUser({ taskId: input.taskId, userId: ctx.user.id });
     }),
     get: protectedProcedure.input(taskIdSchema).query(async ({ ctx, input }) => {
       const task = await requireOwnedTask(input.taskId, ctx.user.id);

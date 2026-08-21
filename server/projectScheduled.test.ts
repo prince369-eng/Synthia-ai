@@ -132,6 +132,14 @@ describe("projects and scheduled router procedures", () => {
     vi.spyOn(db, "listTaskApprovals").mockResolvedValue([] as never);
     vi.spyOn(db, "listTaskDeliverables").mockResolvedValue([] as never);
     vi.spyOn(db, "listTaskSandboxes").mockResolvedValue([] as never);
+    vi.spyOn(db, "getTaskSkillSelectionsForUser").mockResolvedValue([] as never);
+    vi.spyOn(db, "listTaskProofRecordsForUser").mockResolvedValue([] as never);
+    vi.spyOn(db, "listTaskPipelineHealthSignalsForUser").mockResolvedValue([] as never);
+    vi.spyOn(db, "listTaskRemediationProposalsForUser").mockResolvedValue([] as never);
+    vi.spyOn(db, "listTaskDelegationsForUser").mockResolvedValue([] as never);
+    vi.spyOn(db, "listPendingTaskLessonsForUser").mockResolvedValue([] as never);
+    vi.spyOn(db, "listTaskEvaluationPacksForUser").mockResolvedValue([] as never);
+    vi.spyOn(db, "listTaskEvaluationResultsForUser").mockResolvedValue([] as never);
 
     const result = await appRouter.createCaller(createContext()).tasks.get({ taskId: projectId });
 
