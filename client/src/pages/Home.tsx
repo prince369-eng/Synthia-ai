@@ -1,6 +1,6 @@
 import { startLogin, startSignup } from "@/const";
 import { ArrowRight, Bot, CheckCircle2, ChevronRight, Code2, Eye, FileText, Globe2, Menu, ShieldCheck, Sparkles, WandSparkles, X } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 const capabilities = [
   {
@@ -44,6 +44,15 @@ const useCases = [
 export default function Home() {
   const [menuOpen, setMenuOpen] = useState(false);
 
+  useEffect(() => {
+    if (!menuOpen) return;
+    const dismissOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setMenuOpen(false);
+    };
+    window.addEventListener("keydown", dismissOnEscape);
+    return () => window.removeEventListener("keydown", dismissOnEscape);
+  }, [menuOpen]);
+
   const closeMenu = () => setMenuOpen(false);
   const goToCapabilities = () => {
     closeMenu();
@@ -67,12 +76,12 @@ export default function Home() {
           <button type="button" className="synthia-marketing-signin" onClick={() => startLogin("signIn")}>Sign in</button>
           <button type="button" className="synthia-marketing-cta" onClick={startSignup}>Get started <ArrowRight size={15} /></button>
         </div>
-        <button type="button" className="synthia-marketing-menu" onClick={() => setMenuOpen(open => !open)} aria-expanded={menuOpen} aria-label={menuOpen ? "Close navigation" : "Open navigation"}>
+        <button type="button" className="synthia-marketing-menu" onClick={() => setMenuOpen(open => !open)} aria-controls="synthia-public-navigation" aria-expanded={menuOpen} aria-label={menuOpen ? "Close navigation" : "Open navigation"}>
           {menuOpen ? <X size={18} /> : <Menu size={18} />}
         </button>
       </header>
 
-      {menuOpen ? <nav className="synthia-marketing-mobile-menu" aria-label="Mobile public navigation">
+      {menuOpen ? <nav id="synthia-public-navigation" className="synthia-marketing-mobile-menu" aria-label="Mobile public navigation">
         <a href="#capabilities" onClick={closeMenu}>Capabilities</a>
         <a href="#workflow" onClick={closeMenu}>How it works</a>
         <a href="#use-cases" onClick={closeMenu}>Use cases</a>

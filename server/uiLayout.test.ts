@@ -379,6 +379,9 @@ describe("compact workspace layout contract", () => {
     expect(home).toContain("Autonomous work, made inspectable");
     expect(home).toContain("Agent’s Computer");
     expect(home).toContain("Automatic routing");
+    expect(home).toContain('aria-controls="synthia-public-navigation"');
+    expect(home).toContain('id="synthia-public-navigation"');
+    expect(home).toContain('event.key === "Escape"');
     expect(css).toContain(".synthia-marketing{min-height:100vh");
     expect(css).toContain(".synthia-marketing-feature-grid{display:grid;grid-template-columns:repeat(3,1fr)");
     expect(css).toContain("@media(max-width:880px)");

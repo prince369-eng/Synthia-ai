@@ -3098,4 +3098,5 @@
 - [x] Refine the Library search and zero-deliverable state with shared controls and a clear task-workspace escape path without creating a task automatically.
 - [x] Refine the Projects zero-state with a clear task-workspace route while retaining the single user-controlled New project action.
 - [x] Reproduce and fix the reported sign-out auto-return loop so logout remains stable until the user explicitly chooses to sign in again.
+- [x] Refine the public mobile navigation with explicit control linkage and Escape-key dismissal while preserving the existing sign-in and sign-up actions.
 - [ ] Refine Settings section search with an explicit clear action and current-section semantics while retaining existing filter and no-match behavior.
