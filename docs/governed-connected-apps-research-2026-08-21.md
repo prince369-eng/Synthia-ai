@@ -50,6 +50,16 @@ Composio’s hosted link endpoint is `POST /api/v3.1/connected_accounts/link`. I
 
 > Synthia will present connection availability and user authorization only. It will not display internal LLM, media, sandbox, browser, database, storage, queue, or service-provider configuration in the user-facing Connectors area.
 
+## App-first catalog implementation record
+
+The Plugins experience now presents a local, user-facing catalog of common work applications—Gmail, Google Drive, Google Calendar, Google Sheets, Notion, Slack, GitHub, Linear, Jira, Trello, Airtable, Dropbox, HubSpot, Salesforce, and Asana. It intentionally does **not** fetch an app directory merely to render discovery. This protects the user’s quota and prevents an ordinary page view from becoming a third-party request.
+
+Each card contains only application identity, a bounded description, representative permission areas, an authorization requirement, and the proposal-before-action boundary. It does not name, render, or return the private authorization route. The catalog is copied at the server boundary before it is returned, preventing UI mutation from changing server-owned catalog metadata.
+
+The authorization flow is selected-app-only. A protected API validates a conservative `appSlug` pattern, rate-limits the user-initiated mutation, and creates the short-lived server-side authorization session only after a Connect click. The browser receives an authorization URL but never provider credentials. The verified return path includes the selected application slug so the user can explicitly verify the account connection before any later task proposal refers to it. This aligns with Pipedream’s documented server-created token, stable external user identity, allowed-origin, and redirect model.[5] [9]
+
+> **Current boundary:** rendering the app catalog, searching, filtering, opening the connection manager, and running local tests do not create a third-party connection, OAuth consent window, account lookup, app action, or provider request. A future app action remains unavailable until a user connects a specific app and then approves a task-scoped proposal.
+
 ## References
 
 [1]: https://docs.zapier.com/mcp/manage/security "Zapier MCP security: SOC 2 access controls & compliance"

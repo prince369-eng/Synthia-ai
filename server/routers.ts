@@ -94,7 +94,7 @@ import { captureLiveComputerScreen, listLiveComputerFiles, liveComputerAvailabil
 import { generateWithFallback, parseStructuredModelOutput } from "./agent/llm";
 import { createVoiceModeJoinCredentials, getVoiceModeAvailability } from "./realtime/voiceMode";
 import { buildTaskOfficeExport, OFFICE_EXPORT_FORMATS } from "./office/taskOfficeExport";
-import { appConnectorProviders, appConnectorReadiness, completeZapierMcpAuthorization, startAppConnectorAuthorization, verifyComposioAuthorization, verifyPipedreamAuthorization } from "./integrations/appConnectors";
+import { appConnectorReadiness, completeZapierMcpAuthorization, listUserFacingApps, startAppConnectorAuthorization, verifyComposioAuthorization, verifyPipedreamAuthorization } from "./integrations/appConnectors";
 
 const taskIdSchema = z.object({ taskId: z.string().uuid() });
 const taskTitleSchema = z.string().trim().min(1).max(180);
@@ -1209,11 +1209,12 @@ export const appRouter = router({
   }),
   integrations: router({
     appReadiness: protectedProcedure.query(() => appConnectorReadiness()),
+    appCatalog: protectedProcedure.query(() => listUserFacingApps()),
     startAuthorization: protectedProcedure
-      .input(z.object({ provider: z.enum(appConnectorProviders) }))
+      .input(z.object({ appSlug: z.string().trim().min(2).max(128).regex(/^[a-z0-9][a-z0-9_-]*$/i) }))
       .mutation(async ({ ctx, input }) => {
-        await enforceUserMutationLimit(ctx.user.id, `app-connector-start:${input.provider}`, 10, 3_600);
-        return startAppConnectorAuthorization({ provider: input.provider, userId: ctx.user.id, requestOrigin: requestOrigin(ctx.req) });
+        await enforceUserMutationLimit(ctx.user.id, "app-connector-start", 10, 3_600);
+        return startAppConnectorAuthorization({ appSlug: input.appSlug, userId: ctx.user.id, requestOrigin: requestOrigin(ctx.req) });
       }),
     completeZapierMcp: protectedProcedure
       .input(z.object({ mcpServerUrl: z.string().url().max(2_000) }))
@@ -1222,9 +1223,10 @@ export const appRouter = router({
         return completeZapierMcpAuthorization({ userId: ctx.user.id, mcpServerUrl: input.mcpServerUrl });
       }),
     verifyPipedream: protectedProcedure
-      .mutation(async ({ ctx }) => {
+      .input(z.object({ appSlug: z.string().trim().min(2).max(128).regex(/^[a-z0-9][a-z0-9_-]*$/i) }))
+      .mutation(async ({ ctx, input }) => {
         await enforceUserMutationLimit(ctx.user.id, "app-connector-verify:pipedream", 10, 3_600);
-        return verifyPipedreamAuthorization({ userId: ctx.user.id });
+        return verifyPipedreamAuthorization({ userId: ctx.user.id, appSlug: input.appSlug });
       }),
     verifyComposio: protectedProcedure
       .mutation(async ({ ctx }) => {

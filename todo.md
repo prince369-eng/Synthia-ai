@@ -3232,10 +3232,10 @@
 
 ## App-first connector catalog
 
-- [ ] Replace Pipedream and Composio cards with user-facing app cards and map each app to a private eligible authorization route.
-- [ ] Show clear app capabilities, required user authorization, and approval-before-action limits without exposing connector-engine names or internal services.
-- [ ] Extend protected connection contracts to request an authorization session for a selected app only after an explicit user click.
-- [ ] Update connected-app management, deterministic coverage, documentation, validation, and a checkpoint for the app-first catalog.
+- [x] Replace Pipedream and Composio cards with user-facing app cards and map each app to a private eligible authorization route.
+- [x] Show clear app capabilities, required user authorization, and approval-before-action limits without exposing connector-engine names or internal services.
+- [x] Extend protected connection contracts to request an authorization session for a selected app only after an explicit user click.
+- [x] Update connected-app management, deterministic coverage, documentation, validation, and a checkpoint for the app-first catalog.
 
 ## Artifact provenance bundles
 

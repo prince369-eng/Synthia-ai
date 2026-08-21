@@ -55,14 +55,25 @@ describe("compact workspace layout contract", () => {
   it("keeps the Connectors surface app-only and approval-gated without exposing internal service readiness", () => {
     const plugins = readFileSync(new URL("../client/src/pages/Plugins.tsx", import.meta.url), "utf8");
     const settings = readFileSync(new URL("../client/src/pages/Settings.tsx", import.meta.url), "utf8");
+    const connectorCard = readFileSync(new URL("../client/src/components/AppConnectorCard.tsx", import.meta.url), "utf8");
+    const routers = readFileSync(new URL("../server/routers.ts", import.meta.url), "utf8");
 
-    expect(plugins).toContain("trpc.integrations.appReadiness.useQuery()");
+    expect(plugins).toContain("trpc.integrations.appCatalog.useQuery");
+    expect(plugins).not.toContain("trpc.integrations.appReadiness.useQuery");
     expect(plugins).toContain("Available app connections");
-    expect(plugins).toContain("Private connection details stay with the app provider.");
-    expect(readFileSync(new URL("../client/src/components/AppConnectorCard.tsx", import.meta.url), "utf8")).toContain("Approval required");
+    expect(plugins).toContain("Authorize an app directly; task actions still need your approval.");
+    expect(plugins).toContain("startAuthorization.mutateAsync({ appSlug })");
+    expect(plugins).toContain("verifyApp.mutate({ appSlug: app.slug })");
+    expect(connectorCard).toContain("Permissions");
+    expect(connectorCard).toContain("Approval required");
+    expect(connectorCard).toContain("not the app credential");
+    expect(connectorCard).not.toContain("Pipedream");
+    expect(connectorCard).not.toContain("Composio");
     expect(plugins).toContain('window.location.assign(result.authorizationUrl)');
     expect(plugins).not.toContain("trpc.workspace.serviceReadiness.useQuery()");
     expect(plugins).not.toContain("GOVERNED_CONNECTED_APPS");
+    expect(routers).toContain("appCatalog: protectedProcedure");
+    expect(routers).toContain("appSlug: z.string().trim().min(2).max(128)");
     expect(settings).toContain("Synthia does not expose its internal service configuration here.");
     expect(settings).toContain("Only your connected apps are listed here.");
   });
