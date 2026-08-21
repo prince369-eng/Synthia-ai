@@ -50,6 +50,20 @@
       "when": 1787216724477,
       "tag": "0006_minor_anita_blake",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1787287112680,
+      "tag": "0007_keen_firedrake",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1787287277897,
+      "tag": "0008_heavy_mole_man",
+      "breakpoints": true
     }
   ]
 }

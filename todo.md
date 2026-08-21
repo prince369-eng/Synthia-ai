@@ -3072,3 +3072,10 @@
 - [x] Add responsive regression coverage for the authenticated dashboard and task workspace density pass.
 - [x] Audit and refine authenticated Settings and profile-navigation surfaces across desktop and mobile without exposing configuration internals.
 - [x] Add regression coverage for compact Settings navigation, escape routes, and profile-menu actions.
+- [x] Map the submitted Skills specification into Synthia’s existing task loop and maintain a strict separation between Skills and Connectors.
+- [x] Add user-scoped Skill and Skill-install persistence with safe ownership, visibility, and enabled-state boundaries.
+- [x] Add reviewed skill-draft, edit, enable, disable, and deletion APIs with validated markdown and no automatic activation.
+- [x] Match up to three eligible installed Skills to a submitted task, cache the task-scoped selection, inject only approved instructions into planning, and emit auditable skill-loaded events.
+- [x] Build the Skills Library, reviewed creator, and editor UI without exposing credentials or conflating Skills with Connectors.
+- [x] Verify the profile Sign out action is visible, invokes secure logout, and preserves a usable anonymous entry state.
+- [x] Add security, ownership, routing, automatic-matching, audit, and sign-out regression coverage; validate without model or provider workloads.

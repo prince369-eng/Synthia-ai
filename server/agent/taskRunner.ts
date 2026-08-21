@@ -1,15 +1,18 @@
 import {
   type AutonomySettings,
   appendTaskEvent,
+  cacheTaskSkillSelections,
   createApprovalForTask,
   createDeliverable,
   createSandboxForTask,
   getApprovedPersonalizationContext,
   getRecoverableSandboxForTask,
+  getTaskSkillSelectionsForUser,
   getTaskById,
   getUserById,
   listTaskAttachments,
   listTaskEvents,
+  listEnabledSkillCandidatesForUser,
   recordAgentMessage,
   recordUsageForTask,
   restoreSandboxForTask,
@@ -31,6 +34,7 @@ import { resolveAutomaticTaskModel } from "./automaticRouting";
 import { runtimeConfiguredComposerModels } from "./modelCatalog";
 import { executeTaskMedia } from "../media/taskMedia";
 import { executeSupadataPublicVideoUnderstanding } from "../integrations/supadata";
+import { rankSkillsForGoal, skillPlanningContext } from "./skillMatching";
 
 type ModelDecision = {
   narration: string;
@@ -254,6 +258,20 @@ export async function runTaskCycle(taskId: string) {
     const selectedModel = routing.model;
     const personalization = await getApprovedPersonalizationContext(task.userId);
     const personalizationPrompt = personalizationInstruction(personalization);
+    const cachedSkillSelections = await getTaskSkillSelectionsForUser(task.id, task.userId);
+    const taskSkills = cachedSkillSelections.length
+      ? cachedSkillSelections
+      : await cacheTaskSkillSelections({
+        taskId: task.id,
+        userId: task.userId,
+        selections: rankSkillsForGoal(task.goal, await listEnabledSkillCandidatesForUser(task.userId)).map(skill => ({
+          skillId: skill.id,
+          skillName: skill.name,
+          skillMdContent: skill.skillMdContent,
+          relevanceScore: skill.relevanceScore,
+        })),
+      });
+    const skillsPrompt = skillPlanningContext(taskSkills);
     const model = await generateWithFallback({
     purpose: "orchestrator",
     selectedModel,
@@ -263,6 +281,7 @@ export async function runTaskCycle(taskId: string) {
         content: [
           "You are Synthia AI's task orchestrator. Choose exactly one next action. Never execute external side effects; use external_effect to request approval. Keep all sandbox files under /workspace. Task input attachments are hydrated as read-only files in /workspace/inputs before a sandbox action; inspect them only through sandbox commands. Use publish_file with a workspace path, a plain filename, and a MIME type to deliver a file. Return only JSON: { narration: string, action: { kind: respond|web_search|run_command|write_file|open_url|capture_screen|publish_file|complete|external_effect, ... }, plan?: [{id,title,state}] }.",
           personalizationPrompt,
+          skillsPrompt,
         ].filter(Boolean).join("\n\n"),
       },
       { role: "user", content: await taskModelInput({ title: task.title, goal: task.goal, plan: task.plan, attachments, selectedModel, events: taskContext(events) }) },

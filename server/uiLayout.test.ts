@@ -79,6 +79,23 @@ describe("compact workspace layout contract", () => {
     expect(css).toContain("grid-template-columns: repeat(2, minmax(0, 1fr));");
   });
 
+  it("keeps user-authored Skills reviewed, separate from Connectors, and discoverable in Settings", () => {
+    const settings = readFileSync(new URL("../client/src/pages/Settings.tsx", import.meta.url), "utf8");
+    const router = readFileSync(new URL("../server/routers.ts", import.meta.url), "utf8");
+    const taskRunner = readFileSync(new URL("../server/agent/taskRunner.ts", import.meta.url), "utf8");
+    const db = readFileSync(new URL("../server/db.ts", import.meta.url), "utf8");
+
+    expect(settings).toContain('data-testid="settings-skills-library"');
+    expect(settings).toContain("Skills are separate from Connectors");
+    expect(settings).toContain("Review every instruction before saving");
+    expect(settings).toContain("New Skills are disabled until you explicitly enable them");
+    expect(settings).toContain("Generate draft");
+    expect(router).toContain("skills: router({");
+    expect(router).toContain("createDraft:");
+    expect(db).toContain('type: "skill_loaded"');
+    expect(taskRunner).toContain("skillPlanningContext");
+  });
+
   it("normalizes an unavailable or malformed scheduled-job list into the compact empty state", () => {
     expect(normalizeScheduledJobs(undefined)).toEqual([]);
     expect(normalizeScheduledJobs({ jobs: "invalid" })).toEqual([]);

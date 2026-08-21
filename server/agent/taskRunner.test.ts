@@ -7,9 +7,12 @@ const db = {
   createSandboxForTask: vi.fn(),
   getRecoverableSandboxForTask: vi.fn(),
   getApprovedPersonalizationContext: vi.fn(),
+  getTaskSkillSelectionsForUser: vi.fn(),
   getTaskById: vi.fn(),
   getUserById: vi.fn(),
   listTaskAttachments: vi.fn(),
+  listEnabledSkillCandidatesForUser: vi.fn(),
+  cacheTaskSkillSelections: vi.fn(),
   listTaskEvents: vi.fn(),
   recordAgentMessage: vi.fn(),
   recordUsageForTask: vi.fn(),
@@ -53,6 +56,9 @@ beforeEach(() => {
   vi.clearAllMocks();
   db.getTaskById.mockResolvedValue(baseTask);
   db.getApprovedPersonalizationContext.mockResolvedValue({ dimensions: null, sessionMemories: [], longTermMemories: [] });
+  db.getTaskSkillSelectionsForUser.mockResolvedValue([]);
+  db.listEnabledSkillCandidatesForUser.mockResolvedValue([]);
+  db.cacheTaskSkillSelections.mockResolvedValue([]);
   db.listTaskAttachments.mockResolvedValue([]);
   db.listTaskEvents.mockResolvedValue([]);
   db.appendTaskEvent.mockResolvedValue({ id: "event-1", sequenceNumber: 1 });
