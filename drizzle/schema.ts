@@ -433,6 +433,51 @@ export const taskDelegations = pgTable("task_delegations", {
   uniqueIndex("task_delegations_event_unique").on(table.eventId),
 ]);
 
+/**
+ * User-authored evaluation criteria for a specific task. Packs are declarative:
+ * they never change a model, skill, tool, permission, or task state by themselves.
+ */
+export const taskEvaluationPacks = pgTable("task_evaluation_packs", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  taskId: varchar("task_id", { length: 36 }).notNull().references(() => tasks.id, { onDelete: "cascade" }),
+  userId: integer("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  eventId: varchar("event_id", { length: 36 }).notNull().references(() => taskEvents.id, { onDelete: "cascade" }),
+  title: varchar("title", { length: 160 }).notNull(),
+  successCriteria: jsonb("success_criteria").notNull().default([]),
+  evidenceRequirements: jsonb("evidence_requirements").notNull().default([]),
+  reviewerGuidance: text("reviewer_guidance").notNull(),
+  status: varchar("status", { length: 24 }).notNull().default("draft"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+}, table => [
+  index("task_evaluation_packs_task_created_idx").on(table.taskId, table.createdAt),
+  index("task_evaluation_packs_user_status_idx").on(table.userId, table.status, table.updatedAt),
+  uniqueIndex("task_evaluation_packs_event_unique").on(table.eventId),
+]);
+
+/**
+ * Explicit reviewer outcomes. A proposed lesson is informational until the
+ * owner separately records and approves it through the reviewed-learning flow.
+ */
+export const taskEvaluationResults = pgTable("task_evaluation_results", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  taskId: varchar("task_id", { length: 36 }).notNull().references(() => tasks.id, { onDelete: "cascade" }),
+  userId: integer("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  packId: varchar("pack_id", { length: 36 }).notNull().references(() => taskEvaluationPacks.id, { onDelete: "cascade" }),
+  eventId: varchar("event_id", { length: 36 }).notNull().references(() => taskEvents.id, { onDelete: "cascade" }),
+  verdict: varchar("verdict", { length: 24 }).notNull(),
+  criterionResults: jsonb("criterion_results").notNull().default([]),
+  evidenceReferences: jsonb("evidence_references").notNull().default([]),
+  reviewerSummary: text("reviewer_summary").notNull(),
+  proposedLesson: text("proposed_lesson"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+}, table => [
+  index("task_evaluation_results_task_created_idx").on(table.taskId, table.createdAt),
+  index("task_evaluation_results_user_pack_created_idx").on(table.userId, table.packId, table.createdAt),
+  uniqueIndex("task_evaluation_results_event_unique").on(table.eventId),
+]);
+
 export const personalizationMemories = pgTable("personalization_memories", {
   id: varchar("id", { length: 36 }).primaryKey(),
   userId: integer("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),

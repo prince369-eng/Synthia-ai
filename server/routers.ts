@@ -9,6 +9,8 @@ import {
   createMemoryFact,
   createPersonalizationMemory,
   createTaskDelegationForUser,
+  createTaskEvaluationPackForUser,
+  createTaskEvaluationResultForUser,
   createTaskPipelineHealthSignalForUser,
   createTaskProofRecordForUser,
   createTaskRemediationProposalForUser,
@@ -37,6 +39,8 @@ import {
   listTaskMessages,
   listPendingTaskLessonsForUser,
   listTaskDelegationsForUser,
+  listTaskEvaluationPacksForUser,
+  listTaskEvaluationResultsForUser,
   listTaskPipelineHealthSignalsForUser,
   listTaskProofRecordsForUser,
   listTaskRemediationProposalsForUser,
@@ -170,6 +174,23 @@ const voiceModeSessionSchema = taskIdSchema.extend({ sessionId: z.string().uuid(
 const taskOfficeExportSchema = taskIdSchema.extend({ format: z.enum(OFFICE_EXPORT_FORMATS) });
 const taskLessonSchema = taskIdSchema.extend({ lesson: z.string().trim().min(20).max(1_200), confidence: z.number().min(0).max(1).default(0.7) });
 const reviewTaskLessonSchema = taskIdSchema.extend({ memoryId: z.string().uuid(), decision: z.enum(["active", "archived"]) });
+const evaluationCriterionSchema = z.object({ criterion: z.string().trim().min(4).max(240), rationale: z.string().trim().min(4).max(500).optional() });
+const evaluationEvidenceRequirementSchema = z.object({ requirement: z.string().trim().min(4).max(240), required: z.boolean() });
+const evaluationEvidenceReferenceSchema = z.object({ label: z.string().trim().min(2).max(180), locator: z.string().trim().min(1).max(2_048).optional(), description: z.string().trim().min(2).max(600).optional() });
+const createEvaluationPackSchema = taskIdSchema.extend({
+  title: z.string().trim().min(3).max(160),
+  successCriteria: z.array(evaluationCriterionSchema).min(1).max(12),
+  evidenceRequirements: z.array(evaluationEvidenceRequirementSchema).max(12),
+  reviewerGuidance: z.string().trim().min(4).max(1_200),
+});
+const recordEvaluationResultSchema = taskIdSchema.extend({
+  packId: z.string().uuid(),
+  verdict: z.enum(["pass", "needs_revision", "fail", "inconclusive"]),
+  criterionResults: z.array(z.object({ criterion: z.string().trim().min(4).max(240), result: z.enum(["met", "partially_met", "not_met", "not_assessed"]), notes: z.string().trim().min(2).max(800).optional() })).min(1).max(12),
+  evidenceReferences: z.array(evaluationEvidenceReferenceSchema).max(12),
+  reviewerSummary: z.string().trim().min(4).max(2_000),
+  proposedLesson: z.string().trim().min(20).max(1_200).optional(),
+});
 const voiceModeTranscriptSchema = voiceModeSessionSchema.extend({
   role: z.enum(["user", "agent"]),
   content: z.string().trim().min(1).max(8_000),
@@ -630,7 +651,7 @@ export const appRouter = router({
     list: protectedProcedure.input(z.object({ includeArchived: z.boolean().optional() }).optional()).query(async ({ ctx, input }) => listTasksForUser(ctx.user.id, input?.includeArchived)),
     get: protectedProcedure.input(taskIdSchema).query(async ({ ctx, input }) => {
       const task = await requireOwnedTask(input.taskId, ctx.user.id);
-      const [events, messages, approvals, deliverables, attachments, sandboxRows, skillSelections, proofRecords, pipelineHealthSignals, remediationProposals, delegations, pendingTaskLessons] = await Promise.all([
+      const [events, messages, approvals, deliverables, attachments, sandboxRows, skillSelections, proofRecords, pipelineHealthSignals, remediationProposals, delegations, pendingTaskLessons, evaluationPacks, evaluationResults] = await Promise.all([
         listTaskEvents(task.id),
         listTaskMessages(task.id),
         listTaskApprovals(task.id),
@@ -643,8 +664,10 @@ export const appRouter = router({
         listTaskRemediationProposalsForUser(task.id, ctx.user.id),
         listTaskDelegationsForUser(task.id, ctx.user.id),
         listPendingTaskLessonsForUser({ taskId: task.id, userId: ctx.user.id }),
+        listTaskEvaluationPacksForUser(task.id, ctx.user.id),
+        listTaskEvaluationResultsForUser(task.id, ctx.user.id),
       ]);
-      return { task, events, messages, approvals, deliverables, attachments, sandboxes: sandboxRows, skillSelections, proofRecords, pipelineHealthSignals, remediationProposals, delegations, pendingTaskLessons };
+      return { task, events, messages, approvals, deliverables, attachments, sandboxes: sandboxRows, skillSelections, proofRecords, pipelineHealthSignals, remediationProposals, delegations, pendingTaskLessons, evaluationPacks, evaluationResults };
     }),
     exportOffice: protectedProcedure
       .input(taskOfficeExportSchema)
@@ -681,6 +704,20 @@ export const appRouter = router({
         if (!reviewed) throw new TRPCError({ code: "NOT_FOUND", message: "That pending task lesson is unavailable for review." });
         await appendTaskEvent(task.id, { type: "task_metadata", payload: { kind: "task_lesson_reviewed", memoryId: input.memoryId, decision: input.decision, source: "user_review" } });
         return { ok: true };
+      }),
+    createEvaluationPack: protectedProcedure
+      .input(createEvaluationPackSchema)
+      .mutation(async ({ ctx, input }) => {
+        await enforceUserMutationLimit(ctx.user.id, "task-evaluation-pack", 20, 3_600);
+        await requireOwnedTask(input.taskId, ctx.user.id);
+        return createTaskEvaluationPackForUser({ ...input, userId: ctx.user.id });
+      }),
+    recordEvaluationResult: protectedProcedure
+      .input(recordEvaluationResultSchema)
+      .mutation(async ({ ctx, input }) => {
+        await enforceUserMutationLimit(ctx.user.id, "task-evaluation-result", 30, 3_600);
+        await requireOwnedTask(input.taskId, ctx.user.id);
+        return createTaskEvaluationResultForUser({ ...input, userId: ctx.user.id });
       }),
     artifactUrl: protectedProcedure
       .input(taskIdSchema.extend({ deliverableId: z.string().uuid() }))

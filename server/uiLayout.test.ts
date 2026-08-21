@@ -341,6 +341,27 @@ describe("compact workspace layout contract", () => {
     expect(workspace).not.toContain('border-orange-');
   });
 
+  it("keeps evaluation packs owner-scoped, review-driven, and unable to execute or self-modify the agent", () => {
+    const workspace = readFileSync(new URL("../client/src/pages/TaskWorkspace.tsx", import.meta.url), "utf8");
+    const controls = readFileSync(new URL("../client/src/components/TaskOfficeControls.tsx", import.meta.url), "utf8");
+    const router = readFileSync(new URL("../server/routers.ts", import.meta.url), "utf8");
+    const db = readFileSync(new URL("../server/db.ts", import.meta.url), "utf8");
+
+    expect(workspace).toContain('id: "evaluation", label: "Evaluate", icon: ClipboardCheck');
+    expect(workspace).toContain('<TaskEvaluationPanel taskId={taskId} evaluationPacks={data.evaluationPacks} evaluationResults={data.evaluationResults} readOnly={replayMode} />');
+    expect(controls).toContain('Evaluation packs are an owner-authored review contract.');
+    expect(controls).toContain('This panel does not run an evaluation or alter prompts, models, Skills, tools, permissions, or execution policy.');
+    expect(controls).toContain('Replay mode is read-only. Open the live task to create a pack or record a reviewer outcome.');
+    expect(controls).toContain('requires separate reviewed-learning approval');
+    expect(controls).toContain('trpc.tasks.createEvaluationPack.useMutation');
+    expect(controls).toContain('trpc.tasks.recordEvaluationResult.useMutation');
+    expect(router).toContain('createEvaluationPack: protectedProcedure');
+    expect(router).toContain('recordEvaluationResult: protectedProcedure');
+    expect(db).toContain('Creates only a declarative owner-authored review contract.');
+    expect(db).toContain('Persists a reviewer outcome. A proposed lesson stays informational');
+    expect(db).not.toContain('evaluation_auto_execute');
+  });
+
   it("describes task-screen availability without overstating local Docker capability", () => {
     const workspace = readFileSync(new URL("../client/src/pages/TaskWorkspace.tsx", import.meta.url), "utf8");
     const liveComputer = readFileSync(new URL("../server/agent/liveComputer.ts", import.meta.url), "utf8");

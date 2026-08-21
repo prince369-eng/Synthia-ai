@@ -3189,3 +3189,11 @@
 - [x] Research the highest-value reliability, oversight, evaluation, memory, recovery, and collaboration gaps in modern AI-agent products.
 - [x] Compare the researched opportunities against Synthia’s existing governed operations, proof, reviewed-learning, approval, and replay capabilities.
 - [x] Deliver a prioritized, safety-bounded roadmap that distinguishes immediate implementation candidates from configuration- or connector-gated work.
+
+## Owner-scoped evaluation packs
+
+- [x] Audit existing proof, task review, approval, event, and lesson records for reusable evidence and review boundaries.
+- [x] Add bounded owner-scoped evaluation pack and evaluation-result persistence with explicit review outcomes; never auto-promote an agent, model, skill, or configuration.
+- [x] Add protected APIs and a task-workspace evaluation panel for success criteria, evidence requirements, evidence references, verdicts, and reviewer guidance.
+- [x] Add deterministic authorization and non-self-modification regression coverage without starting a task or external workload.
+- [x] Render a read-only-safe task-workspace evaluation panel that creates declarative packs and records human reviewer outcomes without executing an evaluation or altering agent behavior.

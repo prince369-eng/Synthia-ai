@@ -19,6 +19,8 @@ import {
   skills,
   taskAttachments,
   taskDelegations,
+  taskEvaluationPacks,
+  taskEvaluationResults,
   taskEvents,
   taskEventSequences,
   taskMessages,
@@ -113,6 +115,36 @@ export type CreateTaskProofRecordInput = {
   verificationStatus: ProofVerificationStatus;
   confidence: number;
   recoveryGuidance?: string;
+};
+
+export type EvaluationCriterionInput = {
+  criterion: string;
+  rationale?: string;
+};
+
+export type EvaluationEvidenceRequirementInput = {
+  requirement: string;
+  required: boolean;
+};
+
+export type CreateTaskEvaluationPackInput = {
+  taskId: string;
+  userId: number;
+  title: string;
+  successCriteria: EvaluationCriterionInput[];
+  evidenceRequirements: EvaluationEvidenceRequirementInput[];
+  reviewerGuidance: string;
+};
+
+export type CreateTaskEvaluationResultInput = {
+  taskId: string;
+  userId: number;
+  packId: string;
+  verdict: "pass" | "needs_revision" | "fail" | "inconclusive";
+  criterionResults: Array<{ criterion: string; result: "met" | "partially_met" | "not_met" | "not_assessed"; notes?: string }>;
+  evidenceReferences: Array<{ label: string; locator?: string; description?: string }>;
+  reviewerSummary: string;
+  proposedLesson?: string;
 };
 
 export const DEFAULT_PERSONALITY_DIMENSIONS: PersonalityDimensions = {
@@ -532,6 +564,132 @@ export async function createTaskProofRecordForUser(input: CreateTaskProofRecordI
   });
   publishTaskEvent(input.taskId, result.sequenceNumber);
   return result.proof;
+}
+
+export async function listTaskEvaluationPacksForUser(taskId: string, userId: number) {
+  const database = databaseRequired(await getDb());
+  return database
+    .select()
+    .from(taskEvaluationPacks)
+    .where(and(eq(taskEvaluationPacks.taskId, taskId), eq(taskEvaluationPacks.userId, userId)))
+    .orderBy(desc(taskEvaluationPacks.updatedAt));
+}
+
+export async function listTaskEvaluationResultsForUser(taskId: string, userId: number) {
+  const database = databaseRequired(await getDb());
+  return database
+    .select()
+    .from(taskEvaluationResults)
+    .where(and(eq(taskEvaluationResults.taskId, taskId), eq(taskEvaluationResults.userId, userId)))
+    .orderBy(desc(taskEvaluationResults.createdAt));
+}
+
+/**
+ * Creates only a declarative owner-authored review contract. It cannot schedule
+ * execution, change agent configuration, or promote a skill/model.
+ */
+export async function createTaskEvaluationPackForUser(input: CreateTaskEvaluationPackInput) {
+  const database = databaseRequired(await getDb());
+  const packId = randomUUID();
+  const createdAt = new Date();
+  const result = await database.transaction(async transaction => {
+    const [ownedTask] = await transaction
+      .select({ id: tasks.id })
+      .from(tasks)
+      .where(and(eq(tasks.id, input.taskId), eq(tasks.userId, input.userId), isNull(tasks.deletedAt)))
+      .limit(1);
+    if (!ownedTask) throw new Error("Task ownership could not be verified.");
+
+    const event = await appendTaskEventInTransaction(transaction, input.taskId, {
+      type: "task_metadata",
+      payload: {
+        action: "evaluation_pack_created",
+        packId,
+        titlePreview: input.title.slice(0, 160),
+        criterionCount: input.successCriteria.length,
+        evidenceRequirementCount: input.evidenceRequirements.length,
+      },
+    });
+    const [pack] = await transaction
+      .insert(taskEvaluationPacks)
+      .values({
+        id: packId,
+        taskId: input.taskId,
+        userId: input.userId,
+        eventId: event.id,
+        title: input.title,
+        successCriteria: input.successCriteria,
+        evidenceRequirements: input.evidenceRequirements,
+        reviewerGuidance: input.reviewerGuidance,
+        status: "ready",
+        createdAt,
+        updatedAt: createdAt,
+      })
+      .returning();
+    if (!pack) throw new Error("The evaluation pack could not be created.");
+    return { pack, sequenceNumber: event.sequenceNumber };
+  });
+  publishTaskEvent(input.taskId, result.sequenceNumber);
+  return result.pack;
+}
+
+/**
+ * Persists a reviewer outcome. A proposed lesson stays informational until the
+ * user separately creates and approves a reviewed-learning record.
+ */
+export async function createTaskEvaluationResultForUser(input: CreateTaskEvaluationResultInput) {
+  const database = databaseRequired(await getDb());
+  const resultId = randomUUID();
+  const createdAt = new Date();
+  const result = await database.transaction(async transaction => {
+    const [ownedPack] = await transaction
+      .select({ id: taskEvaluationPacks.id })
+      .from(taskEvaluationPacks)
+      .innerJoin(tasks, eq(taskEvaluationPacks.taskId, tasks.id))
+      .where(and(
+        eq(taskEvaluationPacks.id, input.packId),
+        eq(taskEvaluationPacks.taskId, input.taskId),
+        eq(taskEvaluationPacks.userId, input.userId),
+        eq(tasks.userId, input.userId),
+        isNull(tasks.deletedAt),
+      ))
+      .limit(1);
+    if (!ownedPack) throw new Error("Evaluation pack ownership could not be verified.");
+
+    const event = await appendTaskEventInTransaction(transaction, input.taskId, {
+      type: "task_metadata",
+      payload: {
+        action: "evaluation_result_recorded",
+        resultId,
+        packId: input.packId,
+        verdict: input.verdict,
+        criterionResultCount: input.criterionResults.length,
+        evidenceReferenceCount: input.evidenceReferences.length,
+        hasProposedLesson: Boolean(input.proposedLesson),
+      },
+    });
+    const [evaluationResult] = await transaction
+      .insert(taskEvaluationResults)
+      .values({
+        id: resultId,
+        taskId: input.taskId,
+        userId: input.userId,
+        packId: input.packId,
+        eventId: event.id,
+        verdict: input.verdict,
+        criterionResults: input.criterionResults,
+        evidenceReferences: input.evidenceReferences,
+        reviewerSummary: input.reviewerSummary,
+        proposedLesson: input.proposedLesson ?? null,
+        createdAt,
+        updatedAt: createdAt,
+      })
+      .returning();
+    if (!evaluationResult) throw new Error("The evaluation result could not be recorded.");
+    return { evaluationResult, sequenceNumber: event.sequenceNumber };
+  });
+  publishTaskEvent(input.taskId, result.sequenceNumber);
+  return result.evaluationResult;
 }
 
 export async function listTaskEventsSince(taskId: string, sequenceNumber: number) {
