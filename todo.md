@@ -3094,3 +3094,4 @@
 - [x] Add schedule ownership, cron validation, deployment gating, idempotency, and responsive UI regression coverage without creating external jobs.
 - [x] Refine the Docs route into a balanced, responsive resource grid so its three real guidance actions retain clear hierarchy without sparse desktop space.
 - [x] Remove duplicated Agent route controls while preserving the primary task and capabilities navigation in a quiet, descriptive capability section.
+- [x] Align Plugins search and connector-state controls with the established teal/cyan workspace tokens while retaining truthful unavailable and empty states.

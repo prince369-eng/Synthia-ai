@@ -334,6 +334,16 @@ describe("compact workspace layout contract", () => {
     expect(settings).not.toContain("Task notifications use configured server-side mail providers");
   });
 
+  it("keeps the Plugins search control within the shared teal and cyan workspace system", () => {
+    const plugins = readFileSync(new URL("../client/src/pages/Plugins.tsx", import.meta.url), "utf8");
+
+    expect(plugins).toContain('aria-label="Search connectors"');
+    expect(plugins).toContain('className="synthia-input h-9 pl-9 text-xs"');
+    expect(plugins).toContain('text-[#6c817c]');
+    expect(plugins).not.toContain('bg-[#1d1611]');
+    expect(plugins).not.toContain('text-[#f3e6d7]');
+  });
+
   it("keeps ordinary shared-shell task states in the teal signal family", () => {
     const shell = readFileSync(new URL("../client/src/components/SynthiaAppShell.tsx", import.meta.url), "utf8");
 

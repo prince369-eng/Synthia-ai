@@ -13,3 +13,7 @@ No user-visible navigation dead end was observed in the inspected routes. The ne
 The authenticated Agent route correctly exposes ready task capability, task activity, and approval context without exposing implementation configuration or starting work. Its desktop view currently repeats the same two route actions in both the header and capability heading, which introduces unnecessary visual noise without adding a distinct action. A focused refinement should retain the header entry points and make the lower capability area descriptive only, preserving direct task and settings navigation without duplicated controls.
 
 The completed desktop verification confirms that the header remains the single location for **Create task** and **Explore capabilities**, while the lower capability section now presents only readable readiness information. No task, provider, or external workload was initiated during review.
+
+## Plugins surface follow-up
+
+The authenticated Plugins route preserves a clear search field, filter tabs, truthful unavailable connector cards, and a distinct empty state for connected apps. The completed control refinement applies the shared teal/cyan input system and an explicit accessible search name, while leaving all provider availability and connection boundaries unchanged. No connector, credential, or provider action was attempted during review.
