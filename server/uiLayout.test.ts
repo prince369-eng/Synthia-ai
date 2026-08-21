@@ -74,6 +74,9 @@ describe("compact workspace layout contract", () => {
     expect(workspace).toContain("WORKSPACE_RETURN_ROUTES.library");
     expect(css).toContain(".synthia-account-trigger .synthia-account-copy b");
     expect(css).toContain(".synthia-nav.collapsed .synthia-account-copy");
+    expect(css).toContain(".synthia-settings-nav > .synthia-settings-group:first-of-type");
+    expect(css).toContain("grid-column: 1 / -1;");
+    expect(css).toContain("grid-template-columns: repeat(2, minmax(0, 1fr));");
   });
 
   it("normalizes an unavailable or malformed scheduled-job list into the compact empty state", () => {

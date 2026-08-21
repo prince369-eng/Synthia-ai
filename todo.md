@@ -3070,3 +3070,5 @@
 - [x] Verify Live Computer JSX integrity, split/focus behavior, tab skeleton transitions, and landing/auth responsive presentation.
 - [x] Audit and compact the authenticated dashboard and task workspace hierarchy across desktop and mobile without changing task or provider behavior.
 - [x] Add responsive regression coverage for the authenticated dashboard and task workspace density pass.
+- [x] Audit and refine authenticated Settings and profile-navigation surfaces across desktop and mobile without exposing configuration internals.
+- [x] Add regression coverage for compact Settings navigation, escape routes, and profile-menu actions.
