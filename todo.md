@@ -3302,6 +3302,12 @@
 - [x] Remove the classic preview compatibility script from resolved production HTML while preserving the normal module entry and managed development-preview source behavior.
 - [x] Add a deterministic build-boundary regression, validate production output and the full test suite, document, and checkpoint the delivery optimization.
 
+## Client error-disclosure hardening
+
+- [x] Audit query, mutation, and bootstrap diagnostics for raw error-object or visible exception-message disclosure.
+- [x] Replace raw client error output with bounded categories and generic actionable startup recovery guidance without changing unauthorized redirect behavior.
+- [x] Add deterministic disclosure-boundary coverage; document, validate, and checkpoint the client-only hardening without external workloads.
+
 ## Modern workspace UI and UX refinement
 
 - [x] Audit the authenticated shell, dashboard composer, workspace panels, typography, iconography, spacing, hierarchy, and responsive behavior against current productivity-agent interaction patterns.

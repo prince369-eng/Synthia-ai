@@ -10,6 +10,19 @@ import "./index.css";
 
 const queryClient = new QueryClient();
 
+function classifyClientError(error: unknown): "network" | "unauthorized" | "request" | "unknown" {
+  if (error instanceof TRPCClientError) {
+    return error.message === UNAUTHED_ERR_MSG ? "unauthorized" : "request";
+  }
+
+  if (error instanceof TypeError) return "network";
+  return "unknown";
+}
+
+function reportClientError(scope: "bootstrap" | "mutation" | "query", error: unknown) {
+  console.error("[Synthia client error]", { scope, category: classifyClientError(error) });
+}
+
 const redirectToLoginIfUnauthorized = (error: unknown) => {
   if (!(error instanceof TRPCClientError)) return;
   if (typeof window === "undefined") return;
@@ -33,7 +46,7 @@ queryClient.getQueryCache().subscribe(event => {
   if (event.type === "updated" && event.action.type === "error") {
     const error = event.query.state.error;
     redirectToLoginIfUnauthorized(error);
-    console.error("[API Query Error]", error);
+    reportClientError("query", error);
   }
 });
 
@@ -41,7 +54,7 @@ queryClient.getMutationCache().subscribe(event => {
   if (event.type === "updated" && event.action.type === "error") {
     const error = event.mutation.state.error;
     redirectToLoginIfUnauthorized(error);
-    console.error("[API Mutation Error]", error);
+    reportClientError("mutation", error);
   }
 });
 
@@ -114,8 +127,6 @@ try {
   );
   }
 } catch (error) {
-  rootElement.innerHTML = `<div id="synthia-bootstrap" role="alert"><div id="synthia-bootstrap-card"><div id="synthia-bootstrap-mark">!</div><h1>Unable to open Synthia AI</h1><p>The workspace could not start in this browser. Reload the preview once to refresh its client session.</p><p id="synthia-bootstrap-error" style="margin-top:12px;font-family:monospace;font-size:11px"></p></div></div>`;
-  const detail = document.getElementById("synthia-bootstrap-error");
-  if (detail) detail.textContent = `Preview error: ${error instanceof Error ? error.message.slice(0, 220) : "unknown bootstrap error"}`;
-  console.error("[Synthia bootstrap error]", error);
+  rootElement.innerHTML = `<div id="synthia-bootstrap" role="alert"><div id="synthia-bootstrap-card"><div id="synthia-bootstrap-mark">!</div><h1>Unable to open Synthia AI</h1><p>The workspace could not start in this browser. Reload the preview once to refresh its secure client session.</p></div></div>`;
+  reportClientError("bootstrap", error);
 }
