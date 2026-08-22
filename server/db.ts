@@ -18,6 +18,7 @@ import {
   skillInstalls,
   skills,
   taskAttachments,
+  taskBrowserChangeSets,
   taskDelegations,
   taskEvaluationPacks,
   taskEvaluationResults,
@@ -1235,6 +1236,19 @@ export type TaskQualityBudgetInput = {
 
 export type TaskQualityBudgetUpdateInput = TaskQualityBudgetInput & { qualityBudgetId: string };
 
+/** Review-only browser change records: target URLs are opaque references and are never fetched here. */
+export type TaskBrowserChangeSetInput = {
+  taskId: string;
+  userId: number;
+  title: string;
+  targetUrl: string;
+  proposedChanges: string[];
+  reviewerGuidance: string;
+  requiresHumanReview: boolean;
+};
+
+export type TaskBrowserChangeSetUpdateInput = TaskBrowserChangeSetInput & { browserChangeSetId: string };
+
 export async function listTaskPipelineHealthSignalsForUser(taskId: string, userId: number) {
   const database = databaseRequired(await getDb());
   return database
@@ -1301,6 +1315,16 @@ export async function listTaskQualityBudgetsForUser(taskId: string, userId: numb
     .from(taskQualityBudgets)
     .where(and(eq(taskQualityBudgets.taskId, taskId), eq(taskQualityBudgets.userId, userId)))
     .orderBy(desc(taskQualityBudgets.updatedAt));
+}
+
+/** Browser change sets are durable owner-scoped review data; this never opens, navigates, or controls a browser. */
+export async function listTaskBrowserChangeSetsForUser(taskId: string, userId: number) {
+  const database = databaseRequired(await getDb());
+  return database
+    .select()
+    .from(taskBrowserChangeSets)
+    .where(and(eq(taskBrowserChangeSets.taskId, taskId), eq(taskBrowserChangeSets.userId, userId)))
+    .orderBy(desc(taskBrowserChangeSets.updatedAt));
 }
 
 /**
@@ -1383,6 +1407,95 @@ export async function createTaskQualityBudgetForUser(input: TaskQualityBudgetInp
     };
     await transaction.insert(taskQualityBudgets).values(record);
     return record;
+  });
+}
+
+export async function createTaskBrowserChangeSetForUser(input: TaskBrowserChangeSetInput) {
+  const database = databaseRequired(await getDb());
+  return database.transaction(async transaction => {
+    const event = await appendTaskEventInTransaction(transaction, input.taskId, {
+      type: "browser_change_set",
+      payload: {
+        action: "created",
+        title: input.title,
+        proposedChangeCount: input.proposedChanges.length,
+        requiresHumanReview: input.requiresHumanReview,
+        execution: "review_context_only",
+      },
+    });
+    const record = {
+      id: randomUUID(),
+      taskId: input.taskId,
+      userId: input.userId,
+      eventId: event.id,
+      title: input.title,
+      targetUrl: input.targetUrl,
+      proposedChanges: input.proposedChanges,
+      reviewerGuidance: input.reviewerGuidance,
+      requiresHumanReview: input.requiresHumanReview,
+      status: "active" as const,
+    };
+    await transaction.insert(taskBrowserChangeSets).values(record);
+    return record;
+  });
+}
+
+export async function updateTaskBrowserChangeSetForUser(input: TaskBrowserChangeSetUpdateInput) {
+  const database = databaseRequired(await getDb());
+  return database.transaction(async transaction => {
+    const [changeSet] = await transaction
+      .select({ id: taskBrowserChangeSets.id, status: taskBrowserChangeSets.status })
+      .from(taskBrowserChangeSets)
+      .where(and(
+        eq(taskBrowserChangeSets.id, input.browserChangeSetId),
+        eq(taskBrowserChangeSets.taskId, input.taskId),
+        eq(taskBrowserChangeSets.userId, input.userId),
+      ))
+      .limit(1);
+    if (!changeSet || changeSet.status !== "active") throw new Error("That active browser change set is unavailable.");
+    await appendTaskEventInTransaction(transaction, input.taskId, {
+      type: "browser_change_set",
+      payload: { action: "updated", browserChangeSetId: input.browserChangeSetId, execution: "review_context_only" },
+    });
+    const [updated] = await transaction
+      .update(taskBrowserChangeSets)
+      .set({
+        title: input.title,
+        targetUrl: input.targetUrl,
+        proposedChanges: input.proposedChanges,
+        reviewerGuidance: input.reviewerGuidance,
+        requiresHumanReview: input.requiresHumanReview,
+        updatedAt: new Date(),
+      })
+      .where(eq(taskBrowserChangeSets.id, input.browserChangeSetId))
+      .returning();
+    return updated;
+  });
+}
+
+export async function archiveTaskBrowserChangeSetForUser(input: { taskId: string; userId: number; browserChangeSetId: string }) {
+  const database = databaseRequired(await getDb());
+  return database.transaction(async transaction => {
+    const [changeSet] = await transaction
+      .select({ id: taskBrowserChangeSets.id, status: taskBrowserChangeSets.status })
+      .from(taskBrowserChangeSets)
+      .where(and(
+        eq(taskBrowserChangeSets.id, input.browserChangeSetId),
+        eq(taskBrowserChangeSets.taskId, input.taskId),
+        eq(taskBrowserChangeSets.userId, input.userId),
+      ))
+      .limit(1);
+    if (!changeSet || changeSet.status !== "active") throw new Error("That active browser change set is unavailable.");
+    await appendTaskEventInTransaction(transaction, input.taskId, {
+      type: "browser_change_set",
+      payload: { action: "archived", browserChangeSetId: input.browserChangeSetId, execution: "review_context_only" },
+    });
+    const [updated] = await transaction
+      .update(taskBrowserChangeSets)
+      .set({ status: "archived", updatedAt: new Date() })
+      .where(eq(taskBrowserChangeSets.id, input.browserChangeSetId))
+      .returning();
+    return updated;
   });
 }
 

@@ -127,6 +127,13 @@
       "when": 1787377516958,
       "tag": "0017_bright_supernaut",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1787390070374,
+      "tag": "0018_curly_dreadnoughts",
+      "breakpoints": true
     }
   ]
 }

@@ -9,6 +9,7 @@ import {
   createMemoryFact,
   createPersonalizationMemory,
   createTaskDelegationForUser,
+  createTaskBrowserChangeSetForUser,
   createTaskEvaluationPackForUser,
   createTaskEvaluationResultForUser,
   createTaskHandoffPolicyForUser,
@@ -40,6 +41,7 @@ import {
   listProjectsForUser,
   listTaskApprovals,
   listTaskAttachments,
+  listTaskBrowserChangeSetsForUser,
   listTaskDeliverables,
   listTaskEvents,
   listTaskMessages,
@@ -61,6 +63,7 @@ import {
   softDeleteTaskForUser,
   updateTaskForUser,
   updateTaskHandoffPolicyForUser,
+  updateTaskBrowserChangeSetForUser,
   updateTaskPolicyPackForUser,
   updateTaskQualityBudgetForUser,
   updateTaskRecoveryPlaybookForUser,
@@ -85,6 +88,7 @@ import {
   updateScheduledWorkflowForUser,
   updateVoiceSessionForUser,
   archiveTaskHandoffPolicyForUser,
+  archiveTaskBrowserChangeSetForUser,
   archiveTaskPolicyPackForUser,
   archiveTaskQualityBudgetForUser,
   archiveTaskRecoveryPlaybookForUser,
@@ -306,6 +310,18 @@ const qualityBudgetSchema = taskIdSchema.extend({
 });
 const updateQualityBudgetSchema = qualityBudgetSchema.extend({ qualityBudgetId: z.string().uuid() });
 const archiveQualityBudgetSchema = taskIdSchema.extend({ qualityBudgetId: z.string().uuid() });
+const browserChangeSetSchema = taskIdSchema.extend({
+  title: z.string().trim().min(3).max(160),
+  targetUrl: z.string().trim().url().max(2_048).refine(value => {
+    const protocol = new URL(value).protocol;
+    return protocol === "http:" || protocol === "https:";
+  }, "Use an HTTP(S) URL as a review reference."),
+  proposedChanges: z.array(z.string().trim().min(4).max(500)).min(1).max(12),
+  reviewerGuidance: z.string().trim().min(12).max(1_500),
+  requiresHumanReview: z.boolean(),
+});
+const updateBrowserChangeSetSchema = browserChangeSetSchema.extend({ browserChangeSetId: z.string().uuid() });
+const archiveBrowserChangeSetSchema = taskIdSchema.extend({ browserChangeSetId: z.string().uuid() });
 export const attachmentMimeSchema = z.string().trim().min(3).max(100).regex(
   /^(application\/(pdf|json|zip|x-7z-compressed|x-tar|vnd\.(openxmlformats-officedocument\.(wordprocessingml\.document|spreadsheetml\.sheet)|ms-excel|msword))|text\/(plain|csv|markdown)|image\/(png|jpeg|webp)|video\/(mp4|webm|quicktime))$/,
   "This file type is not supported.",
@@ -747,7 +763,7 @@ export const appRouter = router({
     }),
     get: protectedProcedure.input(taskIdSchema).query(async ({ ctx, input }) => {
       const task = await requireOwnedTask(input.taskId, ctx.user.id);
-      const [events, messages, approvals, deliverables, attachments, sandboxRows, skillSelections, proofRecords, pipelineHealthSignals, remediationProposals, delegations, handoffPolicies, recoveryPlaybooks, policyPacks, qualityBudgets, pendingTaskLessons, evaluationPacks, evaluationResults] = await Promise.all([
+      const [events, messages, approvals, deliverables, attachments, sandboxRows, skillSelections, proofRecords, pipelineHealthSignals, remediationProposals, delegations, handoffPolicies, recoveryPlaybooks, policyPacks, qualityBudgets, browserChangeSets, pendingTaskLessons, evaluationPacks, evaluationResults] = await Promise.all([
         listTaskEvents(task.id),
         listTaskMessages(task.id),
         listTaskApprovals(task.id),
@@ -763,11 +779,12 @@ export const appRouter = router({
         listTaskRecoveryPlaybooksForUser(task.id, ctx.user.id),
         listTaskPolicyPacksForUser(task.id, ctx.user.id),
         listTaskQualityBudgetsForUser(task.id, ctx.user.id),
+        listTaskBrowserChangeSetsForUser(task.id, ctx.user.id),
         listPendingTaskLessonsForUser({ taskId: task.id, userId: ctx.user.id }),
         listTaskEvaluationPacksForUser(task.id, ctx.user.id),
         listTaskEvaluationResultsForUser(task.id, ctx.user.id),
       ]);
-      return { task, events, messages, approvals, deliverables, attachments, sandboxes: sandboxRows, skillSelections, proofRecords, pipelineHealthSignals, remediationProposals, delegations, handoffPolicies, recoveryPlaybooks, policyPacks, qualityBudgets, pendingTaskLessons, evaluationPacks, evaluationResults };
+      return { task, events, messages, approvals, deliverables, attachments, sandboxes: sandboxRows, skillSelections, proofRecords, pipelineHealthSignals, remediationProposals, delegations, handoffPolicies, recoveryPlaybooks, policyPacks, qualityBudgets, browserChangeSets, pendingTaskLessons, evaluationPacks, evaluationResults };
     }),
     exportOffice: protectedProcedure
       .input(taskOfficeExportSchema)
@@ -1125,6 +1142,46 @@ export const appRouter = router({
           if (message.includes("unavailable")) throw new TRPCError({ code: "NOT_FOUND", message });
           logger.error({ event: "task_quality_budget_archive_failed", taskId: input.taskId, userId: ctx.user.id, errorKind: error instanceof Error ? error.name : "unknown" }, "Task quality-budget archive failed");
           throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "The quality budget could not be archived. Please retry." });
+        }
+      }),
+    createBrowserChangeSet: protectedProcedure
+      .input(browserChangeSetSchema)
+      .mutation(async ({ ctx, input }) => {
+        await enforceUserMutationLimit(ctx.user.id, "task-browser-change-set-create", 30, 3_600);
+        await requireOwnedTask(input.taskId, ctx.user.id);
+        try {
+          return await createTaskBrowserChangeSetForUser({ ...input, userId: ctx.user.id });
+        } catch (error) {
+          logger.error({ event: "task_browser_change_set_create_failed", taskId: input.taskId, userId: ctx.user.id, errorKind: error instanceof Error ? error.name : "unknown" }, "Task browser change-set creation failed");
+          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "The browser change set could not be saved. Please retry." });
+        }
+      }),
+    updateBrowserChangeSet: protectedProcedure
+      .input(updateBrowserChangeSetSchema)
+      .mutation(async ({ ctx, input }) => {
+        await enforceUserMutationLimit(ctx.user.id, "task-browser-change-set-update", 50, 3_600);
+        await requireOwnedTask(input.taskId, ctx.user.id);
+        try {
+          return await updateTaskBrowserChangeSetForUser({ ...input, userId: ctx.user.id });
+        } catch (error) {
+          const message = error instanceof Error ? error.message : "The browser change set could not be updated.";
+          if (message.includes("unavailable")) throw new TRPCError({ code: "NOT_FOUND", message });
+          logger.error({ event: "task_browser_change_set_update_failed", taskId: input.taskId, userId: ctx.user.id, errorKind: error instanceof Error ? error.name : "unknown" }, "Task browser change-set update failed");
+          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "The browser change set could not be updated. Please retry." });
+        }
+      }),
+    archiveBrowserChangeSet: protectedProcedure
+      .input(archiveBrowserChangeSetSchema)
+      .mutation(async ({ ctx, input }) => {
+        await enforceUserMutationLimit(ctx.user.id, "task-browser-change-set-archive", 30, 3_600);
+        await requireOwnedTask(input.taskId, ctx.user.id);
+        try {
+          return await archiveTaskBrowserChangeSetForUser({ ...input, userId: ctx.user.id });
+        } catch (error) {
+          const message = error instanceof Error ? error.message : "The browser change set could not be archived.";
+          if (message.includes("unavailable")) throw new TRPCError({ code: "NOT_FOUND", message });
+          logger.error({ event: "task_browser_change_set_archive_failed", taskId: input.taskId, userId: ctx.user.id, errorKind: error instanceof Error ? error.name : "unknown" }, "Task browser change-set archive failed");
+          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "The browser change set could not be archived. Please retry." });
         }
       }),
     generateMedia: protectedProcedure.input(mediaGenerationSchema).mutation(async ({ ctx, input }) => {

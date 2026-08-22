@@ -3377,3 +3377,13 @@
 - [x] Audit cron-only workflow authentication, run claiming, public failure behavior, and structured diagnostic fields without running a schedule.
 - [x] Preserve cron-only authentication, queue gating, duplicate protection, and generic public errors while replacing raw exception text with a stable error classification.
 - [x] Extend structured logging coverage; document, validate, and checkpoint the scheduling hardening without creating or executing a workflow.
+## Secure-workspace startup recovery
+- [x] Trace the browser bootstrap path that leaves the secure-workspace fallback visible and identify the bounded blocking condition without starting any task or external service.
+- [x] Repair the startup path so a blocked module cannot leave the application indefinitely stuck, while retaining safe authentication and error-disclosure boundaries.
+- [x] Add deterministic regression coverage, validate the browser startup path, and checkpoint the verified recovery.
+
+## Browser change sets
+- [x] Add an applied, owner-scoped browser change-set schema with active/archive lifecycle and immutable review-context task events.
+- [x] Add protected, rate-limited create, update, archive, and snapshot contracts that treat target URLs only as inert review references.
+- [x] Add a compact Changes workspace tab with replay-safe owner controls and explicit no-browser/no-navigation/no-credentials/no-upload/no-submit/no-execution boundaries.
+- [x] Add deterministic snapshot and source-safety regression coverage, complete validation, and preserve the task-runner non-integration boundary.

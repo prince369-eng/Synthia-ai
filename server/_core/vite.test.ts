@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  inlineStaticPreviewCompatibilityBundle,
   injectStaticPreviewBundleRevision,
   publicRuntimeConfigScript,
   STATIC_PREVIEW_CACHE_CONTROL,
@@ -36,5 +37,24 @@ describe("injectStaticPreviewBundleRevision", () => {
 
     expect(injectStaticPreviewBundleRevision(document, "new-build"))
       .toBe('<script src="/synthia-preview.js?v=new-build"></script>');
+  });
+});
+
+describe("inlineStaticPreviewCompatibilityBundle", () => {
+  it("uses the Synthia-owned compatibility bundle in static preview without requesting the gateway-blocked module asset", () => {
+    const document = '<head><script type="module" crossorigin src="/assets/index-a1b2.js"></script></head><body><div id="root"></div></body>';
+    const result = inlineStaticPreviewCompatibilityBundle(document, "window.__SYNTHIA_BOOTSTRAPPED__ = true;");
+
+    expect(result).not.toContain('src="/assets/index-a1b2.js"');
+    expect(result).toContain('data-synthia-preview-compatibility="true"');
+    expect(result).toContain("window.__SYNTHIA_BOOTSTRAPPED__ = true;");
+    expect(result).toContain("</body>");
+  });
+
+  it("escapes script terminators in the trusted bundle before it is embedded in the preview document", () => {
+    const result = inlineStaticPreviewCompatibilityBundle("<body></body>", 'const marker = "</script><img>";');
+
+    expect(result).toContain('<\\/script><img>');
+    expect(result).not.toContain('</script><img>');
   });
 });

@@ -29,6 +29,19 @@ export function injectStaticPreviewBundleRevision(document: string, revision: st
   );
 }
 
+export function inlineStaticPreviewCompatibilityBundle(document: string, bundle: string) {
+  const compatibilityBundle = bundle.replace(/<\/script/gi, "<\\/script");
+  const withoutModuleEntry = document.replace(
+    /\s*<script type="module" crossorigin src="\/assets\/[^\"]+\.js"><\/script>/,
+    ""
+  );
+
+  return withoutModuleEntry.replace(
+    "</body>",
+    `<script data-synthia-preview-compatibility="true">${compatibilityBundle}</script></body>`
+  );
+}
+
 export async function setupVite(app: Express, server: Server) {
   const serverOptions = {
     middlewareMode: true,
@@ -108,6 +121,8 @@ export function serveStatic(app: Express) {
       const previewBundlePath = path.resolve(distPath, "synthia-preview.js");
       const previewBundleStat = await fs.promises.stat(previewBundlePath);
       document = injectStaticPreviewBundleRevision(document, String(previewBundleStat.mtimeMs));
+      const previewBundle = await fs.promises.readFile(previewBundlePath, "utf8");
+      document = inlineStaticPreviewCompatibilityBundle(document, previewBundle);
       document = document.replace("</head>", `${publicRuntimeConfigScript()}</head>`);
       res.status(200).set({ "Content-Type": "text/html", "Cache-Control": STATIC_PREVIEW_CACHE_CONTROL }).end(document);
     } catch (error) {

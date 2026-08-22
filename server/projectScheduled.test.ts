@@ -158,6 +158,7 @@ describe("projects and scheduled router procedures", () => {
     vi.spyOn(db, "listTaskPipelineHealthSignalsForUser").mockResolvedValue([] as never);
     vi.spyOn(db, "listTaskRemediationProposalsForUser").mockResolvedValue([] as never);
     vi.spyOn(db, "listTaskDelegationsForUser").mockResolvedValue([] as never);
+    vi.spyOn(db, "listTaskBrowserChangeSetsForUser").mockResolvedValue([] as never);
     vi.spyOn(db, "listPendingTaskLessonsForUser").mockResolvedValue([] as never);
     vi.spyOn(db, "listTaskEvaluationPacksForUser").mockResolvedValue([] as never);
     vi.spyOn(db, "listTaskEvaluationResultsForUser").mockResolvedValue([] as never);

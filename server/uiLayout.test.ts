@@ -200,6 +200,33 @@ describe("compact workspace layout contract", () => {
     expect(taskRunner).not.toContain("listTaskQualityBudgetsForUser");
   });
 
+  it("keeps browser change sets owner-scoped, review-only, and unable to operate a browser", () => {
+    const workspace = readFileSync(new URL("../client/src/pages/TaskWorkspace.tsx", import.meta.url), "utf8");
+    const controls = readFileSync(new URL("../client/src/components/TaskOfficeControls.tsx", import.meta.url), "utf8");
+    const routers = readFileSync(new URL("../server/routers.ts", import.meta.url), "utf8");
+    const db = readFileSync(new URL("../server/db.ts", import.meta.url), "utf8");
+    const schema = readFileSync(new URL("../drizzle/schema.ts", import.meta.url), "utf8");
+    const taskRunner = readFileSync(new URL("../server/agent/taskRunner.ts", import.meta.url), "utf8");
+
+    expect(workspace).toContain('id: "changes", label: "Changes"');
+    expect(workspace).toContain('<TaskBrowserChangeSetPanel taskId={taskId} changeSets={data.browserChangeSets} readOnly={replayMode} />');
+    expect(controls).toContain('aria-label="Browser change-set review records"');
+    expect(controls).toContain("cannot open a browser, navigate, use credentials, upload, submit forms, or execute any action from this panel");
+    expect(controls).toContain("Stored and shown as plain text only. It is not opened, fetched, or made clickable.");
+    expect(controls).toContain("Synthia will not infer a destination, open a browser, or act on a web surface automatically.");
+    expect(routers).toContain("createBrowserChangeSet: protectedProcedure");
+    expect(routers).toContain("updateBrowserChangeSet: protectedProcedure");
+    expect(routers).toContain("archiveBrowserChangeSet: protectedProcedure");
+    expect(routers).toContain("listTaskBrowserChangeSetsForUser(task.id, ctx.user.id)");
+    expect(db).toContain("export async function createTaskBrowserChangeSetForUser");
+    expect(db).toContain("export async function updateTaskBrowserChangeSetForUser");
+    expect(db).toContain("export async function archiveTaskBrowserChangeSetForUser");
+    expect(db).toContain('execution: "review_context_only"');
+    expect(schema).toContain("export const taskBrowserChangeSets");
+    expect(schema).toContain('status: browserChangeSetStatusEnum("status").notNull().default("active")');
+    expect(taskRunner).not.toContain("listTaskBrowserChangeSetsForUser");
+  });
+
   it("does not delay the unavailable state when the external task store is absent", () => {
     expect(TASK_HISTORY_QUERY_OPTIONS).toEqual({ retry: false });
   });
