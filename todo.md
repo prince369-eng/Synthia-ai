@@ -3502,3 +3502,8 @@
 - [x] Use Lax SameSite cookies so the top-level OAuth callback remains functional while cross-site subrequests cannot carry a session.
 - [x] Add deterministic secure-transport and cookie-attribute regression coverage without starting an OAuth flow.
 - [x] Validate strict typing, focused tests, the full deterministic suite, production build, and diff hygiene without starting external work.
+
+## Referrer-disclosure hardening
+- [x] Set a strict global no-referrer policy so external resources and user-initiated navigation receive no Synthia origin metadata.
+- [x] Preserve the policy with deterministic response-header contract coverage without visiting an external destination.
+- [x] Validate strict typing, focused tests, the full deterministic suite, production build, and diff hygiene without starting external work.

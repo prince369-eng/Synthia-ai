@@ -10,6 +10,8 @@ describe("document response security header contract", () => {
     expect(source).not.toContain("connect-src 'self' https: wss:");
     expect(source).toContain("frame-ancestors 'none'");
     expect(source).toContain("form-action 'self'");
+    expect(source).toContain('res.setHeader("Referrer-Policy", "no-referrer")');
+    expect(source).not.toContain("strict-origin-when-cross-origin");
     expect(source).toContain("corsAllowedOrigins({ publicAppUrl: ENV.publicAppUrl, isProduction: ENV.isProduction })");
   });
 });

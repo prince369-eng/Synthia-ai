@@ -58,7 +58,7 @@ async function startServer() {
     res.setHeader("Content-Security-Policy", `default-src 'self'; ${scriptPolicy}; object-src 'none'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' wss:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'`);
     res.setHeader("X-Content-Type-Options", "nosniff");
     res.setHeader("X-Frame-Options", "DENY");
-    res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
+    res.setHeader("Referrer-Policy", "no-referrer");
     res.setHeader("Permissions-Policy", "camera=(), microphone=(), geolocation=(), payment=()");
     next();
   });
