@@ -3572,3 +3572,8 @@
 - [x] Replace remaining data-lifecycle, deployment, developer, secret, and server-implementation labels with user-focused controls guidance.
 - [x] Add deterministic source-contract coverage that prevents the replaced implementation labels from returning to Settings.
 - [x] Validate strict typing, focused tests, the full deterministic suite, production build, and diff hygiene without starting external work.
+
+## Error Boundary diagnostic hardening
+- [x] Remove rendered client error stacks from the shared Error Boundary while preserving the recovery action.
+- [x] Add deterministic source-contract coverage that prevents raw error stacks from returning to the client UI.
+- [x] Validate strict typing, focused tests, the full deterministic suite, production build, and diff hygiene without starting external work.

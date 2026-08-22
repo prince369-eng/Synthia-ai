@@ -51,6 +51,16 @@ describe("client error disclosure hardening", () => {
     expect(voiceMode).not.toContain("realtime service configuration");
   });
 
+  it("keeps the shared Error Boundary recovery-focused without rendering raw exception stacks", () => {
+    const boundary = readFileSync(new URL("../client/src/components/ErrorBoundary.tsx", import.meta.url), "utf8");
+
+    expect(boundary).toContain("Synthia could not load this view.");
+    expect(boundary).toContain("Your task data has not been changed. Reload to try again.");
+    expect(boundary).toContain("Reload Page");
+    expect(boundary).not.toContain("this.state.error?.stack");
+    expect(boundary).not.toContain("<pre");
+  });
+
   it("routes feature-level task and workspace diagnostics through the bounded display helper", () => {
     const featureSources = [
       "../client/src/components/TaskOfficeControls.tsx",
