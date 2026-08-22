@@ -1,6 +1,6 @@
 import { PipedreamClient } from "@pipedream/sdk";
 import { TRPCError } from "@trpc/server";
-import { ENV } from "../_core/env";
+import { ENV, isPublicConfiguredHostname } from "../_core/env";
 import { createIntegrationForUser } from "../db";
 import { encryptSecret } from "../security/encryption";
 import { logger } from "../security/logger";
@@ -72,6 +72,30 @@ const ICON_COLORS: Record<string, string> = {
 function simpleIconUrl(iconSlug: string) {
   const color = ICON_COLORS[iconSlug] ?? "A7F3D0";
   return `https://cdn.simpleicons.org/${encodeURIComponent(iconSlug)}/${color}?viewbox=auto`;
+}
+
+/**
+ * Directory metadata comes from an integration provider but is rendered directly in
+ * the owner's browser. Preserve legitimate public HTTPS icon URLs while falling
+ * back to the local catalog icon for credentials, non-standard ports, and local
+ * targets. This does not fetch or otherwise interact with the referenced URL.
+ */
+export function safeCatalogIconUrl(value: string | undefined, fallback: string) {
+  const candidate = value?.trim();
+  if (!candidate) return fallback;
+  try {
+    const url = new URL(candidate);
+    if (
+      url.protocol !== "https:" ||
+      url.username ||
+      url.password ||
+      url.port ||
+      !isPublicConfiguredHostname(url.hostname.toLowerCase().replace(/^\[|\]$/g, ""))
+    ) return fallback;
+    return url.toString();
+  } catch {
+    return fallback;
+  }
 }
 
 function toUserFacingApp(seed: CuratedAppSeed, index: number): UserFacingApp {
@@ -196,7 +220,7 @@ export async function browseAdditionalUserFacingApps(input: { query?: string; af
         slug: app.nameSlug,
         name: app.name,
         description: app.description?.trim() || "Prepare work in this app as a reviewable task proposal.",
-        iconUrl: app.imgSrc?.trim() || simpleIconUrl(app.nameSlug),
+        iconUrl: safeCatalogIconUrl(app.imgSrc, simpleIconUrl(app.nameSlug)),
         categories: app.categories.length ? app.categories.slice(0, 2) : ["More apps"],
         scopeOptions: app.scopeProfiles.map(profile => profile.name).filter(Boolean).slice(0, 2).length
           ? app.scopeProfiles.map(profile => profile.name).filter(Boolean).slice(0, 2)

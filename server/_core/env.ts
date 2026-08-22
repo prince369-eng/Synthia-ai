@@ -15,7 +15,7 @@ const BLOCKED_ALLOWLIST_HOSTS = new Set([
 const DOMAIN_LABEL = "[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?";
 const PUBLIC_DOMAIN_NAME = new RegExp(`^(?:${DOMAIN_LABEL}\\.)+${DOMAIN_LABEL}$`);
 
-function isPublicConfiguredHostname(host: string) {
+export function isPublicConfiguredHostname(host: string) {
   if (!PUBLIC_DOMAIN_NAME.test(host)) return false;
   if (/^\d{1,3}(?:\.\d{1,3}){3}$/.test(host)) return false;
   if (BLOCKED_ALLOWLIST_HOSTS.has(host)) return false;

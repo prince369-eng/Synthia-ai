@@ -3432,3 +3432,8 @@
 - [x] Require credential-bearing provider endpoints to use a normalized public domain name rather than localhost, local/internal names, metadata aliases, or literal IPv4/IPv6 addresses.
 - [x] Reuse the bounded public-domain predicate across capability allowlists and provider endpoint configuration to avoid policy drift.
 - [x] Extend deterministic endpoint boundary coverage and validate strict typing, focused provider-client regressions, the full deterministic suite, and a production build without invoking an external provider.
+
+## Connected-app catalog metadata validation
+- [x] Treat extended-directory icon URLs as untrusted metadata and accept only credential-free public HTTPS origins with default ports before client rendering.
+- [x] Fall back to the curated local icon for malformed, local, literal-IP, credential-bearing, or non-standard-port metadata without fetching any remote image during validation.
+- [x] Add deterministic catalog metadata regressions and validate strict typing, focused UI/catalog tests, the full deterministic suite, and a production build without connecting an app.

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { appConnectorProviders, appConnectorReadiness, listUserFacingApps } from "./appConnectors";
+import { appConnectorProviders, appConnectorReadiness, listUserFacingApps, safeCatalogIconUrl } from "./appConnectors";
 
 describe("app connector authorization boundaries", () => {
   it("describes only the explicit user-authorized provider routes", () => {
@@ -30,5 +30,21 @@ describe("app connector authorization boundaries", () => {
     expect(Object.keys(gmail ?? {}).sort()).toEqual(["approvalRequired", "authorizationRequired", "categories", "description", "featured", "iconUrl", "name", "scopeOptions", "slug"]);
     expect(listUserFacingApps()).not.toBe(apps);
     expect(listUserFacingApps()[0].categories).not.toBe(apps[0].categories);
+  });
+
+  it("accepts only credential-free public HTTPS icon origins from extended-directory metadata", () => {
+    const fallback = "https://cdn.simpleicons.org/example/A7F3D0?viewbox=auto";
+
+    expect(safeCatalogIconUrl("https://images.example.com/icons/example.svg", fallback)).toBe("https://images.example.com/icons/example.svg");
+    for (const candidate of [
+      "http://images.example.com/icon.svg",
+      "https://user:pass@images.example.com/icon.svg",
+      "https://images.example.com:8443/icon.svg",
+      "https://localhost/icon.svg",
+      "https://127.0.0.1/icon.svg",
+      "not a url",
+    ]) {
+      expect(safeCatalogIconUrl(candidate, fallback)).toBe(fallback);
+    }
   });
 });
