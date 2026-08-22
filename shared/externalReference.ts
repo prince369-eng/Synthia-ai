@@ -49,3 +49,32 @@ export function normalizeExternalReferenceUrl(value: string): string | null {
     return null;
   }
 }
+
+/**
+ * Returns a canonical public HTTPS resource URL for passive browser rendering.
+ * Icon providers can legitimately use query parameters, so this is intentionally
+ * broader than proof references while still rejecting credentials, ports, and
+ * fragments without initiating any network activity.
+ */
+export function normalizeExternalResourceUrl(value: string): string | null {
+  const candidate = value.trim();
+  if (!candidate || candidate.length > 2_048) return null;
+
+  try {
+    const url = new URL(candidate);
+    const hostname = url.hostname.toLowerCase().replace(/^\[|\]$/g, "").replace(/\.$/, "");
+    if (
+      url.protocol !== "https:" ||
+      url.username ||
+      url.password ||
+      url.port ||
+      url.hash ||
+      !isPublicHostname(hostname)
+    ) return null;
+
+    url.hostname = hostname;
+    return url.toString();
+  } catch {
+    return null;
+  }
+}

@@ -1,6 +1,7 @@
 import { PipedreamClient } from "@pipedream/sdk";
 import { TRPCError } from "@trpc/server";
-import { ENV, isPublicConfiguredHostname } from "../_core/env";
+import { normalizeExternalResourceUrl } from "@shared/externalReference";
+import { ENV } from "../_core/env";
 import { createIntegrationForUser } from "../db";
 import { encryptSecret } from "../security/encryption";
 import { logger } from "../security/logger";
@@ -83,19 +84,7 @@ function simpleIconUrl(iconSlug: string) {
 export function safeCatalogIconUrl(value: string | undefined, fallback: string) {
   const candidate = value?.trim();
   if (!candidate) return fallback;
-  try {
-    const url = new URL(candidate);
-    if (
-      url.protocol !== "https:" ||
-      url.username ||
-      url.password ||
-      url.port ||
-      !isPublicConfiguredHostname(url.hostname.toLowerCase().replace(/^\[|\]$/g, ""))
-    ) return fallback;
-    return url.toString();
-  } catch {
-    return fallback;
-  }
+  return normalizeExternalResourceUrl(candidate) ?? fallback;
 }
 
 function toUserFacingApp(seed: CuratedAppSeed, index: number): UserFacingApp {

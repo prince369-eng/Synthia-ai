@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isPublicHostname, normalizeExternalReferenceUrl } from "@shared/externalReference";
+import { isPublicHostname, normalizeExternalReferenceUrl, normalizeExternalResourceUrl } from "@shared/externalReference";
 
 describe("external proof reference URL boundary", () => {
   it("canonicalizes public HTTPS evidence URLs without doing network work", () => {
@@ -27,5 +27,20 @@ describe("external proof reference URL boundary", () => {
     "not a url",
   ])("rejects unsafe or non-canonical external proof references: %s", value => {
     expect(normalizeExternalReferenceUrl(value)).toBeNull();
+  });
+
+  it("permits public icon query parameters but rejects unsafe resource URL shapes without loading them", () => {
+    expect(normalizeExternalResourceUrl("https://CDN.Example.com/icon.svg?viewbox=auto")).toBe("https://cdn.example.com/icon.svg?viewbox=auto");
+    for (const hostileValue of [
+      "http://cdn.example.com/icon.svg",
+      "https://user:secret@cdn.example.com/icon.svg",
+      "https://cdn.example.com:8443/icon.svg",
+      "https://cdn.example.com/icon.svg#fragment",
+      "https://localhost/icon.svg",
+      "https://169.254.169.254/icon.svg",
+      "https://[::1]/icon.svg",
+    ]) {
+      expect(normalizeExternalResourceUrl(hostileValue)).toBeNull();
+    }
   });
 });

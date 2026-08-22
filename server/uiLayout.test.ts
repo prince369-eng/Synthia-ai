@@ -71,6 +71,7 @@ describe("compact workspace layout contract", () => {
     expect(connectorCard).toContain("Permissions");
     expect(connectorCard).toContain("Approval required");
     expect(connectorCard).toContain("not the app credential");
+    expect(connectorCard).toContain("normalizeExternalResourceUrl(app.iconUrl)");
     expect(connectorCard).not.toContain("Pipedream");
     expect(connectorCard).not.toContain("Composio");
     expect(plugins).toContain('window.location.assign(trustedAuthorizationNavigation(result.authorizationUrl))');
@@ -91,6 +92,7 @@ describe("compact workspace layout contract", () => {
     expect(dashboard).toContain('aria-label="Choose connected apps for this task"');
     expect(dashboard).toContain('id="composer-connector-picker"');
     expect(dashboard).toContain('setLocation(`/plugins?app=${encodeURIComponent(app.slug)}`)');
+    expect(dashboard).toContain("normalizeExternalResourceUrl(app.iconUrl)");
     expect(dashboard).toContain("selectedConnectedApps,");
     expect(dashboard).toContain("Synthia will still propose every external action for your approval.");
     expect(dashboard).not.toContain("Pipedream");

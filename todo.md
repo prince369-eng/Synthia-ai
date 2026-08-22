@@ -3477,3 +3477,8 @@
 - [x] Require the public OAuth account-portal base to be a canonical credential-free public HTTPS origin before user-initiated login navigation.
 - [x] Add deterministic hostile configuration URL coverage without initiating an OAuth flow or visiting a destination.
 - [x] Validate strict typing, focused tests, the full deterministic suite, production build, and diff hygiene without starting external work.
+
+## Connected-app image URL defense in depth
+- [x] Normalize extended catalog image URLs at the shared server-and-client rendering boundary before either connector surface uses an image source.
+- [x] Preserve legitimate public HTTPS icon query parameters while rejecting credentials, ports, fragments, local/internal hosts, and literal IPs without fetching an image.
+- [x] Add deterministic utility and UI source-contract regressions, then validate strict typing, focused tests, the full deterministic suite, production build, and diff hygiene without external work.

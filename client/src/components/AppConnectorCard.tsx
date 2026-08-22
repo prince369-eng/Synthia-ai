@@ -1,5 +1,6 @@
 import { CheckCircle2, ExternalLink, Loader2, RefreshCcw, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { normalizeExternalResourceUrl } from "@shared/externalReference";
 
 export type AppConnectorState = {
   slug: string;
@@ -14,7 +15,8 @@ export type AppConnectorState = {
 
 function AppGlyph({ app }: { app: AppConnectorState }) {
   const initials = app.name.split(/\s+/).filter(Boolean).slice(0, 2).map(word => word[0]).join("").toUpperCase() || "A";
-  return <span className="synthia-app-connector-glyph relative overflow-hidden" aria-hidden="true"><span className="relative z-0">{initials}</span>{app.iconUrl ? <img className="absolute inset-0 z-10 size-full object-cover bg-[#17201f] p-1" src={app.iconUrl} alt="" referrerPolicy="no-referrer" onError={event => { event.currentTarget.style.display = "none"; }} /> : null}</span>;
+  const iconUrl = normalizeExternalResourceUrl(app.iconUrl);
+  return <span className="synthia-app-connector-glyph relative overflow-hidden" aria-hidden="true"><span className="relative z-0">{initials}</span>{iconUrl ? <img className="absolute inset-0 z-10 size-full object-cover bg-[#17201f] p-1" src={iconUrl} alt="" referrerPolicy="no-referrer" onError={event => { event.currentTarget.style.display = "none"; }} /> : null}</span>;
 }
 
 export function AppConnectorCard({ app, connected, returning, pending, onConnect, onVerify }: { app: AppConnectorState; connected: boolean; returning: boolean; pending: boolean; onConnect: () => void; onVerify: () => void }) {
