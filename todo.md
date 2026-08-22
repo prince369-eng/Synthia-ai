@@ -3462,3 +3462,8 @@
 - [x] Audit and replace remaining client-visible raw tRPC error-message rendering with bounded, contextual recovery guidance.
 - [x] Add deterministic source and utility regressions that preserve accessibility while preventing arbitrary diagnostic text from becoming UI content.
 - [x] Validate strict typing, focused tests, the full deterministic suite, production build, and diff hygiene without starting external work.
+
+## Authentication redirect-path hardening
+- [x] Restrict optional unauthenticated redirect paths to canonical same-origin application routes before client navigation.
+- [x] Add deterministic hostile-path and source-contract coverage without opening a browser destination.
+- [x] Validate strict typing, focused tests, the full deterministic suite, production build, and diff hygiene without starting external work.

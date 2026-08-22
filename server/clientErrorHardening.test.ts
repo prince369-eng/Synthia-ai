@@ -20,4 +20,14 @@ describe("client error disclosure hardening", () => {
     expect(main).not.toContain("synthia-bootstrap-error");
     expect(main).not.toContain("error.message.slice(0, 220)");
   });
+
+  it("keeps optional authentication redirects constrained to normalized internal routes", () => {
+    const auth = readFileSync(new URL("../client/src/_core/hooks/useAuth.ts", import.meta.url), "utf8");
+
+    expect(auth).toContain('import { normalizeInternalNavigationPath } from "@/lib/internalNavigation";');
+    expect(auth).toContain("const safeRedirectPath = normalizeInternalNavigationPath(redirectPath);");
+    expect(auth).toContain("if (safeRedirectPath) {");
+    expect(auth).toContain("window.location.href = safeRedirectPath;");
+    expect(auth).not.toContain("window.location.href = redirectPath;");
+  });
 });

@@ -1,5 +1,6 @@
 import { EXPLICIT_SIGNED_OUT_STORAGE_KEY, startLogin } from "@/const";
 import { trpc } from "@/lib/trpc";
+import { normalizeInternalNavigationPath } from "@/lib/internalNavigation";
 import { TRPCClientError } from "@trpc/client";
 import { useCallback, useEffect, useMemo } from "react";
 
@@ -97,11 +98,12 @@ export function useAuth(options?: UseAuthOptions) {
     if (state.user) return;
     if (isExplicitlySignedOut) return;
     if (typeof window === "undefined") return;
-    if (redirectPath && window.location.pathname === redirectPath) return;
+    const safeRedirectPath = normalizeInternalNavigationPath(redirectPath);
+    if (safeRedirectPath && window.location.pathname === safeRedirectPath) return;
 
     // Navigate at this moment only. startLogin() mints the nonce + cookie itself.
-    if (redirectPath) {
-      window.location.href = redirectPath;
+    if (safeRedirectPath) {
+      window.location.href = safeRedirectPath;
     } else {
       startLogin();
     }
