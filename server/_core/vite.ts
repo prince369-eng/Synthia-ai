@@ -5,6 +5,7 @@ import { nanoid } from "nanoid";
 import path from "path";
 import { createServer as createViteServer } from "vite";
 import viteConfig from "../../vite.config";
+import { logger } from "../security/logger";
 
 export const STATIC_PREVIEW_CACHE_CONTROL = "no-store";
 
@@ -76,9 +77,7 @@ export function serveStatic(app: Express) {
       ? path.resolve(import.meta.dirname, "../..", "dist", "public")
       : path.resolve(import.meta.dirname, "public");
   if (!fs.existsSync(distPath)) {
-    console.error(
-      `Could not find the build directory: ${distPath}, make sure to build the client first`
-    );
+    logger.error({ event: "static_build_directory_missing" }, "Static build directory is missing; build the client before serving static assets");
   }
 
   const inlinePreviewStyles = process.env.SYNTHIA_STATIC_PREVIEW === "true";

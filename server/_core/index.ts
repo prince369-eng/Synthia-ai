@@ -11,6 +11,7 @@ import { serveStatic, setupVite } from "./vite";
 import { ENV } from "./env";
 import { registerTaskEventStream } from "../realtime/taskEventStream";
 import { runScheduledWorkflow } from "../scheduledWorkflows";
+import { logger } from "../security/logger";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -88,12 +89,14 @@ async function startServer() {
   const port = await findAvailablePort(preferredPort);
 
   if (port !== preferredPort) {
-    console.log(`Port ${preferredPort} is busy, using port ${port} instead`);
+    logger.warn({ event: "server_port_fallback", preferredPort, selectedPort: port }, "Preferred port is unavailable; using a fallback port");
   }
 
   server.listen(port, () => {
-    console.log(`Server running on http://localhost:${port}/`);
+    logger.info({ event: "server_started", port }, "Server listening");
   });
 }
 
-startServer().catch(console.error);
+startServer().catch(error => {
+  logger.fatal({ event: "server_start_failed", errorKind: error instanceof Error ? error.name : "unknown" }, "Server failed to start");
+});

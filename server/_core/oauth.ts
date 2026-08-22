@@ -4,6 +4,7 @@ import type { Express, Request, Response } from "express";
 import * as authDb from "../authDb";
 import { getSessionCookieOptions } from "./cookies";
 import { DEFAULT_SESSION_TTL_MS, sdk } from "./sdk";
+import { logger } from "../security/logger";
 
 function getQueryParam(req: Request, key: string): string | undefined {
   const value = req.query[key];
@@ -58,7 +59,7 @@ export function registerOAuthRoutes(app: Express) {
 
       res.redirect(302, "/");
     } catch (error) {
-      console.error("[OAuth] Callback failed", error);
+      logger.error({ event: "oauth_callback_failed", errorKind: error instanceof Error ? error.name : "unknown" }, "OAuth callback failed");
       res.status(500).json({ error: "OAuth callback failed" });
     }
   });

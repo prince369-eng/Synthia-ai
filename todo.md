@@ -3284,6 +3284,12 @@
 - [x] Surface a quality-budget status summary in the evaluation workflow as informational review context, never an automatic pass/fail or task mutation.
 - [x] Add deterministic authorization and non-mutation regressions; document, validate, and checkpoint the quality-budget capability.
 
+## Structured logging hardening
+
+- [x] Replace audited server-side direct console diagnostics with the existing redaction-aware structured logger while preserving safe public error responses.
+- [x] Remove raw upstream response details and arbitrary exception messages from audited structured failure events, retaining stable event metadata and error classifications.
+- [x] Add deterministic logging-boundary regression coverage; document, validate, and checkpoint the hardening without starting external workloads.
+
 ## Modern workspace UI and UX refinement
 
 - [x] Audit the authenticated shell, dashboard composer, workspace panels, typography, iconography, spacing, hierarchy, and responsive behavior against current productivity-agent interaction patterns.

@@ -3,6 +3,7 @@ import { TRPCError } from "@trpc/server";
 import { ENV } from "../_core/env";
 import { createIntegrationForUser } from "../db";
 import { encryptSecret } from "../security/encryption";
+import { logger } from "../security/logger";
 
 export const appConnectorProviders = ["zapier", "pipedream", "composio"] as const;
 export type AppConnectorProvider = typeof appConnectorProviders[number];
@@ -185,7 +186,7 @@ export async function browseAdditionalUserFacingApps(input: { query?: string; af
       }));
     return { apps, nextCursor: page.response.pageInfo.endCursor ?? null, totalCount: page.response.pageInfo.totalCount ?? null };
   } catch (error) {
-    console.error(JSON.stringify({ event: "app_directory_browse_failed", hasQuery: Boolean(query), message: error instanceof Error ? error.message : "unknown" }));
+    logger.error({ event: "app_directory_browse_failed", hasQuery: Boolean(query), errorKind: error instanceof Error ? error.name : "unknown" }, "Connected-app directory browsing failed");
     throw new TRPCError({ code: "BAD_GATEWAY", message: "More apps could not be loaded right now. Try again shortly." });
   }
 }
@@ -207,7 +208,7 @@ export async function startAppConnectorAuthorization(input: { appSlug: string; u
     authorizationUrl.searchParams.set("app", input.appSlug);
     return { mode: "redirect" as const, authorizationUrl: authorizationUrl.toString(), expiresAt: session.expiresAt.getTime() };
   } catch (error) {
-    console.error(JSON.stringify({ event: "app_connector_start_failed", appSlug: input.appSlug, userId: input.userId, message: error instanceof Error ? error.message : "unknown" }));
+    logger.error({ event: "app_connector_start_failed", appSlug: input.appSlug, userId: input.userId, errorKind: error instanceof Error ? error.name : "unknown" }, "Connected-app authorization initialization failed");
     throw new TRPCError({ code: "BAD_GATEWAY", message: "This app could not start the authorization session. Please try again later." });
   }
 }
@@ -253,7 +254,7 @@ export async function verifyPipedreamAuthorization(input: { userId: number; appS
     return { id, app: { slug: input.appSlug, name: label } };
   } catch (error) {
     if (error instanceof TRPCError) throw error;
-    console.error(JSON.stringify({ event: "app_connector_verify_failed", appSlug: input.appSlug, userId: input.userId, message: error instanceof Error ? error.message : "unknown" }));
+    logger.error({ event: "app_connector_verify_failed", appSlug: input.appSlug, userId: input.userId, errorKind: error instanceof Error ? error.name : "unknown" }, "Connected-app authorization verification failed");
     throw new TRPCError({ code: "BAD_GATEWAY", message: "This app connection could not be verified right now." });
   }
 }
@@ -281,7 +282,7 @@ export async function verifyComposioAuthorization(input: { userId: number }) {
     return { id };
   } catch (error) {
     if (error instanceof TRPCError) throw error;
-    console.error(JSON.stringify({ event: "app_connector_verify_failed", provider: "composio", userId: input.userId, message: error instanceof Error ? error.message : "unknown" }));
+    logger.error({ event: "app_connector_verify_failed", provider: "composio", userId: input.userId, errorKind: error instanceof Error ? error.name : "unknown" }, "Connected-app authorization verification failed");
     throw new TRPCError({ code: "BAD_GATEWAY", message: "Composio connection verification is temporarily unavailable." });
   }
 }

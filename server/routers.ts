@@ -94,6 +94,7 @@ import { systemRouter } from "./_core/systemRouter";
 import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
 import { enqueueTaskCycle, isQueueConfigured } from "./agent/queue";
 import { enforceRateLimit, RateLimitError } from "./security/rateLimit";
+import { logger } from "./security/logger";
 import { serviceReadinessForUser } from "./integrations/catalog";
 import { estimateTaskCredits } from "./agent/creditEstimate";
 import { encryptSecret } from "./security/encryption";
@@ -605,7 +606,7 @@ export const appRouter = router({
           const stored = await storagePut(`skill-resources/${ctx.user.id}/${randomUUID()}-${filename}`, bytes, input.contentType);
           return { key: stored.key, filename, mimeType: input.contentType, bytes: bytes.length };
         } catch (error) {
-          console.error(JSON.stringify({ event: "skill_resource_upload_failed", userId: ctx.user.id, filename, message: error instanceof Error ? error.message : "unknown" }));
+          logger.error({ event: "skill_resource_upload_failed", userId: ctx.user.id, filename, errorKind: error instanceof Error ? error.name : "unknown" }, "Skill resource upload failed");
           throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "The Skill resource could not be stored." });
         }
       }),
@@ -848,7 +849,7 @@ export const appRouter = router({
         try {
           return { files: await listLiveComputerFiles({ sandbox }), availability };
         } catch (error) {
-          console.error(JSON.stringify({ event: "live_computer_files_failed", taskId: input.taskId, userId: ctx.user.id, provider: sandbox.provider, message: error instanceof Error ? error.message : "unknown" }));
+          logger.error({ event: "live_computer_files_failed", taskId: input.taskId, userId: ctx.user.id, provider: sandbox.provider, errorKind: error instanceof Error ? error.name : "unknown" }, "Live Computer file listing failed");
           throw new TRPCError({ code: "PRECONDITION_FAILED", message: "The task workspace files are not available for inspection." });
         }
       }),
@@ -862,7 +863,7 @@ export const appRouter = router({
         try {
           return await readLiveComputerSource({ sandbox, path: input.path });
         } catch (error) {
-          console.error(JSON.stringify({ event: "live_computer_source_failed", taskId: input.taskId, userId: ctx.user.id, provider: sandbox.provider, message: error instanceof Error ? error.message : "unknown" }));
+          logger.error({ event: "live_computer_source_failed", taskId: input.taskId, userId: ctx.user.id, provider: sandbox.provider, errorKind: error instanceof Error ? error.name : "unknown" }, "Live Computer source retrieval failed");
           throw new TRPCError({ code: "BAD_REQUEST", message: "That task file cannot be opened in Live Computer." });
         }
       }),
@@ -876,7 +877,7 @@ export const appRouter = router({
         try {
           return await captureLiveComputerScreen({ sandbox });
         } catch (error) {
-          console.error(JSON.stringify({ event: "live_computer_screen_failed", taskId: input.taskId, userId: ctx.user.id, provider: sandbox.provider, message: error instanceof Error ? error.message : "unknown" }));
+          logger.error({ event: "live_computer_screen_failed", taskId: input.taskId, userId: ctx.user.id, provider: sandbox.provider, errorKind: error instanceof Error ? error.name : "unknown" }, "Live Computer screen retrieval failed");
           throw new TRPCError({ code: "PRECONDITION_FAILED", message: "The task screen is not available for capture." });
         }
       }),
@@ -922,7 +923,7 @@ export const appRouter = router({
         try {
           return await createTaskProofRecordForUser({ ...input, userId: ctx.user.id });
         } catch (error) {
-          console.error(JSON.stringify({ event: "task_proof_record_failed", taskId: input.taskId, userId: ctx.user.id, message: error instanceof Error ? error.message : "unknown" }));
+          logger.error({ event: "task_proof_record_failed", taskId: input.taskId, userId: ctx.user.id, errorKind: error instanceof Error ? error.name : "unknown" }, "Task proof record creation failed");
           throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "The proof record could not be saved. Please retry." });
         }
       }),
@@ -934,7 +935,7 @@ export const appRouter = router({
         try {
           return await createTaskPipelineHealthSignalForUser({ ...input, userId: ctx.user.id });
         } catch (error) {
-          console.error(JSON.stringify({ event: "pipeline_health_record_failed", taskId: input.taskId, userId: ctx.user.id, message: error instanceof Error ? error.message : "unknown" }));
+          logger.error({ event: "pipeline_health_record_failed", taskId: input.taskId, userId: ctx.user.id, errorKind: error instanceof Error ? error.name : "unknown" }, "Pipeline health record creation failed");
           throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "The pipeline health signal could not be recorded. Please retry." });
         }
       }),
@@ -948,7 +949,7 @@ export const appRouter = router({
         } catch (error) {
           const message = error instanceof Error ? error.message : "The remediation proposal could not be saved.";
           if (message.includes("signal")) throw new TRPCError({ code: "NOT_FOUND", message });
-          console.error(JSON.stringify({ event: "remediation_proposal_failed", taskId: input.taskId, userId: ctx.user.id, message }));
+          logger.error({ event: "remediation_proposal_failed", taskId: input.taskId, userId: ctx.user.id, errorKind: error instanceof Error ? error.name : "unknown" }, "Remediation proposal creation failed");
           throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "The remediation proposal could not be saved. Please retry." });
         }
       }),
@@ -962,7 +963,7 @@ export const appRouter = router({
         } catch (error) {
           const message = error instanceof Error ? error.message : "The specialist delegation could not be saved.";
           if (message.includes("delegation")) throw new TRPCError({ code: "NOT_FOUND", message });
-          console.error(JSON.stringify({ event: "task_delegation_proposal_failed", taskId: input.taskId, userId: ctx.user.id, message }));
+          logger.error({ event: "task_delegation_proposal_failed", taskId: input.taskId, userId: ctx.user.id, errorKind: error instanceof Error ? error.name : "unknown" }, "Task delegation proposal creation failed");
           throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "The specialist delegation could not be saved. Please retry." });
         }
       }),
@@ -974,7 +975,7 @@ export const appRouter = router({
         try {
           return await createTaskHandoffPolicyForUser({ ...input, userId: ctx.user.id });
         } catch (error) {
-          console.error(JSON.stringify({ event: "task_handoff_policy_create_failed", taskId: input.taskId, userId: ctx.user.id, message: error instanceof Error ? error.message : "unknown" }));
+          logger.error({ event: "task_handoff_policy_create_failed", taskId: input.taskId, userId: ctx.user.id, errorKind: error instanceof Error ? error.name : "unknown" }, "Task handoff policy creation failed");
           throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "The handoff policy could not be saved. Please retry." });
         }
       }),
@@ -988,7 +989,7 @@ export const appRouter = router({
         } catch (error) {
           const message = error instanceof Error ? error.message : "The handoff policy could not be updated.";
           if (message.includes("unavailable")) throw new TRPCError({ code: "NOT_FOUND", message });
-          console.error(JSON.stringify({ event: "task_handoff_policy_update_failed", taskId: input.taskId, userId: ctx.user.id, message }));
+          logger.error({ event: "task_handoff_policy_update_failed", taskId: input.taskId, userId: ctx.user.id, errorKind: error instanceof Error ? error.name : "unknown" }, "Task handoff policy update failed");
           throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "The handoff policy could not be updated. Please retry." });
         }
       }),
@@ -1002,7 +1003,7 @@ export const appRouter = router({
         } catch (error) {
           const message = error instanceof Error ? error.message : "The handoff policy could not be archived.";
           if (message.includes("unavailable")) throw new TRPCError({ code: "NOT_FOUND", message });
-          console.error(JSON.stringify({ event: "task_handoff_policy_archive_failed", taskId: input.taskId, userId: ctx.user.id, message }));
+          logger.error({ event: "task_handoff_policy_archive_failed", taskId: input.taskId, userId: ctx.user.id, errorKind: error instanceof Error ? error.name : "unknown" }, "Task handoff policy archive failed");
           throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "The handoff policy could not be archived. Please retry." });
         }
       }),
@@ -1014,7 +1015,7 @@ export const appRouter = router({
         try {
           return await createTaskRecoveryPlaybookForUser({ ...input, userId: ctx.user.id });
         } catch (error) {
-          console.error(JSON.stringify({ event: "task_recovery_playbook_create_failed", taskId: input.taskId, userId: ctx.user.id, message: error instanceof Error ? error.message : "unknown" }));
+          logger.error({ event: "task_recovery_playbook_create_failed", taskId: input.taskId, userId: ctx.user.id, errorKind: error instanceof Error ? error.name : "unknown" }, "Task recovery playbook creation failed");
           throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "The recovery playbook could not be saved. Please retry." });
         }
       }),
@@ -1028,7 +1029,7 @@ export const appRouter = router({
         } catch (error) {
           const message = error instanceof Error ? error.message : "The recovery playbook could not be updated.";
           if (message.includes("unavailable")) throw new TRPCError({ code: "NOT_FOUND", message });
-          console.error(JSON.stringify({ event: "task_recovery_playbook_update_failed", taskId: input.taskId, userId: ctx.user.id, message }));
+          logger.error({ event: "task_recovery_playbook_update_failed", taskId: input.taskId, userId: ctx.user.id, errorKind: error instanceof Error ? error.name : "unknown" }, "Task recovery playbook update failed");
           throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "The recovery playbook could not be updated. Please retry." });
         }
       }),
@@ -1042,7 +1043,7 @@ export const appRouter = router({
         } catch (error) {
           const message = error instanceof Error ? error.message : "The recovery playbook could not be archived.";
           if (message.includes("unavailable")) throw new TRPCError({ code: "NOT_FOUND", message });
-          console.error(JSON.stringify({ event: "task_recovery_playbook_archive_failed", taskId: input.taskId, userId: ctx.user.id, message }));
+          logger.error({ event: "task_recovery_playbook_archive_failed", taskId: input.taskId, userId: ctx.user.id, errorKind: error instanceof Error ? error.name : "unknown" }, "Task recovery playbook archive failed");
           throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "The recovery playbook could not be archived. Please retry." });
         }
       }),
@@ -1054,7 +1055,7 @@ export const appRouter = router({
         try {
           return await createTaskPolicyPackForUser({ ...input, userId: ctx.user.id });
         } catch (error) {
-          console.error(JSON.stringify({ event: "task_policy_pack_create_failed", taskId: input.taskId, userId: ctx.user.id, message: error instanceof Error ? error.message : "unknown" }));
+          logger.error({ event: "task_policy_pack_create_failed", taskId: input.taskId, userId: ctx.user.id, errorKind: error instanceof Error ? error.name : "unknown" }, "Task policy pack creation failed");
           throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "The policy pack could not be saved. Please retry." });
         }
       }),
@@ -1068,7 +1069,7 @@ export const appRouter = router({
         } catch (error) {
           const message = error instanceof Error ? error.message : "The policy pack could not be updated.";
           if (message.includes("unavailable")) throw new TRPCError({ code: "NOT_FOUND", message });
-          console.error(JSON.stringify({ event: "task_policy_pack_update_failed", taskId: input.taskId, userId: ctx.user.id, message }));
+          logger.error({ event: "task_policy_pack_update_failed", taskId: input.taskId, userId: ctx.user.id, errorKind: error instanceof Error ? error.name : "unknown" }, "Task policy pack update failed");
           throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "The policy pack could not be updated. Please retry." });
         }
       }),
@@ -1082,7 +1083,7 @@ export const appRouter = router({
         } catch (error) {
           const message = error instanceof Error ? error.message : "The policy pack could not be archived.";
           if (message.includes("unavailable")) throw new TRPCError({ code: "NOT_FOUND", message });
-          console.error(JSON.stringify({ event: "task_policy_pack_archive_failed", taskId: input.taskId, userId: ctx.user.id, message }));
+          logger.error({ event: "task_policy_pack_archive_failed", taskId: input.taskId, userId: ctx.user.id, errorKind: error instanceof Error ? error.name : "unknown" }, "Task policy pack archive failed");
           throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "The policy pack could not be archived. Please retry." });
         }
       }),
@@ -1094,7 +1095,7 @@ export const appRouter = router({
         try {
           return await createTaskQualityBudgetForUser({ ...input, userId: ctx.user.id });
         } catch (error) {
-          console.error(JSON.stringify({ event: "task_quality_budget_create_failed", taskId: input.taskId, userId: ctx.user.id, message: error instanceof Error ? error.message : "unknown" }));
+          logger.error({ event: "task_quality_budget_create_failed", taskId: input.taskId, userId: ctx.user.id, errorKind: error instanceof Error ? error.name : "unknown" }, "Task quality-budget creation failed");
           throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "The quality budget could not be saved. Please retry." });
         }
       }),
@@ -1108,7 +1109,7 @@ export const appRouter = router({
         } catch (error) {
           const message = error instanceof Error ? error.message : "The quality budget could not be updated.";
           if (message.includes("unavailable")) throw new TRPCError({ code: "NOT_FOUND", message });
-          console.error(JSON.stringify({ event: "task_quality_budget_update_failed", taskId: input.taskId, userId: ctx.user.id, message }));
+          logger.error({ event: "task_quality_budget_update_failed", taskId: input.taskId, userId: ctx.user.id, errorKind: error instanceof Error ? error.name : "unknown" }, "Task quality-budget update failed");
           throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "The quality budget could not be updated. Please retry." });
         }
       }),
@@ -1122,7 +1123,7 @@ export const appRouter = router({
         } catch (error) {
           const message = error instanceof Error ? error.message : "The quality budget could not be archived.";
           if (message.includes("unavailable")) throw new TRPCError({ code: "NOT_FOUND", message });
-          console.error(JSON.stringify({ event: "task_quality_budget_archive_failed", taskId: input.taskId, userId: ctx.user.id, message }));
+          logger.error({ event: "task_quality_budget_archive_failed", taskId: input.taskId, userId: ctx.user.id, errorKind: error instanceof Error ? error.name : "unknown" }, "Task quality-budget archive failed");
           throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "The quality budget could not be archived. Please retry." });
         }
       }),
@@ -1191,7 +1192,7 @@ export const appRouter = router({
           const stored = await storagePut(`task-inputs/${ctx.user.id}/${randomUUID()}-${filename}`, bytes, input.contentType);
           return { storageKey: stored.key, storageUrl: stored.url, filename, fileType: input.contentType };
         } catch (error) {
-          console.error(JSON.stringify({ event: "task_attachment_upload_failed", userId: ctx.user.id, filename, message: error instanceof Error ? error.message : "unknown" }));
+          logger.error({ event: "task_attachment_upload_failed", userId: ctx.user.id, filename, errorKind: error instanceof Error ? error.name : "unknown" }, "Task attachment upload failed");
           throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "The attachment could not be stored." });
         }
       }),
@@ -1216,7 +1217,7 @@ export const appRouter = router({
           return { text: result.text, language: result.language, duration: result.duration };
         } catch (error) {
           if (error instanceof TRPCError) throw error;
-          console.error(JSON.stringify({ event: "task_voice_transcription_failed", userId: ctx.user.id, message: error instanceof Error ? error.message : "unknown" }));
+          logger.error({ event: "task_voice_transcription_failed", userId: ctx.user.id, errorKind: error instanceof Error ? error.name : "unknown" }, "Task voice transcription failed");
           throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "The voice recording could not be transcribed." });
         }
       }),

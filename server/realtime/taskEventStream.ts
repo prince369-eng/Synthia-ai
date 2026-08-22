@@ -2,6 +2,7 @@ import type { Express, Request, Response } from "express";
 import { getTaskForUser, listTaskEventsSince } from "../db";
 import { createContext } from "../_core/context";
 import { isTaskEventBusConfigured, subscribeTaskEvents } from "./taskEventBus";
+import { logger } from "../security/logger";
 
 const TASK_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -50,7 +51,7 @@ export function registerTaskEventStream(app: Express) {
         }
       } catch (error) {
         send(res, "stream_error", { message: "Event recovery temporarily failed." });
-        console.error(JSON.stringify({ level: "error", event: "task_event_stream_error", taskId: task.id, error: error instanceof Error ? error.message : "unknown" }));
+        logger.error({ event: "task_event_stream_error", taskId: task.id, errorKind: error instanceof Error ? error.name : "unknown" }, "Task event stream recovery failed");
       } finally {
         inFlight = false;
       }
