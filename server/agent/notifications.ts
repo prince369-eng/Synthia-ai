@@ -53,7 +53,12 @@ export async function notifyTask(notification: TaskNotification) {
     try {
       if (await send(notification.recipient, subject, text)) return true;
     } catch (error) {
-      logger.warn({ event: "notification_delivery_failed", taskId: notification.taskId, provider: send.name, error: error instanceof Error ? error.message : "unknown" }, "Task notification delivery failed");
+      const errorCategory = error instanceof Error && (error.name === "AbortError" || error.name === "TimeoutError")
+        ? "timeout"
+        : error instanceof TypeError
+          ? "network"
+          : "provider";
+      logger.warn({ event: "notification_delivery_failed", taskId: notification.taskId, provider: send.name, errorCategory }, "Task notification delivery failed");
     }
   }
   return false;

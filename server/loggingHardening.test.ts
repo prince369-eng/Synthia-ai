@@ -20,7 +20,9 @@ describe("structured logging hardening", () => {
       "media/gemini.ts",
       "media/pixazo.ts",
       "media/taskMedia.ts",
+      "agent/notifications.ts",
       "realtime/taskEventStream.ts",
+      "realtime/taskEventBus.ts",
       "scheduledWorkflows.ts",
     ];
 

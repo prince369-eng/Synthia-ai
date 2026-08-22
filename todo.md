@@ -3417,3 +3417,8 @@
 - [x] Replace remaining Gemini, Pixazo, and task-image-reference raw transport exception text with bounded diagnostic categories.
 - [x] Retain typed provider failure codes and controlled user-facing messages while preventing arbitrary fallback exception text from entering task events or structured logs.
 - [x] Expand the central logging contract to all media and task-reference modules, then validate strict typing, focused regressions, the full deterministic suite, and a production build without invoking providers.
+
+## Notification and task-event diagnostic redaction
+- [x] Replace notification delivery and Redis task-event bus raw exception text with bounded timeout, network, provider, or transport classifications.
+- [x] Preserve notification failover and database-backed task-event stream recovery while extending central structured-logging coverage to both modules.
+- [x] Validate strict typing, focused recovery/logging regressions, the full deterministic suite, and a production build without sending notifications or connecting to Redis.
