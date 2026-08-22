@@ -30,4 +30,15 @@ describe("client error disclosure hardening", () => {
     expect(auth).toContain("window.location.href = safeRedirectPath;");
     expect(auth).not.toContain("window.location.href = redirectPath;");
   });
+
+  it("keeps Voice Mode browser and realtime failures bounded before alert rendering", () => {
+    const voiceMode = readFileSync(new URL("../client/src/components/VoiceModeDialog.tsx", import.meta.url), "utf8");
+
+    expect(voiceMode).toContain('import { clientErrorMessage } from "@/lib/clientErrorDisplay";');
+    expect(voiceMode).toContain("function isPermissionDenied(reason: unknown): boolean");
+    expect(voiceMode).toContain('setError(isPermissionDenied(reason) ? "Microphone permission was not granted. Voice Mode has not started." : clientErrorMessage(reason, "Voice Mode could not connect. Please try again."));');
+    expect(voiceMode).toContain('setError(isPermissionDenied(reason) ? "Screen sharing was not granted. Nothing was shared." : clientErrorMessage(reason, "Screen sharing could not start. Please try again."));');
+    expect(voiceMode).not.toContain("const message = reason instanceof Error ? reason.message");
+    expect(voiceMode).not.toContain("message.includes(\"Permission\")");
+  });
 });

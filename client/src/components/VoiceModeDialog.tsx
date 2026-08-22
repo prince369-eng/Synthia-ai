@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/button";
+import { clientErrorMessage } from "@/lib/clientErrorDisplay";
 import { cn } from "@/lib/utils";
 import { trpc } from "@/lib/trpc";
 import { AudioLines, MonitorDot, Square, X } from "lucide-react";
@@ -105,9 +106,8 @@ export default function VoiceModeDialog({ taskId, onClose }: { taskId: string; o
       setStatus("live");
       update.mutate({ taskId, sessionId: join.sessionId, action: "connected" });
     } catch (reason) {
-      const message = reason instanceof Error ? reason.message : "Voice Mode could not connect.";
       if (createdSessionId) update.mutate({ taskId, sessionId: createdSessionId, action: "failed", failureReason: "Browser microphone or realtime transport connection was unavailable." });
-      setError(message.includes("Permission") || message.includes("NotAllowed") ? "Microphone permission was not granted. Voice Mode has not started." : message);
+      setError(isPermissionDenied(reason) ? "Microphone permission was not granted. Voice Mode has not started." : clientErrorMessage(reason, "Voice Mode could not connect. Please try again."));
       setStatus("ready");
     }
   };
@@ -128,8 +128,7 @@ export default function VoiceModeDialog({ taskId, onClose }: { taskId: string; o
       setScreenStream(display);
       update.mutate({ taskId, sessionId, action: "screen_started" });
     } catch (reason) {
-      const message = reason instanceof Error ? reason.message : "Screen sharing could not start.";
-      setError(message.includes("Permission") || message.includes("NotAllowed") ? "Screen sharing was not granted. Nothing was shared." : message);
+      setError(isPermissionDenied(reason) ? "Screen sharing was not granted. Nothing was shared." : clientErrorMessage(reason, "Screen sharing could not start. Please try again."));
     }
   };
 
@@ -166,6 +165,10 @@ export default function VoiceModeDialog({ taskId, onClose }: { taskId: string; o
       <footer className="mt-5 border-t border-white/8 pt-3 text-[10px] leading-4 text-[#718580]">Do not share passwords, recovery codes, payment details, or private material you do not intend to include in the live session.</footer>
     </section>
   </div>;
+}
+
+function isPermissionDenied(reason: unknown): boolean {
+  return reason instanceof Error && ["NotAllowedError", "PermissionDeniedError", "SecurityError"].includes(reason.name);
 }
 
 function VoiceSettingSelect({ label, value, disabled, onChange, options, labels = options }: { label: string; value: string; disabled: boolean; onChange: (value: string) => void; options: string[]; labels?: string[] }) {

@@ -3512,3 +3512,8 @@
 - [x] Allow microphone access only for the same Synthia origin so the explicit user-initiated Voice Mode control can request browser permission while cross-origin frames remain blocked.
 - [x] Preserve deny-by-default camera, geolocation, and payment policies with deterministic response-header coverage without activating voice or screen sharing.
 - [x] Validate strict typing, focused tests, the full deterministic suite, production build, and diff hygiene without starting external work.
+
+## Voice Mode diagnostic display hardening
+- [x] Replace raw realtime and browser exception text in Voice Mode with contextual, bounded recovery guidance while retaining explicit permission-denied messages.
+- [x] Add deterministic source-contract coverage without starting a Voice Mode session, microphone, screen share, or realtime connection.
+- [x] Validate strict typing, focused tests, the full deterministic suite, production build, and diff hygiene without starting external work.
