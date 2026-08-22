@@ -516,9 +516,10 @@ export const taskPolicyPacks = pgTable("task_policy_packs", {
 ]);
 
 /**
- * Owner-defined task quality expectations. The worker may pause when a hard
- * time, credit, or action-cycle ceiling is reached, but this record never
- * retries, remediates, approves, or changes external-action authority.
+ * Owner-defined task quality expectations. The ceilings are review facts only
+ * in the current product; they do not pause work or otherwise enforce runtime,
+ * credit, or action-cycle limits. This record never retries, remediates,
+ * approves, or changes external-action authority.
  */
 export const taskQualityBudgets = pgTable("task_quality_budgets", {
   id: varchar("id", { length: 36 }).primaryKey(),

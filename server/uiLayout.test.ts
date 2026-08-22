@@ -178,6 +178,7 @@ describe("compact workspace layout contract", () => {
     const routers = readFileSync(new URL("../server/routers.ts", import.meta.url), "utf8");
     const db = readFileSync(new URL("../server/db.ts", import.meta.url), "utf8");
     const schema = readFileSync(new URL("../drizzle/schema.ts", import.meta.url), "utf8");
+    const taskRunner = readFileSync(new URL("../server/agent/taskRunner.ts", import.meta.url), "utf8");
 
     expect(workspace).toContain('id: "quality", label: "Quality"');
     expect(workspace).toContain('<TaskQualityBudgetPanel taskId={taskId} qualityBudgets={data.qualityBudgets} readOnly={replayMode} />');
@@ -194,6 +195,8 @@ describe("compact workspace layout contract", () => {
     expect(db).toContain('execution: "review_context_only"');
     expect(schema).toContain("export const taskQualityBudgets");
     expect(schema).toContain('status: qualityBudgetStatusEnum("status").notNull().default("active")');
+    expect(schema).toContain("they do not pause work or otherwise enforce runtime");
+    expect(taskRunner).not.toContain("listTaskQualityBudgetsForUser");
   });
 
   it("does not delay the unavailable state when the external task store is absent", () => {
