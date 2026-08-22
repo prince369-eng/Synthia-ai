@@ -141,7 +141,7 @@ function safeArtifactUrl(value: string) {
   }
   const hostname = parsed.hostname.toLowerCase();
   const hostAllowed = ENV.aihubmixArtifactAllowedHosts.some(allowed => hostname === allowed || hostname.endsWith(`.${allowed}`));
-  if (parsed.protocol !== "https:" || !hostAllowed) {
+  if (parsed.protocol !== "https:" || parsed.username || parsed.password || parsed.port || !hostAllowed) {
     throw new AIHubMixMediaError("INVALID_RESPONSE", "AIHubMix returned an unsafe artifact URL.");
   }
   return parsed.toString();

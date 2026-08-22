@@ -3402,3 +3402,8 @@
 - [x] Normalize configured sandbox, remote-browser, and media-artifact host allowlists to unique public domain names before capability setup.
 - [x] Reject URL syntax, ports, wildcard syntax, literal IPs, local/internal names, metadata aliases, malformed names, and duplicate entries without any DNS lookup or outbound request.
 - [x] Add deterministic boundary coverage and validate sandbox, remote-browser, media, policy, full-suite, and production-build compatibility without starting a workload.
+
+## Generated media artifact origin validation
+- [x] Require generated AIHubMix artifact URLs to remain HTTPS, allowlisted, credential-free, and free of non-standard ports before retrieval.
+- [x] Add deterministic hostile artifact-response regressions proving no artifact fetch occurs after credential-bearing or non-standard-port URLs are returned.
+- [x] Validate the media boundary with strict typing, focused media regressions, the full deterministic suite, and a production build without invoking a provider.

@@ -53,6 +53,19 @@ describe("AIHubMix media contracts", () => {
     expect(String((fetchMock.mock.calls[0][1] as RequestInit).body)).not.toContain("test-key");
   });
 
+  it.each([
+    "https://user:pass@cdn.aihubmix.com/image.png",
+    "https://cdn.aihubmix.com:444/image.png",
+  ])("rejects a generated artifact URL with unsafe origin syntax before fetching it: %s", async unsafeUrl => {
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify({ task_id: "image-task-unsafe" }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ status: "completed", output: { url: unsafeUrl } }), { status: 200 }));
+    globalThis.fetch = fetchMock;
+
+    await expect(generateAIHubMixImage({ prompt: "Create a safe artifact test." })).rejects.toThrow("unsafe artifact URL");
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
   it("uses the documented video lifecycle and requests cleanup after retrieving the complete MP4", async () => {
     const fetchMock = vi.fn()
       .mockResolvedValueOnce(new Response(JSON.stringify({ id: "video-task-1" }), { status: 200 }))
