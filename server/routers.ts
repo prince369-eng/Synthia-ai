@@ -405,6 +405,25 @@ export const appRouter = router({
   system: systemRouter,
   auth: router({
     me: publicProcedure.query(opts => opts.ctx.user),
+    workosReadiness: protectedProcedure.query(() => {
+      const missing = [
+        !ENV.workosApiKey ? "API key" : null,
+        !ENV.workosClientId ? "Client ID" : null,
+        !ENV.workosRedirectUri ? "Redirect URI" : null,
+        !ENV.workosCookiePassword ? "Cookie password" : null,
+      ].filter((item): item is string => Boolean(item));
+      const configured = missing.length === 0;
+      return {
+        configured,
+        active: configured && ENV.workosAuthEnabled,
+        missing,
+        status: !configured
+          ? "Setup incomplete"
+          : ENV.workosAuthEnabled
+            ? "Optional sign-in is enabled"
+            : "Configured and safely disabled",
+      } as const;
+    }),
     logout: publicProcedure.mutation(({ ctx }) => {
       const cookieOptions = getSessionCookieOptions(ctx.req);
       ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });

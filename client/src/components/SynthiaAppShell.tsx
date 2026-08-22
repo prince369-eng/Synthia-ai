@@ -44,10 +44,18 @@ export function SynthiaAppShell({ children }: { children: ReactNode }) {
     ? preferencesQuery.data.preferences as Record<string, unknown>
     : {};
   const keyboardShortcutsEnabled = preferences.keyboardShortcutsEnabled !== false;
+  const workspaceDensity = preferences.workspaceDensity === "compact" ? "compact" : "comfortable";
 
   useEffect(() => {
     window.localStorage.setItem(SIDEBAR_COLLAPSE_STORAGE_KEY, String(sidebarCollapsed));
   }, [sidebarCollapsed]);
+
+  useEffect(() => {
+    document.documentElement.dataset.synthiaDensity = workspaceDensity;
+    return () => {
+      delete document.documentElement.dataset.synthiaDensity;
+    };
+  }, [workspaceDensity]);
 
   useEffect(() => {
     if (!keyboardShortcutsEnabled) return;

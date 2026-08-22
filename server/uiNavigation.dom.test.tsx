@@ -144,6 +144,15 @@ describe("Synthia navigation behavior", () => {
     expect(screen.getAllByTestId("settings-capability-card")).toHaveLength(3);
   });
 
+  it("stores only an explicit workspace-density preference without changing task defaults", async () => {
+    const user = userEvent.setup();
+    const onSave = vi.fn();
+    render(<SettingsGeneral preferences={{ workspaceDensity: "comfortable", taskDefaults: { mode: "ask_before_risky", allowWebSearch: true, allowCodeExecution: true, allowFileWrites: true } }} theme="dark" onToggleTheme={vi.fn()} onSave={onSave} saving={false} persistenceAvailable />);
+
+    await user.click(screen.getByRole("button", { name: /Compact/i }));
+    expect(onSave).toHaveBeenCalledWith({ workspaceDensity: "compact" });
+  });
+
   it("exposes the managed account portal only through the explicit Account Settings action", async () => {
     const user = userEvent.setup();
     const onManageAccount = vi.fn();
@@ -151,6 +160,14 @@ describe("Synthia navigation behavior", () => {
 
     await user.click(screen.getByRole("button", { name: "Manage account" }));
     expect(onManageAccount).toHaveBeenCalledTimes(1);
+  });
+
+  it("shows an optional configured sign-in provider as safely disabled without exposing a second login action", () => {
+    render(<SettingsAccount user={{ id: 1, name: "Synthia User", email: "user@example.test" }} hasCompletedOnboarding workosReadiness={{ configured: true, active: false, missing: [], status: "configured_disabled" }} workosLoading={false} workosError={false} />);
+
+    expect(screen.getByText("Optional enterprise sign-in")).toBeTruthy();
+    expect(screen.getByText("Configured and safely disabled")).toBeTruthy();
+    expect(screen.queryByRole("button", { name: /sign in with workos/i })).toBeNull();
   });
 
   it("renders real usage totals and durable ledger event context when available", () => {

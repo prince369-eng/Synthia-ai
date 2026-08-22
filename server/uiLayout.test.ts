@@ -339,8 +339,9 @@ describe("compact workspace layout contract", () => {
   it("keeps General Settings review buttons and capability switches inside bounded responsive grid cells", () => {
     const settings = readFileSync(new URL("../client/src/pages/Settings.tsx", import.meta.url), "utf8");
 
-    expect(settings).toContain('className="grid grid-cols-2 gap-2"');
-    expect(settings).toContain('cn("mt-0 w-full", defaults.mode');
+    expect(settings).toContain('className="synthia-review-mode grid grid-cols-2 gap-2"');
+    expect(settings).toContain('cn("mt-0", defaults.mode');
+    expect(settings).toContain('className="mt-3 synthia-density-switch"');
     expect(settings).toContain('className="grid min-w-0 gap-3 md:grid-cols-3"');
     expect(settings).toContain('className="min-w-0 rounded-lg border border-white/8 bg-black/10 px-3 py-3"');
     expect(settings).toContain('className="flex min-w-0 w-full items-start justify-between gap-3"');

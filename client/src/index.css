@@ -511,6 +511,25 @@ p[role="alert"].text-amber-200 { --synthia-amber-allowed: 1; }
   .synthia-connector-safety-note { margin-top: .9rem; border-radius: .75rem; }
   @media (max-width: 1023px) { .synthia-main, .synthia-shell-collapsed .synthia-main { padding-left: 0; } }
   @media (max-width: 639px) { .synthia-chat-stage { padding-inline: 1rem; padding-top: 2rem; } .synthia-chat-stage h1 { font-size: 1.9rem; } .synthia-composer-head-title small { display: none; } .synthia-composer-safety { font-size: .52rem; } .synthia-composer-control-group-end { width: 100%; justify-content: flex-end; } .synthia-composer-toggle { padding-inline: .48rem; } .synthia-composer-toggle span { display: none; } .synthia-composer-connector-count { display: grid !important; } .synthia-connectors-page { width: min(100% - 1.25rem, 74rem); padding-top: 1.5rem; } .synthia-connector-discovery-heading, .synthia-connector-toolbar { padding-inline: .85rem; } .synthia-app-connector-grid { grid-template-columns: 1fr; padding: .75rem .85rem; } .synthia-directory-summary { padding-inline: .85rem; } .synthia-extended-directory { margin-inline: .85rem; } }
+
+  .synthia-density-switch { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .35rem; padding: .3rem; border: 1px solid rgba(198,244,236,.1); border-radius: .72rem; background: rgba(1,9,8,.28); }
+  .synthia-density-switch button { min-width: 0; border: 1px solid transparent; border-radius: .52rem; padding: .58rem .64rem; color: #8fa9a3; font-size: .68rem; font-weight: 700; line-height: 1.2; text-align: left; transition: background .16s, border-color .16s, color .16s; }
+  .synthia-density-switch button:hover:not(:disabled) { color: #dff5f0; background: rgba(255,255,255,.045); }
+  .synthia-density-switch button.is-active { border-color: rgba(103,232,249,.28); color: #d9fbf4; background: linear-gradient(115deg, rgba(20,184,166,.16), rgba(34,211,238,.12)); box-shadow: inset 0 1px 0 rgba(255,255,255,.06); }
+  .synthia-density-switch button span { display: block; margin-top: .18rem; color: #71918a; font-size: .54rem; font-weight: 500; }
+  .synthia-density-switch button:focus-visible { outline: 2px solid #67e8f9; outline-offset: 2px; }
+  .synthia-density-switch button:disabled { cursor: not-allowed; opacity: .55; }
+  .synthia-review-mode { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .45rem; }
+  .synthia-review-mode button { min-width: 0; white-space: normal; }
+  .synthia-auth-readiness { display: flex; min-width: 0; align-items: flex-start; justify-content: space-between; gap: .8rem; border: 1px solid rgba(198,244,236,.075); border-radius: .7rem; padding: .72rem .78rem; background: rgba(1,9,8,.22); }
+  .synthia-auth-readiness > div { min-width: 0; }
+  .synthia-auth-readiness p + p { margin-top: .18rem; color: #89a39c; font-size: .66rem; line-height: 1.45; }
+  .synthia-readiness-badge { flex: 0 0 auto; border: 1px solid rgba(243,178,92,.2); border-radius: 999px; padding: .23rem .42rem; color: #f3c984; background: rgba(243,178,92,.07); font-family: "DM Mono", ui-monospace, monospace; font-size: .5rem; font-weight: 700; letter-spacing: .03em; text-transform: uppercase; }
+  .synthia-readiness-badge.is-ready { border-color: rgba(94,234,212,.22); color: #91eee1; background: rgba(45,212,191,.09); }
+  html[data-synthia-density="compact"] .synthia-settings-panel { padding: 1.05rem; }
+  html[data-synthia-density="compact"] .synthia-settings-panel .mt-6 { margin-top: 1rem; }
+  html[data-synthia-density="compact"] .synthia-settings-panel .mt-5 { margin-top: .85rem; }
+  @media (max-width: 639px) { .synthia-density-switch, .synthia-review-mode { grid-template-columns: 1fr; } .synthia-auth-readiness { align-items: stretch; flex-direction: column; } .synthia-readiness-badge { align-self: flex-start; } }
 }
 
 /* Public landing experience */

@@ -3266,3 +3266,11 @@
 - [x] Redesign the app shell and primary task composer for a more organized, discoverable, compact workflow without removing existing capabilities or safety controls.
 - [x] Refine secondary workspace panels, empty/loading/error states, keyboard affordances, and desktop/mobile layouts for clearer progressive disclosure.
 - [x] Add visual and behavioral regression coverage, run responsive verification, validate the build, and checkpoint the UI/UX refinement.
+
+## Settings layout and optional WorkOS authentication readiness
+
+- [x] Audit and correct settings controls that overflow, crowd, or create uneven visual density at desktop and mobile widths.
+- [x] Add an accessible compact/comfortable workspace-density control and responsive segmented-control behavior without changing stored approval defaults unexpectedly.
+- [x] Research and document a provider-neutral authentication boundary with WorkOS as an optional, server-configured alternative to the existing authentication flow.
+- [x] Add credential-gated WorkOS readiness configuration only; do not activate or replace current sign-in until explicit credentials and a migration decision are supplied.
+- [x] Add layout and authentication-boundary regression coverage, validate responsive views, run type/test/build, and checkpoint the completed refinement.
