@@ -375,7 +375,8 @@ describe("compact workspace layout contract", () => {
     expect(isWebsiteArtifact({ fileType: "text/markdown", filename: "notes.md" })).toBe(false);
     expect(workspace).toContain('label: "Website", icon: Globe2');
     expect(workspace).toContain("<WebsitePanel taskId={taskId} deliverables={data.deliverables} />");
-    expect(workspace).toContain('sandbox="allow-forms allow-modals allow-popups allow-scripts"');
+    expect(workspace).toContain('sandbox="allow-scripts" referrerPolicy="no-referrer"');
+    expect(workspace).not.toContain('allow-forms allow-modals allow-popups');
     expect(workspace).toContain("Open website");
     expect(workspace).toContain("No task website is available yet.");
   });

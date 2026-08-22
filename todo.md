@@ -3344,6 +3344,12 @@
 - [x] Require credential-free default-port HTTPS signed destinations and apply no-store, no-referrer, and nosniff response protections while preserving owner access checks.
 - [x] Add deterministic signed-URL and diagnostic-boundary coverage; document, validate, and checkpoint the storage hardening without performing storage operations.
 
+## Website preview iframe hardening
+
+- [x] Audit the task-owned HTML website preview for unnecessary iframe capabilities and cross-origin information disclosure.
+- [x] Retain script support in an opaque sandbox while blocking forms, modals, popups, same-origin privileges, downloads, and iframe referrer disclosure.
+- [x] Extend deterministic workspace coverage; document, validate, and checkpoint the embedded-preview hardening without opening an artifact or starting an external workload.
+
 ## Modern workspace UI and UX refinement
 
 - [x] Audit the authenticated shell, dashboard composer, workspace panels, typography, iconography, spacing, hierarchy, and responsive behavior against current productivity-agent interaction patterns.
