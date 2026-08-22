@@ -3532,3 +3532,8 @@
 - [x] Constrain the dashboard Apps picker to a compact, viewport-safe anchored popover with a scrollable app list that does not materially obscure recent tasks.
 - [x] Add deterministic desktop and mobile layout source contracts while preserving connected-app selection, Escape dismissal, and approval-first guidance.
 - [x] Validate strict typing, focused layout tests, the full deterministic suite, production build, and diff hygiene without starting external work.
+
+## Live Computer availability-message hardening
+- [x] Replace user-facing task-computer provider reasons with generic task-scoped availability guidance while preserving capture capability controls.
+- [x] Add deterministic source-contract coverage that prevents backend provider availability reasons from rendering in the workspace.
+- [x] Validate strict typing, focused tests, the full deterministic suite, production build, and diff hygiene without starting external work.

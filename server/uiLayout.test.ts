@@ -450,6 +450,9 @@ describe("compact workspace layout contract", () => {
     expect(workspace).toContain("trpc.tasks.liveComputerSource.useQuery");
     expect(workspace).toContain("View live screen");
     expect(workspace).toContain("Task-scoped source inspection");
+    expect(workspace).toContain("No active compatible task workspace is available yet.");
+    expect(workspace).toContain("This task does not currently provide a live screen.");
+    expect(workspace).not.toContain("computer.data?.reason");
     expect(router).toContain("liveComputerFiles: protectedProcedure");
     expect(router).toContain("liveComputerSource: protectedProcedure");
     expect(router).toContain("liveComputerScreen: protectedProcedure");
