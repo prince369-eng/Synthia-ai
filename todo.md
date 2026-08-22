@@ -3472,3 +3472,8 @@
 - [x] Add explicit opener isolation to the deliberate local documentation new-tab link.
 - [x] Add deterministic source-contract coverage without opening the documentation destination.
 - [x] Validate strict typing, focused tests, the full deterministic suite, production build, and diff hygiene without starting external work.
+
+## Account-portal URL hardening
+- [x] Require the public OAuth account-portal base to be a canonical credential-free public HTTPS origin before user-initiated login navigation.
+- [x] Add deterministic hostile configuration URL coverage without initiating an OAuth flow or visiting a destination.
+- [x] Validate strict typing, focused tests, the full deterministic suite, production build, and diff hygiene without starting external work.

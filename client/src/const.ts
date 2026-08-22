@@ -1,4 +1,5 @@
 import { OAUTH_STATE_COOKIE, encodeOAuthState } from "@shared/const";
+import { isPublicHostname } from "@shared/externalReference";
 
 export { COOKIE_NAME, ONE_YEAR_MS } from "@shared/const";
 
@@ -44,9 +45,35 @@ export const AUTH_ENTRY_PORTAL_MODE: Record<AuthEntryIntent, "signIn"> = {
   google: "signIn",
 };
 
+export function normalizeAccountPortalBaseUrl(value: unknown): URL | null {
+  if (typeof value !== "string" || !value.trim() || value.length > 2_048) return null;
+
+  try {
+    const url = new URL(value.trim());
+    const hostname = url.hostname.toLowerCase().replace(/\.$/, "");
+    if (
+      url.protocol !== "https:" ||
+      url.username ||
+      url.password ||
+      url.port ||
+      url.search ||
+      url.hash ||
+      !isPublicHostname(hostname)
+    ) return null;
+
+    url.hostname = hostname;
+    return url;
+  } catch {
+    return null;
+  }
+}
+
 export function buildAccountPortalUrl({ appId, oauthPortalUrl, origin, nonce, intent }: { appId: string; oauthPortalUrl: string; origin: string; nonce: string; intent: AuthEntryIntent }) {
   const redirectUri = `${origin}/api/oauth/callback`;
-  const url = new URL(`${oauthPortalUrl}/app-auth`);
+  const url = normalizeAccountPortalBaseUrl(oauthPortalUrl);
+  if (!url) throw new Error("Synthia sign-in configuration is unavailable.");
+
+  url.pathname = `${url.pathname.replace(/\/+$/, "")}/app-auth`;
   url.searchParams.set("appId", appId);
   url.searchParams.set("redirectUri", redirectUri);
   url.searchParams.set("state", encodeOAuthState({ redirectUri, nonce }));

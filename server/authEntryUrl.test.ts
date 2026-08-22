@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { AUTH_ENTRY_PORTAL_MODE, buildAccountPortalUrl, type AuthEntryIntent } from "../client/src/const";
+import { AUTH_ENTRY_PORTAL_MODE, buildAccountPortalUrl, normalizeAccountPortalBaseUrl, type AuthEntryIntent } from "../client/src/const";
 import { decodeOAuthState } from "../shared/const";
 
 describe("Synthia Manus account portal entries", () => {
@@ -20,5 +20,29 @@ describe("Synthia Manus account portal entries", () => {
       nonce: "test-nonce",
       redirectUri: "https://synthia.example.test/api/oauth/callback",
     });
+  });
+
+  it("rejects unsafe account-portal configuration before a login destination is built", () => {
+    for (const hostileValue of [
+      "http://manus.im",
+      "https://manus.im:8443",
+      "https://user:password@manus.im",
+      "https://localhost",
+      "https://metadata.google.internal",
+      "https://127.0.0.1",
+      "https://manus.im?state=unsafe",
+      "javascript:alert(1)",
+    ]) {
+      expect(normalizeAccountPortalBaseUrl(hostileValue)).toBeNull();
+    }
+
+    expect(normalizeAccountPortalBaseUrl("https://MANUS.IM./portal/")?.toString()).toBe("https://manus.im/portal/");
+    expect(() => buildAccountPortalUrl({
+      appId: "synthia-app",
+      oauthPortalUrl: "http://manus.im",
+      origin: "https://synthia.example.test",
+      nonce: "test-nonce",
+      intent: "signIn",
+    })).toThrow("Synthia sign-in configuration is unavailable.");
   });
 });
