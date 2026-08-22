@@ -3442,3 +3442,8 @@
 - [x] Require authenticated storage signed redirects to use a normalized public hostname in addition to existing HTTPS, credential-free, and default-port constraints.
 - [x] Add deterministic storage proxy coverage for local, internal, metadata, literal-IP, credential-bearing, non-standard-port, and non-HTTPS redirect origins.
 - [x] Validate strict typing, focused storage regressions, the full deterministic suite, and a production build without retrieving a storage object.
+
+## Task terminal display redaction
+- [x] Add a bounded display-only task event payload redactor for credential-named fields, credential-bearing URLs, authorization strings, nested/cyclic values, and oversized structures.
+- [x] Render terminal event data through the redactor without modifying the immutable persisted event, task replay source, or task runner behavior.
+- [x] Add deterministic terminal and workspace contracts, then validate strict typing, focused regressions, the full deterministic suite, and a production build without starting a task or provider.

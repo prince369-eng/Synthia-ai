@@ -408,6 +408,18 @@ describe("compact workspace layout contract", () => {
     expect(workspace).toContain("No task website is available yet.");
   });
 
+  it("redacts credential-like task event payload values before terminal display without changing replay data", () => {
+    const workspace = readFileSync(new URL("../client/src/pages/TaskWorkspace.tsx", import.meta.url), "utf8");
+    const display = readFileSync(new URL("../client/src/lib/taskEventDisplay.ts", import.meta.url), "utf8");
+    const terminal = workspace.slice(workspace.indexOf("function TerminalPanel"));
+
+    expect(terminal).toContain("JSON.stringify(redactTaskEventPayload(event.payload), null, 2)");
+    expect(terminal).not.toContain("JSON.stringify(asRecord(event.payload), null, 2)");
+    expect(display).toContain("Produces a bounded, display-only view of task event data");
+    expect(display).toContain("The persisted task");
+    expect(display).toContain("SENSITIVE_FIELD_NAME");
+  });
+
   it("refreshes workspace artifact links through the owned task-artifact contract instead of persisting direct URLs", () => {
     const workspace = readFileSync(new URL("../client/src/pages/TaskWorkspace.tsx", import.meta.url), "utf8");
 
