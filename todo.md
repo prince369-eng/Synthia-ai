@@ -3517,3 +3517,8 @@
 - [x] Replace raw realtime and browser exception text in Voice Mode with contextual, bounded recovery guidance while retaining explicit permission-denied messages.
 - [x] Add deterministic source-contract coverage without starting a Voice Mode session, microphone, screen share, or realtime connection.
 - [x] Validate strict typing, focused tests, the full deterministic suite, production build, and diff hygiene without starting external work.
+
+## Voice Mode availability-message hardening
+- [x] Replace backend configuration reasons in the unavailable state with generic, actionable availability guidance.
+- [x] Add deterministic source-contract coverage without starting a Voice Mode session, microphone, screen share, or realtime connection.
+- [x] Validate strict typing, focused tests, the full deterministic suite, production build, and diff hygiene without starting external work.

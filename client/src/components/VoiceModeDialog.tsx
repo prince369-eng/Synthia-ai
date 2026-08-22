@@ -143,7 +143,7 @@ export default function VoiceModeDialog({ taskId, onClose }: { taskId: string; o
         </div>
         <button type="button" onClick={() => { void endVoice(); onClose(); }} aria-label="Close Voice Mode" className="rounded-md p-1 text-[#9ab2ad] hover:bg-white/8 hover:text-white"><X size={17} /></button>
       </header>
-      {unavailable ? <div className="mt-5 rounded-lg border border-amber-300/20 bg-amber-300/[.06] p-3 text-xs leading-5 text-amber-100"><strong>Voice Mode is not configured.</strong><p className="mt-1 text-[#d8c7a6]">{availability.data?.reason ?? "Checking the realtime service configuration…"}</p></div> : <>
+      {unavailable ? <div className="mt-5 rounded-lg border border-amber-300/20 bg-amber-300/[.06] p-3 text-xs leading-5 text-amber-100"><strong>Voice Mode is unavailable.</strong><p className="mt-1 text-[#d8c7a6]">It is not available in this workspace yet. Please try again later.</p></div> : <>
         <div className="mt-5 grid gap-3 sm:grid-cols-3">
           <VoiceSettingSelect label="Voice" value={settings.voiceId} disabled={status !== "ready"} onChange={value => setSettings(current => ({ ...current, voiceId: value as VoiceModeSettings["voiceId"] }))} options={["synthia", "lumen", "calm", "expressive"]} />
           <VoiceSettingSelect label="Conversation style" value={settings.personality} disabled={status !== "ready"} onChange={value => setSettings(current => ({ ...current, personality: value as VoiceModeSettings["personality"] }))} options={["clear", "warm", "precise", "creative"]} />

@@ -41,4 +41,13 @@ describe("client error disclosure hardening", () => {
     expect(voiceMode).not.toContain("const message = reason instanceof Error ? reason.message");
     expect(voiceMode).not.toContain("message.includes(\"Permission\")");
   });
+
+  it("keeps Voice Mode availability details independent from backend configuration", () => {
+    const voiceMode = readFileSync(new URL("../client/src/components/VoiceModeDialog.tsx", import.meta.url), "utf8");
+
+    expect(voiceMode).toContain("<strong>Voice Mode is unavailable.</strong>");
+    expect(voiceMode).toContain("It is not available in this workspace yet. Please try again later.");
+    expect(voiceMode).not.toContain("availability.data?.reason");
+    expect(voiceMode).not.toContain("realtime service configuration");
+  });
 });
