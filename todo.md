@@ -3452,3 +3452,8 @@
 - [x] Apply the display-only event payload redactor to timeline summaries and Live Computer fallback payloads in addition to terminal output.
 - [x] Extend source-contract coverage so future workspace event surfaces cannot serialize raw payloads without the redaction boundary.
 - [x] Validate strict typing, focused workspace regressions, the full deterministic suite, and a production build without starting a task or provider.
+## Proof-reference external link hardening
+- [x] Add a pure shared, DNS-free external-reference normalizer that accepts only canonical public HTTPS domains without credentials, ports, query strings, or fragments.
+- [x] Require and canonicalize `external_url` proof locators at the protected persistence boundary while retaining non-URL proof locators as bounded text.
+- [x] Render proof links only after the shared normalization boundary succeeds, retain invalid locators as inert text, and preserve deliberate user-click behavior with `noopener noreferrer`.
+- [x] Add hostile URL, workspace source-contract, focused, full-suite, production-build, and whitespace-diff validation without visiting, fetching, resolving, or opening an external reference.

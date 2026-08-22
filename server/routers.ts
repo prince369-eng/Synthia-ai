@@ -3,6 +3,7 @@ import { TRPCError } from "@trpc/server";
 import { parse as parseCookieHeader } from "cookie";
 import { randomUUID } from "node:crypto";
 import { z } from "zod";
+import { normalizeExternalReferenceUrl } from "@shared/externalReference";
 import {
   appendTaskEvent,
   clearSessionPersonalizationMemories,
@@ -224,6 +225,15 @@ const proofEvidenceSchema = z.object({
   label: z.string().trim().min(2).max(180),
   locator: z.string().trim().min(1).max(2_048).optional(),
   description: z.string().trim().min(1).max(600).optional(),
+}).superRefine((reference, context) => {
+  if (reference.source !== "external_url") return;
+  if (!reference.locator || !normalizeExternalReferenceUrl(reference.locator)) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["locator"],
+      message: "External proof references must be public HTTPS URLs without credentials, ports, query strings, or fragments.",
+    });
+  }
 });
 const createProofRecordSchema = taskIdSchema.extend({
   claim: z.string().trim().min(8).max(2_000),
@@ -938,8 +948,15 @@ export const appRouter = router({
         await enforceUserMutationLimit(ctx.user.id, "task-proof-record", 40, 3_600);
         await requireOwnedTask(input.taskId, ctx.user.id);
         try {
-          return await createTaskProofRecordForUser({ ...input, userId: ctx.user.id });
+          const evidence = input.evidence.map(reference => {
+            if (reference.source !== "external_url" || !reference.locator) return reference;
+            const locator = normalizeExternalReferenceUrl(reference.locator);
+            if (!locator) throw new TRPCError({ code: "BAD_REQUEST", message: "The external proof reference is invalid." });
+            return { ...reference, locator };
+          });
+          return await createTaskProofRecordForUser({ ...input, evidence, userId: ctx.user.id });
         } catch (error) {
+          if (error instanceof TRPCError) throw error;
           logger.error({ event: "task_proof_record_failed", taskId: input.taskId, userId: ctx.user.id, errorKind: error instanceof Error ? error.name : "unknown" }, "Task proof record creation failed");
           throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "The proof record could not be saved. Please retry." });
         }

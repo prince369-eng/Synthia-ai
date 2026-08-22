@@ -1,26 +1,12 @@
+import { isPublicHostname } from "@shared/externalReference";
+
 const list = (value?: string) =>
   (value ?? "")
     .split(",")
     .map(item => item.trim().toLowerCase())
     .filter(Boolean);
 
-const BLOCKED_ALLOWLIST_HOSTS = new Set([
-  "localhost",
-  "localhost.localdomain",
-  "metadata",
-  "metadata.google.internal",
-  "instance-data",
-]);
-
-const DOMAIN_LABEL = "[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?";
-const PUBLIC_DOMAIN_NAME = new RegExp(`^(?:${DOMAIN_LABEL}\\.)+${DOMAIN_LABEL}$`);
-
-export function isPublicConfiguredHostname(host: string) {
-  if (!PUBLIC_DOMAIN_NAME.test(host)) return false;
-  if (/^\d{1,3}(?:\.\d{1,3}){3}$/.test(host)) return false;
-  if (BLOCKED_ALLOWLIST_HOSTS.has(host)) return false;
-  return !host.endsWith(".localhost") && !host.endsWith(".local") && !host.endsWith(".internal");
-}
+export { isPublicHostname as isPublicConfiguredHostname } from "@shared/externalReference";
 
 /**
  * Configuration allowlists accept only normalized domain names. They intentionally
@@ -28,7 +14,7 @@ export function isPublicConfiguredHostname(host: string) {
  * downstream capability boundary cannot be broadened accidentally by an env value.
  */
 export function publicHostnameAllowlist(value?: string) {
-  return Array.from(new Set(list(value).map(host => host.replace(/\.$/, "")).filter(isPublicConfiguredHostname)));
+  return Array.from(new Set(list(value).map(host => host.replace(/\.$/, "")).filter(isPublicHostname)));
 }
 
 const modelList = (value?: string) =>
@@ -73,7 +59,7 @@ export function safeProviderBaseUrl(value: string | undefined, fallback: string)
       url.port ||
       url.search ||
       url.hash ||
-      !isPublicConfiguredHostname(url.hostname.toLowerCase().replace(/^\[|\]$/g, ""))
+      !isPublicHostname(url.hostname.toLowerCase().replace(/^\[|\]$/g, ""))
     ) return fallback;
     return url.toString().replace(/\/$/, "");
   } catch {

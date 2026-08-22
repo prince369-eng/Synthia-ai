@@ -719,9 +719,15 @@ describe("compact workspace layout contract", () => {
     expect(workspace).toContain('aria-label="Record task proof"');
     expect(workspace).toContain("What would recover confidence?");
     expect(workspace).toContain("No proof records yet");
+    expect(workspace).toContain("normalizeExternalReferenceUrl");
+    expect(workspace).toContain('<ProofReferenceLocator locator={reference.locator} />');
+    expect(workspace).toContain('rel="noopener noreferrer"');
+    expect(workspace).not.toContain('reference.locator.startsWith("http")');
     expect(router).toContain("recordProof: protectedProcedure");
     expect(router).toContain('enforceUserMutationLimit(ctx.user.id, "task-proof-record", 40, 3_600)');
     expect(router).toContain('await requireOwnedTask(input.taskId, ctx.user.id)');
+    expect(router).toContain("External proof references must be public HTTPS URLs");
+    expect(router).toContain("normalizeExternalReferenceUrl(reference.locator)");
     expect(db).toContain("createTaskProofRecordForUser");
     expect(db).toContain('type: "proof_record"');
     expect(db).toContain("It deliberately stores no provider output, audio, screen frames, artifact bytes, or model-generated evidence.");
