@@ -93,6 +93,13 @@ export function publicApplicationOrigin(value?: string): string | null {
   }
 }
 
+/** Keep local browser origins available only for development CORS requests. */
+export function corsAllowedOrigins({ publicAppUrl, isProduction }: { publicAppUrl?: string; isProduction: boolean }) {
+  const configuredOrigin = publicApplicationOrigin(publicAppUrl);
+  const developmentOrigins = isProduction ? [] : ["http://localhost:3000", "http://127.0.0.1:3000"];
+  return [configuredOrigin, ...developmentOrigins].filter((value): value is string => Boolean(value));
+}
+
 const APPROVED_FREE_MODELS = [
   "aihubmix:glm-5.2-free",
   "aihubmix:gemini-3.7-flash-free",

@@ -8,7 +8,7 @@ import { registerStorageProxy } from "./storageProxy";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
-import { ENV, publicApplicationOrigin } from "./env";
+import { corsAllowedOrigins, ENV } from "./env";
 import { registerTaskEventStream } from "../realtime/taskEventStream";
 import { runScheduledWorkflow } from "../scheduledWorkflows";
 import { logger } from "../security/logger";
@@ -35,11 +35,10 @@ async function findAvailablePort(startPort: number = 3000): Promise<number> {
 async function startServer() {
   const app = express();
   const server = createServer(app);
+  const allowedOrigins = new Set(corsAllowedOrigins({ publicAppUrl: ENV.publicAppUrl, isProduction: ENV.isProduction }));
   app.disable("x-powered-by");
   app.use((req, res, next) => {
     const origin = req.headers.origin;
-    const configuredPublicOrigin = publicApplicationOrigin(ENV.publicAppUrl);
-    const allowedOrigins = new Set([configuredPublicOrigin, "http://localhost:3000", "http://127.0.0.1:3000"].filter((value): value is string => Boolean(value)));
     if (origin && !allowedOrigins.has(origin)) {
       res.status(403).json({ error: "Origin is not permitted." });
       return;

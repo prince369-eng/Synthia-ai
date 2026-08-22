@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { boundedPositiveInteger, configuredProviderDefaults, isExplicitlyEnabled, publicApplicationOrigin, publicHostnameAllowlist, safeProviderBaseUrl } from "./env";
+import { boundedPositiveInteger, configuredProviderDefaults, corsAllowedOrigins, isExplicitlyEnabled, publicApplicationOrigin, publicHostnameAllowlist, safeProviderBaseUrl } from "./env";
 
 describe("configuredProviderDefaults", () => {
   it("uses the user-approved free-tier, vision, Pixazo, and public-facing task defaults when no non-secret override exists", () => {
@@ -88,5 +88,16 @@ describe("configuredProviderDefaults", () => {
       "https://[::1]",
       "not a url",
     ]) expect(publicApplicationOrigin(value)).toBeNull();
+  });
+
+  it("limits localhost CORS origins to development while retaining the normalized public application origin", () => {
+    const publicAppUrl = "https://app.example.test";
+    expect(corsAllowedOrigins({ publicAppUrl, isProduction: true })).toEqual([publicAppUrl]);
+    expect(corsAllowedOrigins({ publicAppUrl, isProduction: false })).toEqual([
+      publicAppUrl,
+      "http://localhost:3000",
+      "http://127.0.0.1:3000",
+    ]);
+    expect(corsAllowedOrigins({ publicAppUrl: "https://localhost", isProduction: true })).toEqual([]);
   });
 });

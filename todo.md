@@ -3492,3 +3492,8 @@
 - [x] Normalize the configured production application origin to a canonical credential-free public HTTPS origin before CORS uses it.
 - [x] Add deterministic malformed, local, literal-IP, path, query, fragment, and credential configuration coverage without sending a request.
 - [x] Validate strict typing, focused tests, the full deterministic suite, production build, and diff hygiene without starting external work.
+
+## CORS environment separation
+- [x] Restrict localhost CORS origins to development so production accepts only the normalized configured public origin.
+- [x] Add deterministic production-versus-development origin-set coverage without making a request.
+- [x] Validate strict typing, focused tests, the full deterministic suite, production build, and diff hygiene without starting external work.
