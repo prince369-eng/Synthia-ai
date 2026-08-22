@@ -38,7 +38,7 @@ export function inlineStaticPreviewCompatibilityBundle(document: string, bundle:
 
   return withoutModuleEntry.replace(
     "</body>",
-    `<script data-synthia-preview-compatibility="true">${compatibilityBundle}</script></body>`
+    () => `<script data-synthia-preview-compatibility="true">${compatibilityBundle}</script></body>`
   );
 }
 

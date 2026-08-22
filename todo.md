@@ -3542,3 +3542,8 @@
 - [x] Replace database and object-storage implementation labels with user-focused data-handling guidance.
 - [x] Add deterministic source-contract coverage that prevents data-controls infrastructure disclosures.
 - [x] Validate strict typing, focused tests, the full deterministic suite, production build, and diff hygiene without starting external work.
+
+## Secure-workspace bootstrap fallback incident
+- [x] Identify why the application shell is remaining on the secure-workspace fallback in the user's browser.
+- [x] Repair the confirmed bootstrap or module-loading cause without weakening authentication or browser security controls.
+- [x] Add or update deterministic regression coverage and validate the repaired bootstrap behavior.

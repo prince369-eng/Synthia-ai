@@ -57,4 +57,11 @@ describe("inlineStaticPreviewCompatibilityBundle", () => {
     expect(result).toContain('<\\/script><img>');
     expect(result).not.toContain('</script><img>');
   });
+
+  it("preserves literal replacement tokens inside the compatibility bundle", () => {
+    const result = inlineStaticPreviewCompatibilityBundle("<body></body>", "const marker = '$&';");
+
+    expect(result).toContain("const marker = '$&';");
+    expect(result.match(/<\/body>/g)).toHaveLength(1);
+  });
 });
