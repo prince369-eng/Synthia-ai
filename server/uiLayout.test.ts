@@ -627,25 +627,30 @@ describe("compact workspace layout contract", () => {
 
   it("keeps Voice Mode user-started, task-scoped, and safe for local screen sharing", () => {
     const workspace = readFileSync(new URL("../client/src/pages/TaskWorkspace.tsx", import.meta.url), "utf8");
+    const voiceDialog = readFileSync(new URL("../client/src/components/VoiceModeDialog.tsx", import.meta.url), "utf8");
     const router = readFileSync(new URL("../server/routers.ts", import.meta.url), "utf8");
     const realtime = readFileSync(new URL("../server/realtime/voiceMode.ts", import.meta.url), "utf8");
     const css = readFileSync(new URL("../client/src/index.css", import.meta.url), "utf8");
 
     expect(workspace).toContain('onClick={() => setVoiceModeOpen(true)}');
     expect(workspace).toContain('aria-label="Open Voice Mode from task chat"');
-    expect(workspace).toContain('role="dialog"');
-    expect(workspace).toContain('aria-modal="true"');
-    expect(workspace).toContain("getDisplayMedia({ video: { frameRate: { ideal: 5, max: 10 } }, audio: false })");
-    expect(workspace).toContain("Track.Source.ScreenShare");
-    expect(workspace).toContain("screenStream?.getTracks().forEach(mediaTrack => mediaTrack.stop())");
-    expect(workspace).toContain("RoomEvent.TranscriptionReceived");
-    expect(workspace).toContain("segment.final");
-    expect(workspace).toContain("recordTranscript.mutate");
-    expect(workspace).toContain("Do not share passwords, recovery codes, payment details");
-    expect(workspace).toContain("synthia-voice-live-indicator");
-    expect(workspace).toContain("synthia-voice-active-control");
-    expect(workspace).toContain("synthia-screen-share-live-label");
-    expect(workspace).toContain("synthia-screen-share-active-control");
+    expect(workspace).toContain('lazy(() => import("@/components/VoiceModeDialog"))');
+    expect(workspace).toContain("<Suspense fallback={<VoiceModeLoadingDialog />}>");
+    expect(workspace).not.toContain('from "livekit-client"');
+    expect(workspace).toContain("No microphone or screen-share permission has been requested.");
+    expect(voiceDialog).toContain('role="dialog"');
+    expect(voiceDialog).toContain('aria-modal="true"');
+    expect(voiceDialog).toContain("getDisplayMedia({ video: { frameRate: { ideal: 5, max: 10 } }, audio: false })");
+    expect(voiceDialog).toContain("Track.Source.ScreenShare");
+    expect(voiceDialog).toContain("screenStream?.getTracks().forEach(mediaTrack => mediaTrack.stop())");
+    expect(voiceDialog).toContain("RoomEvent.TranscriptionReceived");
+    expect(voiceDialog).toContain("segment.final");
+    expect(voiceDialog).toContain("recordTranscript.mutate");
+    expect(voiceDialog).toContain("Do not share passwords, recovery codes, payment details");
+    expect(voiceDialog).toContain("synthia-voice-live-indicator");
+    expect(voiceDialog).toContain("synthia-voice-active-control");
+    expect(voiceDialog).toContain("synthia-screen-share-live-label");
+    expect(voiceDialog).toContain("synthia-screen-share-active-control");
     expect(router).toContain("voiceModeAvailability: protectedProcedure");
     expect(router).toContain("startVoiceMode: protectedProcedure");
     expect(router).toContain("recordVoiceTranscript: protectedProcedure");

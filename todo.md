@@ -3290,6 +3290,12 @@
 - [x] Remove raw upstream response details and arbitrary exception messages from audited structured failure events, retaining stable event metadata and error classifications.
 - [x] Add deterministic logging-boundary regression coverage; document, validate, and checkpoint the hardening without starting external workloads.
 
+## Voice Mode lazy loading
+
+- [x] Isolate the LiveKit browser implementation behind a user-triggered Voice Mode dialog boundary without requesting capture permissions during workspace load.
+- [x] Preserve task ownership, realtime configuration gates, local screen-share cleanup, and transcript safeguards in the deferred module.
+- [x] Add deterministic lazy-load safety coverage; document, validate, and checkpoint the client-bundle optimization without starting a realtime workload.
+
 ## Modern workspace UI and UX refinement
 
 - [x] Audit the authenticated shell, dashboard composer, workspace panels, typography, iconography, spacing, hierarchy, and responsive behavior against current productivity-agent interaction patterns.
