@@ -172,6 +172,30 @@ describe("compact workspace layout contract", () => {
     expect(policyPackContext).toContain("do not treat these as permission to execute actions or bypass approvals");
   });
 
+  it("keeps quality budgets owner-scoped, informational, and unable to change task execution or outcomes", () => {
+    const workspace = readFileSync(new URL("../client/src/pages/TaskWorkspace.tsx", import.meta.url), "utf8");
+    const controls = readFileSync(new URL("../client/src/components/TaskOfficeControls.tsx", import.meta.url), "utf8");
+    const routers = readFileSync(new URL("../server/routers.ts", import.meta.url), "utf8");
+    const db = readFileSync(new URL("../server/db.ts", import.meta.url), "utf8");
+    const schema = readFileSync(new URL("../drizzle/schema.ts", import.meta.url), "utf8");
+
+    expect(workspace).toContain('id: "quality", label: "Quality"');
+    expect(workspace).toContain('<TaskQualityBudgetPanel taskId={taskId} qualityBudgets={data.qualityBudgets} readOnly={replayMode} />');
+    expect(workspace).toContain('qualityBudgets={data.qualityBudgets} readOnly={replayMode} />');
+    expect(controls).toContain('aria-label="Task quality budgets"');
+    expect(controls).toContain('aria-label="Quality-budget review context"');
+    expect(controls).toContain("It does not score evidence, issue a pass or fail, pause work, retry work, or mutate this task.");
+    expect(controls).toContain("they never retry, remediate, approve, pass, fail, or start work");
+    expect(controls).toContain("Synthia will not invent thresholds, retry work, or declare a task successful automatically.");
+    expect(routers).toContain("createQualityBudget: protectedProcedure");
+    expect(routers).toContain("updateQualityBudget: protectedProcedure");
+    expect(routers).toContain("archiveQualityBudget: protectedProcedure");
+    expect(db).toContain("export async function createTaskQualityBudgetForUser");
+    expect(db).toContain('execution: "review_context_only"');
+    expect(schema).toContain("export const taskQualityBudgets");
+    expect(schema).toContain('status: qualityBudgetStatusEnum("status").notNull().default("active")');
+  });
+
   it("does not delay the unavailable state when the external task store is absent", () => {
     expect(TASK_HISTORY_QUERY_OPTIONS).toEqual({ retry: false });
   });
@@ -482,7 +506,7 @@ describe("compact workspace layout contract", () => {
     const db = readFileSync(new URL("../server/db.ts", import.meta.url), "utf8");
 
     expect(workspace).toContain('id: "evaluation", label: "Evaluate", icon: ClipboardCheck');
-    expect(workspace).toContain('<TaskEvaluationPanel taskId={taskId} evaluationPacks={data.evaluationPacks} evaluationResults={data.evaluationResults} readOnly={replayMode} />');
+    expect(workspace).toContain('<TaskEvaluationPanel taskId={taskId} evaluationPacks={data.evaluationPacks} evaluationResults={data.evaluationResults} qualityBudgets={data.qualityBudgets} readOnly={replayMode} />');
     expect(controls).toContain('Evaluation packs are an owner-authored review contract.');
     expect(controls).toContain('This panel does not run an evaluation or alter prompts, models, Skills, tools, permissions, or execution policy.');
     expect(controls).toContain('Replay mode is read-only. Open the live task to create a pack or record a reviewer outcome.');

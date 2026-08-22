@@ -28,6 +28,7 @@ import {
   taskPipelineHealthSignals,
   taskPolicyPacks,
   taskProofRecords,
+  taskQualityBudgets,
   taskRecoveryPlaybooks,
   taskRemediationProposals,
   taskSkillSelections,
@@ -1217,6 +1218,23 @@ export type TaskPolicyPackInput = {
 
 export type TaskPolicyPackUpdateInput = TaskPolicyPackInput & { policyPackId: string };
 
+export type TaskQualityBudgetInput = {
+  taskId: string;
+  userId: number;
+  title: string;
+  maxCredits: number;
+  maxRuntimeMinutes: number;
+  maxActionCycles: number;
+  minEvidenceRecords: number;
+  expectedDeliverables: number;
+  maxRevisionCycles: number;
+  reviewDepth: "basic" | "standard" | "thorough";
+  reviewerGuidance: string;
+  requiresHumanReview: boolean;
+};
+
+export type TaskQualityBudgetUpdateInput = TaskQualityBudgetInput & { qualityBudgetId: string };
+
 export async function listTaskPipelineHealthSignalsForUser(taskId: string, userId: number) {
   const database = databaseRequired(await getDb());
   return database
@@ -1275,6 +1293,16 @@ export async function listTaskPolicyPacksForUser(taskId: string, userId: number)
     .orderBy(desc(taskPolicyPacks.updatedAt));
 }
 
+/** Quality budgets are review expectations only; they never enqueue, retry, approve, or remediate work. */
+export async function listTaskQualityBudgetsForUser(taskId: string, userId: number) {
+  const database = databaseRequired(await getDb());
+  return database
+    .select()
+    .from(taskQualityBudgets)
+    .where(and(eq(taskQualityBudgets.taskId, taskId), eq(taskQualityBudgets.userId, userId)))
+    .orderBy(desc(taskQualityBudgets.updatedAt));
+}
+
 /**
  * Enabled policy packs are bounded planning text only. Task action policy and
  * approval gates remain independently enforced after planning.
@@ -1320,6 +1348,97 @@ export async function createTaskPolicyPackForUser(input: TaskPolicyPackInput) {
     };
     await transaction.insert(taskPolicyPacks).values(record);
     return record;
+  });
+}
+
+export async function createTaskQualityBudgetForUser(input: TaskQualityBudgetInput) {
+  const database = databaseRequired(await getDb());
+  return database.transaction(async transaction => {
+    const event = await appendTaskEventInTransaction(transaction, input.taskId, {
+      type: "quality_budget",
+      payload: {
+        action: "created",
+        title: input.title,
+        reviewDepth: input.reviewDepth,
+        requiresHumanReview: input.requiresHumanReview,
+        execution: "review_context_only",
+      },
+    });
+    const record = {
+      id: randomUUID(),
+      taskId: input.taskId,
+      userId: input.userId,
+      eventId: event.id,
+      title: input.title,
+      maxCredits: input.maxCredits,
+      maxRuntimeMinutes: input.maxRuntimeMinutes,
+      maxActionCycles: input.maxActionCycles,
+      minEvidenceRecords: input.minEvidenceRecords,
+      expectedDeliverables: input.expectedDeliverables,
+      maxRevisionCycles: input.maxRevisionCycles,
+      reviewDepth: input.reviewDepth,
+      reviewerGuidance: input.reviewerGuidance,
+      requiresHumanReview: input.requiresHumanReview,
+      status: "active" as const,
+    };
+    await transaction.insert(taskQualityBudgets).values(record);
+    return record;
+  });
+}
+
+export async function updateTaskQualityBudgetForUser(input: TaskQualityBudgetUpdateInput) {
+  const database = databaseRequired(await getDb());
+  return database.transaction(async transaction => {
+    const [budget] = await transaction
+      .select({ id: taskQualityBudgets.id, status: taskQualityBudgets.status })
+      .from(taskQualityBudgets)
+      .where(and(eq(taskQualityBudgets.id, input.qualityBudgetId), eq(taskQualityBudgets.taskId, input.taskId), eq(taskQualityBudgets.userId, input.userId)))
+      .limit(1);
+    if (!budget || budget.status !== "active") throw new Error("That active quality budget is unavailable.");
+    await appendTaskEventInTransaction(transaction, input.taskId, {
+      type: "quality_budget",
+      payload: { action: "updated", qualityBudgetId: input.qualityBudgetId, execution: "review_context_only" },
+    });
+    const [updated] = await transaction
+      .update(taskQualityBudgets)
+      .set({
+        title: input.title,
+        maxCredits: input.maxCredits,
+        maxRuntimeMinutes: input.maxRuntimeMinutes,
+        maxActionCycles: input.maxActionCycles,
+        minEvidenceRecords: input.minEvidenceRecords,
+        expectedDeliverables: input.expectedDeliverables,
+        maxRevisionCycles: input.maxRevisionCycles,
+        reviewDepth: input.reviewDepth,
+        reviewerGuidance: input.reviewerGuidance,
+        requiresHumanReview: input.requiresHumanReview,
+        updatedAt: new Date(),
+      })
+      .where(eq(taskQualityBudgets.id, input.qualityBudgetId))
+      .returning();
+    return updated;
+  });
+}
+
+export async function archiveTaskQualityBudgetForUser(input: { taskId: string; userId: number; qualityBudgetId: string }) {
+  const database = databaseRequired(await getDb());
+  return database.transaction(async transaction => {
+    const [budget] = await transaction
+      .select({ id: taskQualityBudgets.id, status: taskQualityBudgets.status })
+      .from(taskQualityBudgets)
+      .where(and(eq(taskQualityBudgets.id, input.qualityBudgetId), eq(taskQualityBudgets.taskId, input.taskId), eq(taskQualityBudgets.userId, input.userId)))
+      .limit(1);
+    if (!budget || budget.status !== "active") throw new Error("That active quality budget is unavailable.");
+    await appendTaskEventInTransaction(transaction, input.taskId, {
+      type: "quality_budget",
+      payload: { action: "archived", qualityBudgetId: input.qualityBudgetId, execution: "review_context_only" },
+    });
+    const [updated] = await transaction
+      .update(taskQualityBudgets)
+      .set({ status: "archived", updatedAt: new Date() })
+      .where(eq(taskQualityBudgets.id, input.qualityBudgetId))
+      .returning();
+    return updated;
   });
 }
 

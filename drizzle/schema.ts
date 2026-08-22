@@ -17,7 +17,7 @@ import {
 const userRoleEnum = pgEnum("user_role", ["user", "admin"]);
 const taskStatusEnum = pgEnum("task_status", ["queued", "booting", "planning", "running", "needs_input", "paused", "completed", "failed", "cancelled"]);
 const estimateBandEnum = pgEnum("estimate_band", ["quick", "standard", "extensive"]);
-const eventTypeEnum = pgEnum("event_type", ["user_message", "agent_message", "clarifying_question", "plan_update", "tool_call", "tool_result", "approval_request", "approval_response", "screenshot", "error", "status_change", "context_summary", "user_file_edit", "user_terminal_command", "task_metadata", "skill_loaded", "voice_session", "voice_transcript", "screen_share", "proof_record", "pipeline_health", "remediation_proposal", "delegation", "handoff_policy", "recovery_playbook", "policy_pack"]);
+const eventTypeEnum = pgEnum("event_type", ["user_message", "agent_message", "clarifying_question", "plan_update", "tool_call", "tool_result", "approval_request", "approval_response", "screenshot", "error", "status_change", "context_summary", "user_file_edit", "user_terminal_command", "task_metadata", "skill_loaded", "voice_session", "voice_transcript", "screen_share", "proof_record", "pipeline_health", "remediation_proposal", "delegation", "handoff_policy", "recovery_playbook", "policy_pack", "quality_budget"]);
 const messageRoleEnum = pgEnum("message_role", ["user", "agent"]);
 const voiceSessionStatusEnum = pgEnum("voice_session_status", ["starting", "active", "ended", "failed"]);
 const proofVerificationStatusEnum = pgEnum("proof_verification_status", ["self_attested", "unverified", "corroborated", "contradicted", "needs_review"]);
@@ -30,6 +30,8 @@ const delegationStatusEnum = pgEnum("delegation_status", ["proposed", "approved"
 const handoffPolicyStatusEnum = pgEnum("handoff_policy_status", ["active", "archived"]);
 const recoveryPlaybookStatusEnum = pgEnum("recovery_playbook_status", ["active", "archived"]);
 const policyPackStatusEnum = pgEnum("policy_pack_status", ["enabled", "archived"]);
+const qualityBudgetStatusEnum = pgEnum("quality_budget_status", ["active", "archived"]);
+const qualityReviewDepthEnum = pgEnum("quality_review_depth", ["basic", "standard", "thorough"]);
 const sandboxProviderEnum = pgEnum("sandbox_provider", ["docker", "e2b", "hopx"]);
 const sandboxStatusEnum = pgEnum("sandbox_status", ["booting", "active", "checkpointed", "destroyed"]);
 const riskLevelEnum = pgEnum("risk_level", ["low", "medium", "high"]);
@@ -58,7 +60,7 @@ export const users = pgTable("users", {
 });
 
 export const taskStatuses = ["queued", "booting", "planning", "running", "needs_input", "paused", "completed", "failed", "cancelled"] as const;
-export const eventTypes = ["user_message", "agent_message", "clarifying_question", "plan_update", "tool_call", "tool_result", "approval_request", "approval_response", "screenshot", "error", "status_change", "context_summary", "user_file_edit", "user_terminal_command", "task_metadata", "skill_loaded", "voice_session", "voice_transcript", "screen_share", "proof_record", "pipeline_health", "remediation_proposal", "delegation", "handoff_policy", "recovery_playbook", "policy_pack"] as const;
+export const eventTypes = ["user_message", "agent_message", "clarifying_question", "plan_update", "tool_call", "tool_result", "approval_request", "approval_response", "screenshot", "error", "status_change", "context_summary", "user_file_edit", "user_terminal_command", "task_metadata", "skill_loaded", "voice_session", "voice_transcript", "screen_share", "proof_record", "pipeline_health", "remediation_proposal", "delegation", "handoff_policy", "recovery_playbook", "policy_pack", "quality_budget"] as const;
 
 export const projects = pgTable("projects", {
   id: varchar("id", { length: 36 }).primaryKey(),
@@ -511,6 +513,35 @@ export const taskPolicyPacks = pgTable("task_policy_packs", {
   index("task_policy_packs_source_created_idx").on(table.sourceTaskId, table.createdAt),
   index("task_policy_packs_user_status_domain_idx").on(table.userId, table.status, table.taskDomain, table.updatedAt),
   uniqueIndex("task_policy_packs_event_unique").on(table.eventId),
+]);
+
+/**
+ * Owner-defined task quality expectations. The worker may pause when a hard
+ * time, credit, or action-cycle ceiling is reached, but this record never
+ * retries, remediates, approves, or changes external-action authority.
+ */
+export const taskQualityBudgets = pgTable("task_quality_budgets", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  taskId: varchar("task_id", { length: 36 }).notNull().references(() => tasks.id, { onDelete: "cascade" }),
+  userId: integer("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  eventId: varchar("event_id", { length: 36 }).notNull().references(() => taskEvents.id, { onDelete: "cascade" }),
+  title: varchar("title", { length: 160 }).notNull(),
+  maxCredits: integer("max_credits").notNull(),
+  maxRuntimeMinutes: integer("max_runtime_minutes").notNull(),
+  maxActionCycles: integer("max_action_cycles").notNull(),
+  minEvidenceRecords: integer("min_evidence_records").notNull().default(0),
+  expectedDeliverables: integer("expected_deliverables").notNull().default(0),
+  maxRevisionCycles: integer("max_revision_cycles").notNull().default(0),
+  reviewDepth: qualityReviewDepthEnum("review_depth").notNull().default("standard"),
+  reviewerGuidance: text("reviewer_guidance").notNull(),
+  requiresHumanReview: boolean("requires_human_review").notNull().default(true),
+  status: qualityBudgetStatusEnum("status").notNull().default("active"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+}, table => [
+  index("task_quality_budgets_task_updated_idx").on(table.taskId, table.updatedAt),
+  index("task_quality_budgets_user_status_updated_idx").on(table.userId, table.status, table.updatedAt),
+  uniqueIndex("task_quality_budgets_event_unique").on(table.eventId),
 ]);
 
 /**

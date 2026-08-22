@@ -13,6 +13,7 @@ import {
   createTaskEvaluationResultForUser,
   createTaskHandoffPolicyForUser,
   createTaskPolicyPackForUser,
+  createTaskQualityBudgetForUser,
   createTaskPipelineHealthSignalForUser,
   createTaskProofRecordForUser,
   createTaskRecoveryPlaybookForUser,
@@ -49,6 +50,7 @@ import {
   listTaskHandoffPoliciesForUser,
   listTaskPipelineHealthSignalsForUser,
   listTaskPolicyPacksForUser,
+  listTaskQualityBudgetsForUser,
   listTaskProofRecordsForUser,
   listTaskRecoveryPlaybooksForUser,
   listTaskRemediationProposalsForUser,
@@ -60,6 +62,7 @@ import {
   updateTaskForUser,
   updateTaskHandoffPolicyForUser,
   updateTaskPolicyPackForUser,
+  updateTaskQualityBudgetForUser,
   updateTaskRecoveryPlaybookForUser,
   updateUserPreferences,
   updatePersonalizationMemory,
@@ -83,6 +86,7 @@ import {
   updateVoiceSessionForUser,
   archiveTaskHandoffPolicyForUser,
   archiveTaskPolicyPackForUser,
+  archiveTaskQualityBudgetForUser,
   archiveTaskRecoveryPlaybookForUser,
 } from "./db";
 import { getSessionCookieOptions } from "./_core/cookies";
@@ -287,6 +291,20 @@ const policyPackSchema = taskIdSchema.extend({
 });
 const updatePolicyPackSchema = policyPackSchema.extend({ policyPackId: z.string().uuid() });
 const archivePolicyPackSchema = taskIdSchema.extend({ policyPackId: z.string().uuid() });
+const qualityBudgetSchema = taskIdSchema.extend({
+  title: z.string().trim().min(3).max(160),
+  maxCredits: z.number().int().min(1).max(1_000_000),
+  maxRuntimeMinutes: z.number().int().min(1).max(10_080),
+  maxActionCycles: z.number().int().min(1).max(100),
+  minEvidenceRecords: z.number().int().min(0).max(100),
+  expectedDeliverables: z.number().int().min(0).max(100),
+  maxRevisionCycles: z.number().int().min(0).max(20),
+  reviewDepth: z.enum(["basic", "standard", "thorough"]),
+  reviewerGuidance: z.string().trim().min(12).max(1_500),
+  requiresHumanReview: z.boolean(),
+});
+const updateQualityBudgetSchema = qualityBudgetSchema.extend({ qualityBudgetId: z.string().uuid() });
+const archiveQualityBudgetSchema = taskIdSchema.extend({ qualityBudgetId: z.string().uuid() });
 export const attachmentMimeSchema = z.string().trim().min(3).max(100).regex(
   /^(application\/(pdf|json|zip|x-7z-compressed|x-tar|vnd\.(openxmlformats-officedocument\.(wordprocessingml\.document|spreadsheetml\.sheet)|ms-excel|msword))|text\/(plain|csv|markdown)|image\/(png|jpeg|webp)|video\/(mp4|webm|quicktime))$/,
   "This file type is not supported.",
@@ -728,7 +746,7 @@ export const appRouter = router({
     }),
     get: protectedProcedure.input(taskIdSchema).query(async ({ ctx, input }) => {
       const task = await requireOwnedTask(input.taskId, ctx.user.id);
-      const [events, messages, approvals, deliverables, attachments, sandboxRows, skillSelections, proofRecords, pipelineHealthSignals, remediationProposals, delegations, handoffPolicies, recoveryPlaybooks, policyPacks, pendingTaskLessons, evaluationPacks, evaluationResults] = await Promise.all([
+      const [events, messages, approvals, deliverables, attachments, sandboxRows, skillSelections, proofRecords, pipelineHealthSignals, remediationProposals, delegations, handoffPolicies, recoveryPlaybooks, policyPacks, qualityBudgets, pendingTaskLessons, evaluationPacks, evaluationResults] = await Promise.all([
         listTaskEvents(task.id),
         listTaskMessages(task.id),
         listTaskApprovals(task.id),
@@ -743,11 +761,12 @@ export const appRouter = router({
         listTaskHandoffPoliciesForUser(task.id, ctx.user.id),
         listTaskRecoveryPlaybooksForUser(task.id, ctx.user.id),
         listTaskPolicyPacksForUser(task.id, ctx.user.id),
+        listTaskQualityBudgetsForUser(task.id, ctx.user.id),
         listPendingTaskLessonsForUser({ taskId: task.id, userId: ctx.user.id }),
         listTaskEvaluationPacksForUser(task.id, ctx.user.id),
         listTaskEvaluationResultsForUser(task.id, ctx.user.id),
       ]);
-      return { task, events, messages, approvals, deliverables, attachments, sandboxes: sandboxRows, skillSelections, proofRecords, pipelineHealthSignals, remediationProposals, delegations, handoffPolicies, recoveryPlaybooks, policyPacks, pendingTaskLessons, evaluationPacks, evaluationResults };
+      return { task, events, messages, approvals, deliverables, attachments, sandboxes: sandboxRows, skillSelections, proofRecords, pipelineHealthSignals, remediationProposals, delegations, handoffPolicies, recoveryPlaybooks, policyPacks, qualityBudgets, pendingTaskLessons, evaluationPacks, evaluationResults };
     }),
     exportOffice: protectedProcedure
       .input(taskOfficeExportSchema)
@@ -1065,6 +1084,46 @@ export const appRouter = router({
           if (message.includes("unavailable")) throw new TRPCError({ code: "NOT_FOUND", message });
           console.error(JSON.stringify({ event: "task_policy_pack_archive_failed", taskId: input.taskId, userId: ctx.user.id, message }));
           throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "The policy pack could not be archived. Please retry." });
+        }
+      }),
+    createQualityBudget: protectedProcedure
+      .input(qualityBudgetSchema)
+      .mutation(async ({ ctx, input }) => {
+        await enforceUserMutationLimit(ctx.user.id, "task-quality-budget-create", 30, 3_600);
+        await requireOwnedTask(input.taskId, ctx.user.id);
+        try {
+          return await createTaskQualityBudgetForUser({ ...input, userId: ctx.user.id });
+        } catch (error) {
+          console.error(JSON.stringify({ event: "task_quality_budget_create_failed", taskId: input.taskId, userId: ctx.user.id, message: error instanceof Error ? error.message : "unknown" }));
+          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "The quality budget could not be saved. Please retry." });
+        }
+      }),
+    updateQualityBudget: protectedProcedure
+      .input(updateQualityBudgetSchema)
+      .mutation(async ({ ctx, input }) => {
+        await enforceUserMutationLimit(ctx.user.id, "task-quality-budget-update", 50, 3_600);
+        await requireOwnedTask(input.taskId, ctx.user.id);
+        try {
+          return await updateTaskQualityBudgetForUser({ ...input, userId: ctx.user.id });
+        } catch (error) {
+          const message = error instanceof Error ? error.message : "The quality budget could not be updated.";
+          if (message.includes("unavailable")) throw new TRPCError({ code: "NOT_FOUND", message });
+          console.error(JSON.stringify({ event: "task_quality_budget_update_failed", taskId: input.taskId, userId: ctx.user.id, message }));
+          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "The quality budget could not be updated. Please retry." });
+        }
+      }),
+    archiveQualityBudget: protectedProcedure
+      .input(archiveQualityBudgetSchema)
+      .mutation(async ({ ctx, input }) => {
+        await enforceUserMutationLimit(ctx.user.id, "task-quality-budget-archive", 30, 3_600);
+        await requireOwnedTask(input.taskId, ctx.user.id);
+        try {
+          return await archiveTaskQualityBudgetForUser({ ...input, userId: ctx.user.id });
+        } catch (error) {
+          const message = error instanceof Error ? error.message : "The quality budget could not be archived.";
+          if (message.includes("unavailable")) throw new TRPCError({ code: "NOT_FOUND", message });
+          console.error(JSON.stringify({ event: "task_quality_budget_archive_failed", taskId: input.taskId, userId: ctx.user.id, message }));
+          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "The quality budget could not be archived. Please retry." });
         }
       }),
     generateMedia: protectedProcedure.input(mediaGenerationSchema).mutation(async ({ ctx, input }) => {

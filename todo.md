@@ -3276,6 +3276,14 @@
 - [x] Apply only explicitly enabled policy-pack guidance to a later task’s planning context, visibly and without overriding task-level approvals or action policy.
 - [x] Add deterministic authorization, non-mutation, UI-boundary, and planning-context regressions; document, validate, and checkpoint the capability.
 
+## Owner-scoped quality budgets
+
+- [x] Define declarative, task-owner quality budgets for planned evidence, review depth, artifact completeness, and bounded revision expectations without an autonomous retry or remediation path.
+- [x] Add durable quality-budget persistence, audit events, and protected APIs that cannot alter task execution, permissions, providers, or approval state.
+- [x] Add a review-only workspace control that lets task owners create, inspect, update, and archive quality budgets while replay remains read-only.
+- [x] Surface a quality-budget status summary in the evaluation workflow as informational review context, never an automatic pass/fail or task mutation.
+- [x] Add deterministic authorization and non-mutation regressions; document, validate, and checkpoint the quality-budget capability.
+
 ## Modern workspace UI and UX refinement
 
 - [x] Audit the authenticated shell, dashboard composer, workspace panels, typography, iconography, spacing, hierarchy, and responsive behavior against current productivity-agent interaction patterns.

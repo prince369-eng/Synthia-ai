@@ -120,6 +120,13 @@
       "when": 1787376725973,
       "tag": "0016_orange_dakota_north",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1787377516958,
+      "tag": "0017_bright_supernaut",
+      "breakpoints": true
     }
   ]
 }
