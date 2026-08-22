@@ -3497,3 +3497,8 @@
 - [x] Restrict localhost CORS origins to development so production accepts only the normalized configured public origin.
 - [x] Add deterministic production-versus-development origin-set coverage without making a request.
 - [x] Validate strict typing, focused tests, the full deterministic suite, production build, and diff hygiene without starting external work.
+
+## Session-cookie SameSite hardening
+- [x] Use Lax SameSite cookies so the top-level OAuth callback remains functional while cross-site subrequests cannot carry a session.
+- [x] Add deterministic secure-transport and cookie-attribute regression coverage without starting an OAuth flow.
+- [x] Validate strict typing, focused tests, the full deterministic suite, production build, and diff hygiene without starting external work.
