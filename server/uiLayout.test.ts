@@ -84,7 +84,7 @@ describe("compact workspace layout contract", () => {
     expect(settings).toContain("Only your connected apps are listed here.");
   });
 
-  it("offers an app-only composer picker that includes only connected apps as task context and routes setup to Plugins", () => {
+  it("offers a compact, viewport-safe app-only composer picker that includes only connected apps as task context and routes setup to Plugins", () => {
     const dashboard = readFileSync(new URL("../client/src/pages/TaskDashboard.tsx", import.meta.url), "utf8");
     const routers = readFileSync(new URL("../server/routers.ts", import.meta.url), "utf8");
     const css = readFileSync(new URL("../client/src/index.css", import.meta.url), "utf8");
@@ -101,6 +101,13 @@ describe("compact workspace layout contract", () => {
     expect(routers).toContain("Connect each selected app before adding it to this task.");
     expect(css).toContain(".synthia-composer-connector-picker");
     expect(css).toContain(".synthia-composer-connector-option.selected");
+    expect(css).toContain("width: min(18rem, calc(100vw - 2rem));");
+    expect(css).toContain("max-height: min(16rem, calc(100dvh - 7rem));");
+    expect(css).toContain("grid-template-rows: auto auto minmax(0, 1fr) auto;");
+    expect(css).toContain(".synthia-composer-connector-list { @apply grid min-h-0");
+    expect(css).toContain("max-height: min(14rem, calc(100dvh - 6rem));");
+    expect(dashboard).toContain('event.key === "Escape"');
+    expect(dashboard).toContain("setConnectorPickerOpen(false)");
   });
 
   it("renders an owner-scoped read-only comparison tab without a run, promotion, or configuration mutation", () => {

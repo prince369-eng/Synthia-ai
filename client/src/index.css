@@ -215,13 +215,13 @@ button:not(:disabled):active { transform: scale(.97); }
   .synthia-media-capability em.ready { @apply border-emerald-300/20 bg-emerald-400/[.08] text-emerald-200; }
   .synthia-media-capability em.pending { @apply border-teal-300/20 bg-teal-400/[.08] text-cyan-200; }
   .synthia-composer-connector-count { @apply -ml-0.5 grid h-3.5 min-w-3.5 place-items-center rounded-full bg-cyan-300 px-1 text-[8px] font-bold text-[#09211e]; }
-  .synthia-composer-connector-picker { @apply absolute right-0 top-[calc(100%+.45rem)] z-30 grid w-[min(21rem,calc(100vw-2.5rem))] gap-2 rounded-lg border border-white/10 bg-[#1d2927] p-2 shadow-xl; transform-origin: top right; }
+  .synthia-composer-connector-picker { @apply absolute right-0 top-[calc(100%+.45rem)] z-30 grid gap-1.5 overflow-hidden rounded-lg border border-white/10 bg-[#1d2927] p-2 shadow-xl; width: min(18rem, calc(100vw - 2rem)); max-height: min(16rem, calc(100dvh - 7rem)); grid-template-rows: auto auto minmax(0, 1fr) auto; transform-origin: top right; }
   .synthia-composer-connector-picker-head { @apply flex items-center justify-between gap-3 px-1; }
   .synthia-composer-connector-picker-head > span { @apply flex items-center gap-1.5 text-[11px] text-[#e5f2ef]; }
   .synthia-composer-connector-picker-head svg { @apply text-cyan-200; }
   .synthia-composer-connector-picker-head button { @apply text-[10px] font-medium text-cyan-200 hover:text-cyan-100; }
   .synthia-composer-connector-picker > p { @apply px-1 text-[10px] leading-4 text-[#91a7a1]; }
-  .synthia-composer-connector-list { @apply grid max-h-70 gap-0.5 overflow-y-auto overscroll-contain; scrollbar-color: rgb(34 211 238 / .6) transparent; scrollbar-width: thin; }
+  .synthia-composer-connector-list { @apply grid min-h-0 gap-0.5 overflow-y-auto overscroll-contain; scrollbar-color: rgb(34 211 238 / .6) transparent; scrollbar-width: thin; }
   .synthia-composer-connector-option { @apply flex items-center gap-2 rounded-md border border-transparent px-1.5 py-1.5 text-left hover:border-teal-300/15 hover:bg-teal-400/[.08]; }
   .synthia-composer-connector-option.selected { @apply border-cyan-300/20 bg-cyan-300/[.07]; }
   .synthia-composer-connector-option.available { @apply opacity-85; }
@@ -259,9 +259,9 @@ button:not(:disabled):active { transform: scale(.97); }
   .synthia-capability-menu b { @apply block text-[11px] font-medium text-[#e5f2ef]; }
   .synthia-capability-menu small { @apply mt-0.5 block text-[10px] leading-4 text-[#91a7a1]; }
   .synthia-capability-menu p { @apply col-span-2 border-t border-white/7 px-2.5 pb-1 pt-2 text-[10px] leading-4 text-[#91a7a1]; }
-  .synthia-model-menu::-webkit-scrollbar, .synthia-capability-menu::-webkit-scrollbar { width: .5rem; }
-  .synthia-model-menu::-webkit-scrollbar-thumb, .synthia-capability-menu::-webkit-scrollbar-thumb { border: 2px solid #1d2927; border-radius: 999px; background: rgb(34 211 238 / .6); }
-  .synthia-model-menu::-webkit-scrollbar-track, .synthia-capability-menu::-webkit-scrollbar-track { background: transparent; }
+  .synthia-model-menu::-webkit-scrollbar, .synthia-capability-menu::-webkit-scrollbar, .synthia-composer-connector-list::-webkit-scrollbar { width: .5rem; }
+  .synthia-model-menu::-webkit-scrollbar-thumb, .synthia-capability-menu::-webkit-scrollbar-thumb, .synthia-composer-connector-list::-webkit-scrollbar-thumb { border: 2px solid #1d2927; border-radius: 999px; background: rgb(34 211 238 / .6); }
+  .synthia-model-menu::-webkit-scrollbar-track, .synthia-capability-menu::-webkit-scrollbar-track, .synthia-composer-connector-list::-webkit-scrollbar-track { background: transparent; }
   .synthia-dashboard-tasks { @apply mt-12 w-full border-t border-white/[.055] pt-5; }
   .synthia-section-heading { @apply mb-2 flex items-center justify-between px-1; }
   .synthia-section-heading h2 { @apply text-xs font-semibold text-[#e5f2ef]; }
@@ -510,7 +510,7 @@ p[role="alert"].text-amber-200 { --synthia-amber-allowed: 1; }
   .synthia-extended-directory { margin: 0 1.25rem 1.15rem; border-color: rgba(103,232,249,.12); background: rgba(45,212,191,.025); }
   .synthia-connector-safety-note { margin-top: .9rem; border-radius: .75rem; }
   @media (max-width: 1023px) { .synthia-main, .synthia-shell-collapsed .synthia-main { padding-left: 0; } }
-  @media (max-width: 639px) { .synthia-chat-stage { padding-inline: 1rem; padding-top: 2rem; } .synthia-chat-stage h1 { font-size: 1.9rem; } .synthia-composer-head-title small { display: none; } .synthia-composer-safety { font-size: .52rem; } .synthia-composer-control-group-end { width: 100%; justify-content: flex-end; } .synthia-composer-toggle { padding-inline: .48rem; } .synthia-composer-toggle span { display: none; } .synthia-composer-connector-count { display: grid !important; } .synthia-connectors-page { width: min(100% - 1.25rem, 74rem); padding-top: 1.5rem; } .synthia-connector-discovery-heading, .synthia-connector-toolbar { padding-inline: .85rem; } .synthia-app-connector-grid { grid-template-columns: 1fr; padding: .75rem .85rem; } .synthia-directory-summary { padding-inline: .85rem; } .synthia-extended-directory { margin-inline: .85rem; } }
+  @media (max-width: 639px) { .synthia-chat-stage { padding-inline: 1rem; padding-top: 2rem; } .synthia-chat-stage h1 { font-size: 1.9rem; } .synthia-composer-head-title small { display: none; } .synthia-composer-safety { font-size: .52rem; } .synthia-composer-control-group-end { width: 100%; justify-content: flex-end; } .synthia-composer-toggle { padding-inline: .48rem; } .synthia-composer-toggle span { display: none; } .synthia-composer-connector-count { display: grid !important; } .synthia-composer-connector-picker { right: 0; width: min(18rem, calc(100vw - 2rem)); max-height: min(14rem, calc(100dvh - 6rem)); } .synthia-connectors-page { width: min(100% - 1.25rem, 74rem); padding-top: 1.5rem; } .synthia-connector-discovery-heading, .synthia-connector-toolbar { padding-inline: .85rem; } .synthia-app-connector-grid { grid-template-columns: 1fr; padding: .75rem .85rem; } .synthia-directory-summary { padding-inline: .85rem; } .synthia-extended-directory { margin-inline: .85rem; } }
 
   .synthia-density-switch { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .35rem; padding: .3rem; border: 1px solid rgba(198,244,236,.1); border-radius: .72rem; background: rgba(1,9,8,.28); }
   .synthia-density-switch button { min-width: 0; border: 1px solid transparent; border-radius: .52rem; padding: .58rem .64rem; color: #8fa9a3; font-size: .68rem; font-weight: 700; line-height: 1.2; text-align: left; transition: background .16s, border-color .16s, color .16s; }

@@ -12,6 +12,7 @@ import { TaskComposerAttachments, type ComposerAttachment } from "@/components/T
 import { resolveAutomaticTaskRoute } from "@shared/automaticTaskRouting";
 import { normalizeExternalResourceUrl } from "@shared/externalReference";
 import { applyPromptGuidance, promptGuidanceForGoal } from "@/lib/promptGuidance";
+import { clientErrorMessage } from "@/lib/clientErrorDisplay";
 
 export function buildTaskAttachmentRefs(attachments: ComposerAttachment[]) {
   return attachments.map(attachment => attachment.sourceType === "library"
@@ -200,7 +201,7 @@ export default function TaskDashboard() {
       setAttachments(current => current.length >= 12 ? current : [...current, { id: crypto.randomUUID(), sourceType: "upload", ...stored }]);
       setAttachmentError(null);
     } catch (error) {
-      setAttachmentError(error instanceof Error ? error.message : "The file could not be attached.");
+      setAttachmentError(clientErrorMessage(error, "The file could not be attached. Please try again."));
     }
   }
 
@@ -255,7 +256,7 @@ export default function TaskDashboard() {
             setAttachmentError(null);
             composerRef.current?.focus();
           } catch (error) {
-            setAttachmentError(error instanceof Error ? error.message : "The voice recording could not be transcribed.");
+            setAttachmentError(clientErrorMessage(error, "The voice recording could not be transcribed. Please try again."));
           } finally {
             setVoiceState("idle");
           }
@@ -350,7 +351,7 @@ export default function TaskDashboard() {
           {visualInputBlocked ? <p role="alert" className="mt-2 px-1 text-xs text-amber-200">This task includes an image. Select a vision-capable model or return to Automatic routing before starting.</p> : null}
           {liveVoiceHint ? <div role="status" className="synthia-composer-hint"><span>{liveVoiceHint}</span><button type="button" onClick={() => setLiveVoiceHint(null)} aria-label="Dismiss Live Voice guidance">Dismiss</button></div> : null}
           {attachmentError ? <div role="alert" className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 px-1 text-xs text-rose-300"><span>{attachmentError}</span>{voicePermissionBlocked ? <><button type="button" className="font-medium text-cyan-200 underline decoration-cyan-300/50 underline-offset-2 transition-colors hover:text-cyan-100" onClick={() => void toggleVoiceCapture()}>Try microphone again</button><button type="button" className="font-medium text-[#91a7a1] underline decoration-white/20 underline-offset-2 transition-colors hover:text-[#e5f2ef]" aria-label="Dismiss microphone warning" onClick={dismissVoiceWarning}>Dismiss</button></> : null}</div> : null}
-          {createTask.isError ? <p role="alert" className="mt-3 text-xs text-rose-300">{createTask.error.message}</p> : null}
+          {createTask.isError ? <p role="alert" className="mt-3 text-xs text-rose-300">{clientErrorMessage(createTask.error, "The task could not be created. Please try again.")}</p> : null}
           <input ref={fileInputRef} onChange={event => void chooseLocalFile(event)} className="sr-only" type="file" accept=".pdf,.txt,.md,.csv,.json,.doc,.docx,.xls,.xlsx,.zip,.7z,.tar,.png,.jpg,.jpeg,.webp,.mp4,.webm,.mov" />
         </form>
         <div className="synthia-prompt-chips" aria-label="Suggested task prompts">{TASK_ENTRY_SUGGESTIONS.map(item => <button type="button" key={item.label} onClick={() => setGoal(item.goal)}>{item.label}</button>)}<div className="relative"><button type="button" className={cn("synthia-prompt-more", centerMoreOpen && "active")} aria-label="More task modes" aria-expanded={centerMoreOpen} onClick={() => setCenterMoreOpen(value => !value)}><MoreHorizontal size={14} /> More</button>{centerMoreOpen ? <div className="synthia-capability-menu" data-testid="center-capability-menu"><button type="button" onClick={() => { setInvolvesCode(true); setGoal("Build a production-ready application that solves this problem:"); setCenterMoreOpen(false); }}><Code2 size={14} /><span><b>Develop apps</b><small>Plan and build with code execution.</small></span></button><button type="button" onClick={() => { setGoal("Create or process a video for this objective:"); setMediaMenuOpen(true); setCenterMoreOpen(false); }}><Video size={14} /><span><b>Video</b><small>Use video inputs or verified generation.</small></span></button><button type="button" onClick={() => { setLocation("/scheduled"); setCenterMoreOpen(false); }}><CalendarClock size={14} /><span><b>Scheduled task</b><small>Open Synthia’s configured schedule area.</small></span></button><button type="button" onClick={() => { setCapabilities(value => ({ ...value, allowWebSearch: true })); setGoal("Conduct wide research on this topic and cite the findings:"); setCenterMoreOpen(false); }}><Search size={14} /><span><b>Wide Research</b><small>Search, compare, and synthesize sources.</small></span></button><button type="button" onClick={() => { setGoal("Create a structured spreadsheet for this objective:"); setCenterMoreOpen(false); }}><Table2 size={14} /><span><b>Spreadsheet</b><small>Produce a real downloadable data artifact.</small></span></button><button type="button" onClick={() => { setGoal("Create a clear data visualization for this objective:"); setCenterMoreOpen(false); }}><BarChart3 size={14} /><span><b>Visualization</b><small>Analyze data and deliver a chart.</small></span></button><button type="button" onClick={() => { setGoal("Create an audio or voice workflow for this objective:"); setCenterMoreOpen(false); }}><AudioLines size={14} /><span><b>Audio</b><small>Use voice input or an audio-capable task route.</small></span></button><button type="button" onClick={() => { setGoal("Answer this directly and concisely:"); setMode("ask_before_risky"); setCenterMoreOpen(false); }}><MessageSquare size={14} /><span><b>Chat mode</b><small>Keep the task focused on an answer.</small></span></button><button type="button" onClick={() => { setGoal("Turn this repeatable workflow into a reliable playbook:"); setCenterMoreOpen(false); }}><BookOpen size={14} /><span><b>Playbook</b><small>Document a repeatable autonomous workflow.</small></span></button><p>Every option creates a Synthia task or opens an existing route; unsupported provider actions remain unavailable.</p></div> : null}</div></div>

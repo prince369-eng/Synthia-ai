@@ -50,4 +50,24 @@ describe("client error disclosure hardening", () => {
     expect(voiceMode).not.toContain("availability.data?.reason");
     expect(voiceMode).not.toContain("realtime service configuration");
   });
+
+  it("routes feature-level task and workspace diagnostics through the bounded display helper", () => {
+    const featureSources = [
+      "../client/src/components/TaskOfficeControls.tsx",
+      "../client/src/pages/Plugins.tsx",
+      "../client/src/pages/Scheduled.tsx",
+      "../client/src/pages/TaskDashboard.tsx",
+      "../client/src/pages/Settings.tsx",
+      "../client/src/pages/TaskWorkspace.tsx",
+    ].map(path => readFileSync(new URL(path, import.meta.url), "utf8"));
+
+    for (const source of featureSources) {
+      expect(source).not.toMatch(/(?:\w+\.)?error\?\.message/);
+      expect(source).not.toMatch(/(?:\w+\.)?error\.message/);
+    }
+
+    for (const source of featureSources.slice(0, 3)) {
+      expect(source).toContain('clientErrorMessage');
+    }
+  });
 });

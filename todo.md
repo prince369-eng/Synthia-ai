@@ -3522,3 +3522,13 @@
 - [x] Replace backend configuration reasons in the unavailable state with generic, actionable availability guidance.
 - [x] Add deterministic source-contract coverage without starting a Voice Mode session, microphone, screen share, or realtime connection.
 - [x] Validate strict typing, focused tests, the full deterministic suite, production build, and diff hygiene without starting external work.
+
+## Remaining client diagnostic renderer hardening
+- [x] Route direct task-office, connector, dashboard, workspace, schedule, and settings error renderers through the shared bounded client diagnostic helper.
+- [x] Add deterministic source-contract coverage that forbids direct tRPC error-message rendering in feature components.
+- [x] Validate strict typing, focused tests, the full deterministic suite, production build, and diff hygiene without starting external work.
+
+## Composer Apps popover layout repair
+- [x] Constrain the dashboard Apps picker to a compact, viewport-safe anchored popover with a scrollable app list that does not materially obscure recent tasks.
+- [x] Add deterministic desktop and mobile layout source contracts while preserving connected-app selection, Escape dismissal, and approval-first guidance.
+- [x] Validate strict typing, focused layout tests, the full deterministic suite, production build, and diff hygiene without starting external work.

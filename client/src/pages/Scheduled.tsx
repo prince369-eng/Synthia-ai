@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { CalendarClock, Clock3, Loader2, PauseCircle, PlayCircle, Plus, Route, Trash2 } from "lucide-react";
+import { clientErrorMessage } from "@/lib/clientErrorDisplay";
 import { trpc } from "@/lib/trpc";
 
 type ScheduleDraft = { name: string; goal: string; cron: string };
@@ -55,7 +56,7 @@ export default function Scheduled() {
         <label className="space-y-1 text-sm text-zinc-300"><span>UTC cron</span><input value={draft.cron} onChange={event => setDraft(current => ({ ...current, cron: event.target.value }))} maxLength={120} disabled={!available || createSchedule.isPending} className="synthia-input font-mono" placeholder="0 0 9 * * *" /></label>
       </div>
       <label className="block space-y-1 text-sm text-zinc-300"><span>Task objective</span><textarea value={draft.goal} onChange={event => setDraft(current => ({ ...current, goal: event.target.value }))} maxLength={8000} disabled={!available || createSchedule.isPending} className="synthia-input min-h-24" placeholder="Describe the recurring work Synthia should run." /></label>
-      {createSchedule.error ? <p className="text-sm text-rose-300" role="alert">{createSchedule.error.message}</p> : null}
+      {createSchedule.error ? <p className="text-sm text-rose-300" role="alert">{clientErrorMessage(createSchedule.error, "We could not create that schedule. Please try again.")}</p> : null}
       <button type="submit" disabled={!canSubmit || createSchedule.isPending} className="synthia-button-primary inline-flex items-center gap-2 disabled:cursor-not-allowed disabled:opacity-50"><CalendarClock size={15} />{createSchedule.isPending ? "Creating…" : "Create schedule"}</button>
     </form>
 
