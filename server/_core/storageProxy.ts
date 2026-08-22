@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { canUserAccessStorageKey } from "../db";
 import { logger } from "../security/logger";
-import { ENV } from "./env";
+import { ENV, isPublicConfiguredHostname } from "./env";
 import { sdk } from "./sdk";
 
 export function normalizeStorageKey(value: string): string | null {
@@ -15,7 +15,14 @@ export function normalizeStorageKey(value: string): string | null {
 export function normalizeSignedStorageRedirect(value: string): string | null {
   try {
     const url = new URL(value);
-    if (url.protocol !== "https:" || url.username || url.password || url.port) {
+    const hostname = url.hostname.toLowerCase().replace(/^\[|\]$/g, "");
+    if (
+      url.protocol !== "https:" ||
+      url.username ||
+      url.password ||
+      url.port ||
+      !isPublicConfiguredHostname(hostname)
+    ) {
       return null;
     }
     return url.toString();
