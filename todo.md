@@ -3457,3 +3457,8 @@
 - [x] Require and canonicalize `external_url` proof locators at the protected persistence boundary while retaining non-URL proof locators as bounded text.
 - [x] Render proof links only after the shared normalization boundary succeeds, retain invalid locators as inert text, and preserve deliberate user-click behavior with `noopener noreferrer`.
 - [x] Add hostile URL, workspace source-contract, focused, full-suite, production-build, and whitespace-diff validation without visiting, fetching, resolving, or opening an external reference.
+
+## Client diagnostic display hardening
+- [x] Audit and replace remaining client-visible raw tRPC error-message rendering with bounded, contextual recovery guidance.
+- [x] Add deterministic source and utility regressions that preserve accessibility while preventing arbitrary diagnostic text from becoming UI content.
+- [x] Validate strict typing, focused tests, the full deterministic suite, production build, and diff hygiene without starting external work.

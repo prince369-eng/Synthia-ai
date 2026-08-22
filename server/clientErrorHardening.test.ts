@@ -10,6 +10,10 @@ describe("client error disclosure hardening", () => {
     expect(main).toContain('reportClientError("query", error);');
     expect(main).toContain('reportClientError("mutation", error);');
     expect(main).toContain('reportClientError("bootstrap", error);');
+    expect(main).toContain("function sanitizeDisplayedClientError");
+    expect(main).toContain("error.message = clientErrorMessage(error);");
+    expect(main).toContain('sanitizeDisplayedClientError(error);');
+    expect(main).toContain('redirectToLoginIfUnauthorized(error);\n    reportClientError("query", error);\n    sanitizeDisplayedClientError(error);');
     expect(main).not.toContain('console.error("[API Query Error]", error);');
     expect(main).not.toContain('console.error("[API Mutation Error]", error);');
     expect(main).not.toContain('console.error("[Synthia bootstrap error]", error);');

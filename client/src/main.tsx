@@ -1,4 +1,5 @@
 import { trpc } from "@/lib/trpc";
+import { clientErrorMessage } from "@/lib/clientErrorDisplay";
 import { COOKIE_NAME, UNAUTHED_ERR_MSG } from '@shared/const';
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { httpBatchLink, TRPCClientError } from "@trpc/client";
@@ -21,6 +22,12 @@ function classifyClientError(error: unknown): "network" | "unauthorized" | "requ
 
 function reportClientError(scope: "bootstrap" | "mutation" | "query", error: unknown) {
   console.error("[Synthia client error]", { scope, category: classifyClientError(error) });
+}
+
+function sanitizeDisplayedClientError(error: unknown) {
+  if (error instanceof TRPCClientError) {
+    error.message = clientErrorMessage(error);
+  }
 }
 
 const redirectToLoginIfUnauthorized = (error: unknown) => {
@@ -47,6 +54,7 @@ queryClient.getQueryCache().subscribe(event => {
     const error = event.query.state.error;
     redirectToLoginIfUnauthorized(error);
     reportClientError("query", error);
+    sanitizeDisplayedClientError(error);
   }
 });
 
@@ -55,6 +63,7 @@ queryClient.getMutationCache().subscribe(event => {
     const error = event.mutation.state.error;
     redirectToLoginIfUnauthorized(error);
     reportClientError("mutation", error);
+    sanitizeDisplayedClientError(error);
   }
 });
 
