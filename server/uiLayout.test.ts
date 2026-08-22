@@ -348,21 +348,22 @@ describe("compact workspace layout contract", () => {
     expect(settings).toContain("w-9 shrink-0 rounded-full");
   });
 
-  it("keeps the attachment option surface directly adjacent to the composer plus trigger", () => {
+  it("keeps the attachment option surface directly below the composer plus trigger", () => {
     const css = readFileSync(new URL("../client/src/index.css", import.meta.url), "utf8");
 
-    expect(css).toContain(".synthia-attachment-menu { @apply absolute bottom-full left-0");
-    expect(css).not.toContain(".synthia-attachment-menu { @apply absolute bottom-[calc(100%+.4rem)]");
+    expect(css).toContain(".synthia-attachment-menu { @apply absolute left-0 top-[calc(100%+.45rem)]");
+    expect(css).not.toContain(".synthia-attachment-menu { @apply absolute bottom-full left-0");
   });
 
-  it("keeps the model selector bounded and scrollable while showing user-facing model capabilities only", () => {
+  it("keeps the model selector bounded below its trigger while showing model names and capabilities only", () => {
     const dashboard = readFileSync(new URL("../client/src/pages/TaskDashboard.tsx", import.meta.url), "utf8");
     const css = readFileSync(new URL("../client/src/index.css", import.meta.url), "utf8");
 
-    expect(css).toContain(".synthia-model-menu { @apply absolute bottom-[calc(100%+.4rem)] right-0 z-20 grid w-57 max-h-[min(16rem,calc(100dvh-8rem))] overflow-y-auto overscroll-contain");
+    expect(css).toContain(".synthia-model-menu { @apply absolute right-0 top-[calc(100%+.45rem)] z-30 grid w-57 max-h-[min(16rem,calc(100dvh-8rem))] overflow-y-auto overscroll-contain");
     expect(dashboard).toContain('data-scrollable="true"');
     expect(dashboard).toContain("<b>{model.model}</b><small>{composerModelCapabilityLabel(model)}</small>");
     expect(dashboard).not.toContain("{model.provider} · {model.model}");
+    expect(dashboard).not.toContain("Manual model selection is active for task orchestration.");
   });
 
   it("keeps the center workspace calm with a dynamic welcome and progressively disclosed secondary controls", () => {
@@ -375,10 +376,10 @@ describe("compact workspace layout contract", () => {
     expect(dashboard).toContain("workspaceWelcome(user?.name)");
     expect(dashboard).toContain("synthia-workspace-kicker");
     expect(dashboard).toContain("synthia-task-controls-menu");
-    expect(dashboard).toContain('data-testid="automatic-route-preview"');
     expect(dashboard).toContain("Task controls");
     expect(dashboard).not.toContain("Agent workspace");
-    expect(css).toContain(".synthia-task-controls-menu { @apply absolute bottom-[calc(100%+.4rem)] left-0");
+    expect(css).toContain(".synthia-task-controls-menu { @apply absolute left-0 top-[calc(100%+.45rem)]");
+    expect(css).toContain(".synthia-composer-connector-picker { @apply absolute right-0 top-[calc(100%+.45rem)]");
     expect(css).toContain(".synthia-workspace-kicker");
     expect(css).toContain(".synthia-capability-menu { @apply absolute bottom-[calc(100%+.45rem)] right-0 z-30 grid w-[min(32rem,calc(100vw-2.5rem))] max-h-[min(19rem,calc(100dvh-9rem))] grid-cols-2");
     expect(css).toContain(".synthia-capability-menu::-webkit-scrollbar-thumb");

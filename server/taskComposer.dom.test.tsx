@@ -88,11 +88,11 @@ describe("task composer attachments", () => {
     ]);
   });
 
-  it("exposes the compact plus attachment menu and organized workspace controls", async () => {
+  it("exposes the compact plus attachment menu and organized workspace controls with stable click-open surfaces", async () => {
     const user = userEvent.setup();
     render(<TaskDashboard />);
     const attachmentTrigger = screen.getByRole("button", { name: "Add a task attachment" });
-    await user.hover(attachmentTrigger);
+    await user.click(attachmentTrigger);
     expect(screen.getByText("Add from local files")).toBeTruthy();
     expect(screen.getByText("From Library")).toBeTruthy();
     expect(screen.getByRole("button", { name: "Choose model" })).toBeTruthy();
@@ -148,7 +148,7 @@ describe("task composer attachments", () => {
     await user.click(screen.getByRole("button", { name: "Choose model" }));
     const menu = screen.getByTestId("composer-model-menu");
     expect(menu.getAttribute("data-scrollable")).toBe("true");
-    expect(within(menu).getByText("glm-5.2-free")).toBeTruthy();
+    expect(within(menu).getAllByText("glm-5.2-free")).toHaveLength(2);
     expect(within(menu).getByText("agnes-2.0-flash")).toBeTruthy();
     expect(within(menu).getByText("Text · Vision")).toBeTruthy();
     expect(within(menu).getByText("Text · Audio")).toBeTruthy();
@@ -184,22 +184,22 @@ describe("task composer attachments", () => {
     Object.defineProperty(globalThis, "MediaRecorder", { configurable: true, value: mediaRecorder });
   });
 
-  it("explains capability-aware Automatic routing and keeps media execution behind the Start action", async () => {
+  it("keeps model presentation task-focused and media execution behind the Start action", async () => {
     const user = userEvent.setup();
     render(<TaskDashboard />);
     await user.click(screen.getByRole("button", { name: "Choose model" }));
-    expect(screen.getByText("Understands requested media, image inputs, and development tasks. Generation runs only after Start.")).toBeTruthy();
+    expect(screen.getByText("Model choices will appear when they are available.")).toBeTruthy();
     await user.click(screen.getByRole("button", { name: "Choose model" }));
     await user.type(screen.getByLabelText("Task goal"), "Create a short launch video for the product.");
-    expect(screen.getByTestId("automatic-route-preview").textContent).toContain("no ready route is configured");
     expect(screen.getByRole("button", { name: "Start task" })).toBeTruthy();
   });
 
-  it("shows that a public video link needs Supadata configuration before it can be understood", async () => {
+  it("keeps unavailable public video analysis inside the media surface without exposing internal services", async () => {
     const user = userEvent.setup();
     render(<TaskDashboard />);
-    await user.type(screen.getByLabelText("Task goal"), "Summarize https://www.youtube.com/watch?v=abc123 for this project.");
-    expect(screen.getByTestId("automatic-route-preview").textContent).toContain("public-video understanding is requested, but this capability is not configured yet");
+    await user.click(screen.getByRole("button", { name: "View media capabilities" }));
+    expect(screen.getByText("Public-link analysis is not enabled for this workspace.")).toBeTruthy();
+    expect(screen.queryByText(/Supadata/)).toBeNull();
     expect(screen.getByRole("button", { name: "Start task" })).toBeTruthy();
   });
 
