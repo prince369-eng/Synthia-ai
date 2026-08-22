@@ -59,7 +59,7 @@ async function startServer() {
     res.setHeader("X-Content-Type-Options", "nosniff");
     res.setHeader("X-Frame-Options", "DENY");
     res.setHeader("Referrer-Policy", "no-referrer");
-    res.setHeader("Permissions-Policy", "camera=(), microphone=(), geolocation=(), payment=()");
+    res.setHeader("Permissions-Policy", "camera=(), microphone=(self), geolocation=(), payment=()");
     next();
   });
   // Supports the largest supported base64 voice input while bounding memory use.

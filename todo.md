@@ -3507,3 +3507,8 @@
 - [x] Set a strict global no-referrer policy so external resources and user-initiated navigation receive no Synthia origin metadata.
 - [x] Preserve the policy with deterministic response-header contract coverage without visiting an external destination.
 - [x] Validate strict typing, focused tests, the full deterministic suite, production build, and diff hygiene without starting external work.
+
+## Live voice permission-policy alignment
+- [x] Allow microphone access only for the same Synthia origin so the explicit user-initiated Voice Mode control can request browser permission while cross-origin frames remain blocked.
+- [x] Preserve deny-by-default camera, geolocation, and payment policies with deterministic response-header coverage without activating voice or screen sharing.
+- [x] Validate strict typing, focused tests, the full deterministic suite, production build, and diff hygiene without starting external work.

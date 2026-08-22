@@ -12,6 +12,7 @@ describe("document response security header contract", () => {
     expect(source).toContain("form-action 'self'");
     expect(source).toContain('res.setHeader("Referrer-Policy", "no-referrer")');
     expect(source).not.toContain("strict-origin-when-cross-origin");
+    expect(source).toContain('res.setHeader("Permissions-Policy", "camera=(), microphone=(self), geolocation=(), payment=()")');
     expect(source).toContain("corsAllowedOrigins({ publicAppUrl: ENV.publicAppUrl, isProduction: ENV.isProduction })");
   });
 });
