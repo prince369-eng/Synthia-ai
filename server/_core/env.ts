@@ -13,6 +13,22 @@ const modelList = (value?: string) =>
 /** Public-web access is privileged capability configuration and must be explicit. */
 export const isExplicitlyEnabled = (value?: string) => value === "true";
 
+/**
+ * Numeric process configuration is operator input, not an execution instruction.
+ * Missing, fractional, non-finite, negative, and out-of-range values fall back or clamp
+ * before reaching task safety caps or provider timeout requests.
+ */
+export function boundedPositiveInteger(
+  value: string | undefined,
+  fallback: number,
+  { min = 1, max = Number.MAX_SAFE_INTEGER }: { min?: number; max?: number } = {},
+) {
+  if (!value?.trim()) return fallback;
+  const parsed = Number(value);
+  if (!Number.isSafeInteger(parsed) || parsed < min) return fallback;
+  return Math.min(parsed, max);
+}
+
 const APPROVED_FREE_MODELS = [
   "aihubmix:glm-5.2-free",
   "aihubmix:gemini-3.7-flash-free",
@@ -65,20 +81,20 @@ export const ENV = {
   workerMode: process.env.SYNTHIA_WORKER_MODE ?? "embedded",
   logLevel: process.env.SYNTHIA_LOG_LEVEL ?? "info",
   encryptionKey: process.env.SYNTHIA_ENCRYPTION_KEY ?? "",
-  eventRetentionDays: Number(process.env.SYNTHIA_EVENT_RETENTION_DAYS ?? 30),
-  sandboxRetentionDays: Number(process.env.SYNTHIA_SANDBOX_RETENTION_DAYS ?? 30),
-  maxAgentIterations: Number(process.env.SYNTHIA_MAX_AGENT_ITERATIONS ?? 80),
-  taskTimeoutSeconds: Number(process.env.SYNTHIA_TASK_TIMEOUT_SECONDS ?? 7200),
+  eventRetentionDays: boundedPositiveInteger(process.env.SYNTHIA_EVENT_RETENTION_DAYS, 30, { min: 1, max: 3_650 }),
+  sandboxRetentionDays: boundedPositiveInteger(process.env.SYNTHIA_SANDBOX_RETENTION_DAYS, 30, { min: 1, max: 3_650 }),
+  maxAgentIterations: boundedPositiveInteger(process.env.SYNTHIA_MAX_AGENT_ITERATIONS, 80, { min: 1, max: 500 }),
+  taskTimeoutSeconds: boundedPositiveInteger(process.env.SYNTHIA_TASK_TIMEOUT_SECONDS, 7_200, { min: 60, max: 86_400 }),
   redisUrl: process.env.REDIS_URL ?? "",
   redisTlsEnabled: process.env.REDIS_TLS_ENABLED === "true",
   sandboxProvider: process.env.SYNTHIA_SANDBOX_PROVIDER ?? "auto",
   e2bApiKey: process.env.E2B_API_KEY ?? "",
   e2bTemplateId: process.env.E2B_TEMPLATE_ID ?? "",
-  e2bSandboxTimeoutSeconds: Number(process.env.E2B_SANDBOX_TIMEOUT_SECONDS ?? 82800),
+  e2bSandboxTimeoutSeconds: boundedPositiveInteger(process.env.E2B_SANDBOX_TIMEOUT_SECONDS, 82_800, { min: 60, max: 82_800 }),
   hopxApiKey: process.env.HOPX_API_KEY ?? "",
   hopxTemplateId: process.env.HOPX_TEMPLATE_ID ?? "",
   hopxBaseUrl: process.env.HOPX_BASE_URL ?? "https://api.hopx.dev",
-  hopxSandboxTimeoutSeconds: Number(process.env.HOPX_SANDBOX_TIMEOUT_SECONDS ?? 82800),
+  hopxSandboxTimeoutSeconds: boundedPositiveInteger(process.env.HOPX_SANDBOX_TIMEOUT_SECONDS, 82_800, { min: 60, max: 82_800 }),
   dockerSandboxImage: process.env.SYNTHIA_DOCKER_SANDBOX_IMAGE ?? "synthia-sandbox:latest",
   sandboxAllowedHosts: list(process.env.SYNTHIA_SANDBOX_ALLOWED_HOSTS),
   sandboxPublicWebAccess: isExplicitlyEnabled(process.env.SYNTHIA_SANDBOX_PUBLIC_WEB_ACCESS),
@@ -122,7 +138,7 @@ export const ENV = {
   agentBrowserProvider: process.env.SYNTHIA_AGENT_BROWSER_PROVIDER ?? "hyperbrowser",
   hyperbrowserApiKey: process.env.HYPERBROWSER_API_KEY ?? "",
   hyperbrowserBaseUrl: process.env.HYPERBROWSER_BASE_URL ?? "https://api.hyperbrowser.ai",
-  hyperbrowserTimeoutMinutes: Number(process.env.SYNTHIA_HYPERBROWSER_TIMEOUT_MINUTES ?? 10),
+  hyperbrowserTimeoutMinutes: boundedPositiveInteger(process.env.SYNTHIA_HYPERBROWSER_TIMEOUT_MINUTES, 10, { min: 5, max: 30 }),
   hyperbrowserAllowedHosts: list(process.env.SYNTHIA_HYPERBROWSER_ALLOWED_HOSTS),
   hyperbrowserPublicWebAccess: isExplicitlyEnabled(process.env.SYNTHIA_HYPERBROWSER_PUBLIC_WEB_ACCESS),
   supadataApiKey: process.env.SUPADATA_API_KEY ?? "",

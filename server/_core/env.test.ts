@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { configuredProviderDefaults, isExplicitlyEnabled } from "./env";
+import { boundedPositiveInteger, configuredProviderDefaults, isExplicitlyEnabled } from "./env";
 
 describe("configuredProviderDefaults", () => {
   it("uses the user-approved free-tier, vision, Pixazo, and public-facing task defaults when no non-secret override exists", () => {
@@ -33,5 +33,18 @@ describe("configuredProviderDefaults", () => {
     expect(isExplicitlyEnabled("false")).toBe(false);
     expect(isExplicitlyEnabled("TRUE")).toBe(false);
     expect(isExplicitlyEnabled("true")).toBe(true);
+  });
+
+  it("falls back for malformed safety limits and clamps valid values at their configured maximum", () => {
+    const taskTimeout = { min: 60, max: 86_400 };
+    expect(boundedPositiveInteger(undefined, 7_200, taskTimeout)).toBe(7_200);
+    expect(boundedPositiveInteger("", 7_200, taskTimeout)).toBe(7_200);
+    expect(boundedPositiveInteger("NaN", 7_200, taskTimeout)).toBe(7_200);
+    expect(boundedPositiveInteger("Infinity", 7_200, taskTimeout)).toBe(7_200);
+    expect(boundedPositiveInteger("-1", 7_200, taskTimeout)).toBe(7_200);
+    expect(boundedPositiveInteger("59", 7_200, taskTimeout)).toBe(7_200);
+    expect(boundedPositiveInteger("3600.5", 7_200, taskTimeout)).toBe(7_200);
+    expect(boundedPositiveInteger("3600", 7_200, taskTimeout)).toBe(3_600);
+    expect(boundedPositiveInteger("90000", 7_200, taskTimeout)).toBe(86_400);
   });
 });

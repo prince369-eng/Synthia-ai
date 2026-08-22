@@ -3392,3 +3392,8 @@
 - [x] Remove implicit public-web enablement for sandbox and remote-browser configuration while preserving an explicit `true` operator choice.
 - [x] Add deterministic environment-boundary coverage for absent, false, malformed, and explicit enabled values without starting a browser or outbound request.
 - [x] Validate the hardened configuration boundary with strict typing, focused policy/catalog regressions, the full deterministic suite, and a production build.
+
+## Numeric runtime safety limits
+- [x] Replace direct numeric environment coercion for task caps, retention, sandbox timeouts, and browser session timeouts with safe bounded parsing.
+- [x] Make blank, fractional, negative, non-finite, and unsafe values fall back to documented defaults while clamping valid extreme values at safety limits.
+- [x] Add deterministic parsing regressions and validate task-runner, sandbox, browser, full-suite, and production-build compatibility without starting any workload.
