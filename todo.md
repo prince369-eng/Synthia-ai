@@ -3314,6 +3314,12 @@
 - [x] Require canonical HTTPS provider-hosted authorization URLs with no explicit port or embedded credentials at both server and client navigation boundaries.
 - [x] Add deterministic hostile-destination coverage; document, validate, and checkpoint the redirect hardening without initiating an authorization flow.
 
+## Restored Docker sandbox isolation
+
+- [x] Audit local Docker checkpoint restoration for runtime controls that differed from fresh sandbox creation.
+- [x] Apply the same network, filesystem, resource, and PID isolation arguments to fresh and restored local Docker sandboxes, with validated application-owned descriptors.
+- [x] Add deterministic restored-runtime and descriptor coverage; document, validate, and checkpoint the development-only sandbox hardening without starting a container.
+
 ## Modern workspace UI and UX refinement
 
 - [x] Audit the authenticated shell, dashboard composer, workspace panels, typography, iconography, spacing, hierarchy, and responsive behavior against current productivity-agent interaction patterns.

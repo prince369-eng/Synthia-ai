@@ -55,8 +55,44 @@ function configuredProvider(): SandboxProviderName {
   return ENV.e2bApiKey ? "e2b" : ENV.hopxApiKey ? "hopx" : "docker";
 }
 
+const DOCKER_SANDBOX_ID = /^synthia-[A-Za-z0-9_.-]{1,54}$/;
+
+const DOCKER_RUNTIME_ISOLATION_ARGS = [
+  "--network",
+  "none",
+  "--read-only",
+  "--tmpfs",
+  "/tmp:rw,noexec,nosuid,size=256m",
+  "--tmpfs",
+  "/workspace:rw,nosuid,size=512m",
+  "--memory",
+  "1g",
+  "--cpus",
+  "1",
+  "--pids-limit",
+  "256",
+] as const;
+
 function dockerContainerName(taskId: string) {
-  return `synthia-${taskId.replace(/[^a-zA-Z0-9_.-]/g, "").slice(0, 42)}`;
+  const suffix = taskId.replace(/[^a-zA-Z0-9_.-]/g, "").slice(0, 42);
+  if (!suffix) throw new Error("A valid task identifier is required to create a Docker sandbox.");
+  return `synthia-${suffix}`;
+}
+
+function restoredDockerContainerName(checkpointRef: string) {
+  const suffix = checkpointRef.replace(/[^a-zA-Z0-9_.-]/g, "-").slice(0, 30);
+  if (!suffix) throw new Error("Invalid Docker checkpoint reference.");
+  return `synthia-restore-${suffix}-${Date.now()}`;
+}
+
+export function assertDockerSandboxId(value: string) {
+  if (!DOCKER_SANDBOX_ID.test(value)) throw new Error("Invalid Docker sandbox descriptor.");
+  return value;
+}
+
+export function dockerSandboxRunArguments(containerName: string, image: string): string[] {
+  assertDockerSandboxId(containerName);
+  return ["run", "--detach", "--rm", "--name", containerName, ...DOCKER_RUNTIME_ISOLATION_ARGS, image, "sleep", "infinity"];
 }
 
 function requireSafePath(path: string) {
@@ -248,29 +284,7 @@ export class DockerSandboxProvider implements SandboxProvider {
       throw new Error("Docker sandboxes are disabled in production. Configure E2B instead.");
     }
     const name = dockerContainerName(taskId);
-    await execFile("docker", [
-      "run",
-      "--detach",
-      "--rm",
-      "--name",
-      name,
-      "--network",
-      "none",
-      "--read-only",
-      "--tmpfs",
-      "/tmp:rw,noexec,nosuid,size=256m",
-      "--tmpfs",
-      "/workspace:rw,nosuid,size=512m",
-      "--memory",
-      "1g",
-      "--cpus",
-      "1",
-      "--pids-limit",
-      "256",
-      ENV.dockerSandboxImage,
-      "sleep",
-      "infinity",
-    ]);
+    await execFile("docker", dockerSandboxRunArguments(name, ENV.dockerSandboxImage));
     return {
       provider: "docker",
       providerSandboxId: name,
@@ -281,9 +295,10 @@ export class DockerSandboxProvider implements SandboxProvider {
 
   async execute(descriptor: SandboxDescriptor, command: string, timeoutMs = 120_000): Promise<CommandResult> {
     try {
+      const sandboxId = assertDockerSandboxId(descriptor.providerSandboxId);
       const { stdout, stderr } = await execFile(
         "docker",
-        ["exec", descriptor.providerSandboxId, "/bin/sh", "-lc", command],
+        ["exec", "--", sandboxId, "/bin/sh", "-lc", command],
         { timeout: timeoutMs, maxBuffer: 1_000_000 },
       );
       return { exitCode: 0, stdout, stderr };
@@ -321,20 +336,21 @@ export class DockerSandboxProvider implements SandboxProvider {
   }
 
   async checkpoint(descriptor: SandboxDescriptor): Promise<string> {
-    const checkpointRef = `${descriptor.providerSandboxId}-checkpoint`;
-    await execFile("docker", ["commit", descriptor.providerSandboxId, checkpointRef]);
+    const sandboxId = assertDockerSandboxId(descriptor.providerSandboxId);
+    const checkpointRef = `${sandboxId}-checkpoint`;
+    await execFile("docker", ["commit", "--", sandboxId, checkpointRef]);
     return checkpointRef;
   }
 
   async restore(checkpointRef: string): Promise<SandboxDescriptor> {
     if (!/^[a-zA-Z0-9_.:-]+$/.test(checkpointRef)) throw new Error("Invalid Docker checkpoint reference.");
-    const name = `${checkpointRef.replace(/[^a-zA-Z0-9_.-]/g, "-")}-${Date.now()}`;
-    await execFile("docker", ["run", "--detach", "--rm", "--name", name, "--network", "none", checkpointRef, "sleep", "infinity"]);
+    const name = restoredDockerContainerName(checkpointRef);
+    await execFile("docker", dockerSandboxRunArguments(name, checkpointRef));
     return { provider: "docker", providerSandboxId: name, region: "local", maxSessionSeconds: 7_200 };
   }
 
   async destroy(descriptor: SandboxDescriptor): Promise<void> {
-    await execFile("docker", ["rm", "--force", descriptor.providerSandboxId]);
+    await execFile("docker", ["rm", "--force", "--", assertDockerSandboxId(descriptor.providerSandboxId)]);
   }
 }
 
