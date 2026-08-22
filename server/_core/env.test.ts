@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { boundedPositiveInteger, configuredProviderDefaults, isExplicitlyEnabled, publicHostnameAllowlist } from "./env";
+import { boundedPositiveInteger, configuredProviderDefaults, isExplicitlyEnabled, publicHostnameAllowlist, safeProviderBaseUrl } from "./env";
 
 describe("configuredProviderDefaults", () => {
   it("uses the user-approved free-tier, vision, Pixazo, and public-facing task defaults when no non-secret override exists", () => {
@@ -54,5 +54,18 @@ describe("configuredProviderDefaults", () => {
       "cdn.aihubmix.com",
     ]);
     expect(publicHostnameAllowlist("https://example.test,example.test:443,127.0.0.1,::1,localhost,api.local,metadata.google.internal,*.example.test,example")).toEqual([]);
+  });
+
+  it("keeps only canonical HTTPS provider bases before credentialed clients use them", () => {
+    const fallback = "https://provider.example/v1";
+    expect(safeProviderBaseUrl("https://provider.example/v1/", fallback)).toBe("https://provider.example/v1");
+    for (const value of [
+      "http://provider.example/v1",
+      "https://token@provider.example/v1",
+      "https://provider.example:8443/v1",
+      "https://provider.example/v1?target=other",
+      "https://provider.example/v1#fragment",
+      "not a url",
+    ]) expect(safeProviderBaseUrl(value, fallback)).toBe(fallback);
   });
 });

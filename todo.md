@@ -3422,3 +3422,8 @@
 - [x] Replace notification delivery and Redis task-event bus raw exception text with bounded timeout, network, provider, or transport classifications.
 - [x] Preserve notification failover and database-backed task-event stream recovery while extending central structured-logging coverage to both modules.
 - [x] Validate strict typing, focused recovery/logging regressions, the full deterministic suite, and a production build without sending notifications or connecting to Redis.
+
+## Outbound provider endpoint validation
+- [x] Normalize configured credential-bearing provider base URLs to canonical HTTPS endpoints before sandbox, browser, model, media, or connector clients receive them.
+- [x] Reject embedded credentials, non-standard ports, query strings, fragments, malformed URLs, and non-HTTPS schemes by falling back to a documented provider endpoint.
+- [x] Add deterministic environment-boundary coverage and validate provider-client compatibility with strict typing, focused regressions, the full deterministic suite, and a production build without invoking an external provider.

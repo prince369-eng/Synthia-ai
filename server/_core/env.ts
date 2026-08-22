@@ -54,6 +54,31 @@ export function boundedPositiveInteger(
   return Math.min(parsed, max);
 }
 
+/**
+ * Provider endpoints are operator configuration, but many outbound clients attach API
+ * credentials to them. Keep only canonical HTTPS bases: no embedded credentials,
+ * query/fragment state, or non-standard port can alter the request target.
+ */
+export function safeProviderBaseUrl(value: string | undefined, fallback: string) {
+  const candidate = value?.trim();
+  if (!candidate) return fallback;
+  try {
+    const url = new URL(candidate);
+    if (
+      url.protocol !== "https:" ||
+      url.username ||
+      url.password ||
+      url.port ||
+      url.search ||
+      url.hash ||
+      !url.hostname
+    ) return fallback;
+    return url.toString().replace(/\/$/, "");
+  } catch {
+    return fallback;
+  }
+}
+
 const APPROVED_FREE_MODELS = [
   "aihubmix:glm-5.2-free",
   "aihubmix:gemini-3.7-flash-free",
@@ -118,7 +143,7 @@ export const ENV = {
   e2bSandboxTimeoutSeconds: boundedPositiveInteger(process.env.E2B_SANDBOX_TIMEOUT_SECONDS, 82_800, { min: 60, max: 82_800 }),
   hopxApiKey: process.env.HOPX_API_KEY ?? "",
   hopxTemplateId: process.env.HOPX_TEMPLATE_ID ?? "",
-  hopxBaseUrl: process.env.HOPX_BASE_URL ?? "https://api.hopx.dev",
+  hopxBaseUrl: safeProviderBaseUrl(process.env.HOPX_BASE_URL, "https://api.hopx.dev"),
   hopxSandboxTimeoutSeconds: boundedPositiveInteger(process.env.HOPX_SANDBOX_TIMEOUT_SECONDS, 82_800, { min: 60, max: 82_800 }),
   dockerSandboxImage: process.env.SYNTHIA_DOCKER_SANDBOX_IMAGE ?? "synthia-sandbox:latest",
   sandboxAllowedHosts: publicHostnameAllowlist(process.env.SYNTHIA_SANDBOX_ALLOWED_HOSTS),
@@ -138,17 +163,17 @@ export const ENV = {
   audioProvider: providerDefaults.audioProvider,
   audioModels: providerDefaults.audioModels,
   pixazoApiKey: process.env.PIXAZO_API_KEY ?? "",
-  pixazoBaseUrl: process.env.PIXAZO_BASE_URL ?? "https://gateway.pixazo.ai",
+  pixazoBaseUrl: safeProviderBaseUrl(process.env.PIXAZO_BASE_URL, "https://gateway.pixazo.ai"),
   pixazoImageModels: providerDefaults.pixazoImageModels,
   pixazoVideoModels: providerDefaults.pixazoVideoModels,
   pixazoAudioModels: providerDefaults.pixazoAudioModels,
   pixazoGenerationEnabled: providerDefaults.pixazoGenerationEnabled === "true",
   groqApiKey: process.env.GROQ_API_KEY ?? "",
   agnesApiKey: process.env.AGNES_API_KEY ?? "",
-  agnesBaseUrl: process.env.AGNES_BASE_URL ?? "https://apihub.agnes-ai.com/v1",
+  agnesBaseUrl: safeProviderBaseUrl(process.env.AGNES_BASE_URL, "https://apihub.agnes-ai.com/v1"),
   aihubmixApiKey: process.env.AIHUBMIX_API_KEY ?? "",
-  aihubmixBaseUrl: process.env.AIHUBMIX_BASE_URL ?? "https://aihubmix.com/v1",
-  aihubmixFallbackBaseUrl: process.env.AIHUBMIX_FALLBACK_BASE_URL ?? "https://api.inferera.com/v1",
+  aihubmixBaseUrl: safeProviderBaseUrl(process.env.AIHUBMIX_BASE_URL, "https://aihubmix.com/v1"),
+  aihubmixFallbackBaseUrl: safeProviderBaseUrl(process.env.AIHUBMIX_FALLBACK_BASE_URL, "https://api.inferera.com/v1"),
   aihubmixImageModels: modelList(process.env.AIHUBMIX_IMAGE_MODELS),
   aihubmixVideoModels: modelList(process.env.AIHUBMIX_VIDEO_MODELS),
   aihubmixAudioModels: modelList(process.env.AIHUBMIX_AUDIO_MODELS),
@@ -162,7 +187,7 @@ export const ENV = {
   deepseekApiKey: process.env.DEEPSEEK_API_KEY ?? "",
   agentBrowserProvider: process.env.SYNTHIA_AGENT_BROWSER_PROVIDER ?? "hyperbrowser",
   hyperbrowserApiKey: process.env.HYPERBROWSER_API_KEY ?? "",
-  hyperbrowserBaseUrl: process.env.HYPERBROWSER_BASE_URL ?? "https://api.hyperbrowser.ai",
+  hyperbrowserBaseUrl: safeProviderBaseUrl(process.env.HYPERBROWSER_BASE_URL, "https://api.hyperbrowser.ai"),
   hyperbrowserTimeoutMinutes: boundedPositiveInteger(process.env.SYNTHIA_HYPERBROWSER_TIMEOUT_MINUTES, 10, { min: 5, max: 30 }),
   hyperbrowserAllowedHosts: publicHostnameAllowlist(process.env.SYNTHIA_HYPERBROWSER_ALLOWED_HOSTS),
   hyperbrowserPublicWebAccess: isExplicitlyEnabled(process.env.SYNTHIA_HYPERBROWSER_PUBLIC_WEB_ACCESS),
@@ -206,5 +231,5 @@ export const ENV = {
   pipedreamProjectId: process.env.PIPEDREAM_PROJECT_ID ?? "",
   composioApiKey: process.env.COMPOSIO_API_KEY ?? "",
   composioAuthConfigId: process.env.COMPOSIO_AUTH_CONFIG_ID ?? "",
-  composioBaseUrl: process.env.COMPOSIO_BASE_URL ?? "https://backend.composio.dev",
+  composioBaseUrl: safeProviderBaseUrl(process.env.COMPOSIO_BASE_URL, "https://backend.composio.dev"),
 };
