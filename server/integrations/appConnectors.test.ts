@@ -19,13 +19,15 @@ describe("app connector authorization boundaries", () => {
     expect(readiness.get("composio")).toBe("redirect");
   });
 
-  it("provides a local public catalog without a provider call or private authorization-route fields", () => {
+  it("provides a local public directory of more than 150 apps without a provider call or private authorization-route fields", () => {
     const apps = listUserFacingApps();
     const gmail = apps.find(app => app.slug === "gmail");
 
-    expect(apps.map(app => app.name)).toEqual(expect.arrayContaining(["Gmail", "Google Drive", "Google Calendar", "Google Sheets", "Notion", "Slack", "GitHub", "Linear", "Jira", "Trello", "Airtable", "Dropbox", "HubSpot", "Salesforce", "Asana"]));
-    expect(gmail).toMatchObject({ name: "Gmail", categories: ["Communication", "Productivity"], scopeOptions: ["Email", "Drafts"], authorizationRequired: true, approvalRequired: true });
-    expect(Object.keys(gmail ?? {}).sort()).toEqual(["approvalRequired", "authorizationRequired", "categories", "description", "iconUrl", "name", "scopeOptions", "slug"]);
+    expect(apps.length).toBeGreaterThanOrEqual(150);
+    expect(apps.map(app => app.name)).toEqual(expect.arrayContaining(["Gmail", "Google Drive", "Google Calendar", "Google Sheets", "Notion", "Slack", "GitHub", "Linear", "Jira", "Trello", "Airtable", "Dropbox", "HubSpot", "Salesforce", "Asana", "Microsoft Teams", "Stripe", "Shopify"]));
+    expect(gmail).toMatchObject({ name: "Gmail", categories: ["Communication"], scopeOptions: ["Messages", "Drafts"], authorizationRequired: true, approvalRequired: true, featured: true });
+    expect(gmail?.iconUrl).toMatch(/^https:\/\/cdn\.simpleicons\.org\//);
+    expect(Object.keys(gmail ?? {}).sort()).toEqual(["approvalRequired", "authorizationRequired", "categories", "description", "featured", "iconUrl", "name", "scopeOptions", "slug"]);
     expect(listUserFacingApps()).not.toBe(apps);
     expect(listUserFacingApps()[0].categories).not.toBe(apps[0].categories);
   });

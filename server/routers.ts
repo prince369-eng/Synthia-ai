@@ -94,7 +94,7 @@ import { captureLiveComputerScreen, listLiveComputerFiles, liveComputerAvailabil
 import { generateWithFallback, parseStructuredModelOutput } from "./agent/llm";
 import { createVoiceModeJoinCredentials, getVoiceModeAvailability } from "./realtime/voiceMode";
 import { buildTaskOfficeExport, OFFICE_EXPORT_FORMATS } from "./office/taskOfficeExport";
-import { appConnectorReadiness, completeZapierMcpAuthorization, listUserFacingApps, startAppConnectorAuthorization, verifyComposioAuthorization, verifyPipedreamAuthorization } from "./integrations/appConnectors";
+import { appConnectorReadiness, browseAdditionalUserFacingApps, completeZapierMcpAuthorization, listUserFacingApps, startAppConnectorAuthorization, verifyComposioAuthorization, verifyPipedreamAuthorization } from "./integrations/appConnectors";
 
 const taskIdSchema = z.object({ taskId: z.string().uuid() });
 const taskTitleSchema = z.string().trim().min(1).max(180);
@@ -986,6 +986,7 @@ export const appRouter = router({
             allowCodeExecution: z.boolean(),
             allowFileWrites: z.boolean(),
             selectedModel: selectedModelSchema.optional(),
+            selectedConnectedApps: z.array(z.string().trim().min(2).max(128).regex(/^[a-z0-9][a-z0-9_-]*$/i)).max(6).optional(),
           }).default(DEFAULT_AUTONOMY_SETTINGS),
           involvesCode: z.boolean(),
           attachments: z.array(attachmentReferenceSchema).max(12).optional(),
@@ -995,6 +996,17 @@ export const appRouter = router({
         await enforceUserMutationLimit(ctx.user.id, "task-create", 12, 3_600);
         if (input.autonomySettings.selectedModel && !runtimeConfiguredComposerModels().some(model => model.id === `${input.autonomySettings.selectedModel!.provider}:${input.autonomySettings.selectedModel!.model}`)) {
           throw new TRPCError({ code: "BAD_REQUEST", message: "The selected model is not configured for this workspace." });
+        }
+        const selectedConnectedApps = Array.from(new Set(input.autonomySettings.selectedConnectedApps ?? []));
+        if (selectedConnectedApps.length) {
+          const catalogSlugs = new Set(listUserFacingApps().map(app => app.slug));
+          if (selectedConnectedApps.some(appSlug => !catalogSlugs.has(appSlug))) {
+            throw new TRPCError({ code: "BAD_REQUEST", message: "A selected app is not available in this workspace." });
+          }
+          const connectedLabels = new Set((await listIntegrationsForUser(ctx.user.id)).map(integration => integration.label.toLowerCase()));
+          if (selectedConnectedApps.some(appSlug => !connectedLabels.has(appSlug.toLowerCase()))) {
+            throw new TRPCError({ code: "FORBIDDEN", message: "Connect each selected app before adding it to this task." });
+          }
         }
         if (input.projectId) await requireOwnedProject(input.projectId, ctx.user.id);
         const attachments = await Promise.all((input.attachments ?? []).map(async attachment => {
@@ -1022,7 +1034,7 @@ export const appRouter = router({
           media: mediaReadiness(ENV),
           publicMedia: { configured: Boolean(ENV.supadataApiKey) },
         });
-        const autonomySettings = { ...input.autonomySettings, automaticRoute };
+        const autonomySettings = { ...input.autonomySettings, selectedConnectedApps, automaticRoute };
         const estimate = estimateTaskCredits({ goal: input.goal, planSteps: plan.length, involvesCode: input.involvesCode });
         const task = await createTaskForUser({
           userId: ctx.user.id,
@@ -1210,6 +1222,12 @@ export const appRouter = router({
   integrations: router({
     appReadiness: protectedProcedure.query(() => appConnectorReadiness()),
     appCatalog: protectedProcedure.query(() => listUserFacingApps()),
+    browseAppDirectory: protectedProcedure
+      .input(z.object({ query: z.string().trim().max(80).optional(), after: z.string().trim().min(1).max(1_024).optional() }))
+      .mutation(async ({ ctx, input }) => {
+        await enforceUserMutationLimit(ctx.user.id, "app-directory-browse", 20, 3_600);
+        return browseAdditionalUserFacingApps({ query: input.query, after: input.after, limit: 24 });
+      }),
     startAuthorization: protectedProcedure
       .input(z.object({ appSlug: z.string().trim().min(2).max(128).regex(/^[a-z0-9][a-z0-9_-]*$/i) }))
       .mutation(async ({ ctx, input }) => {

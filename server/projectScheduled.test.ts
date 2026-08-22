@@ -112,6 +112,27 @@ describe("projects and scheduled router procedures", () => {
     expect(result).toEqual({ task: createdTask, executionQueued: true });
   });
 
+  it("refuses unconnected app selections before creating a task or queueing work", async () => {
+    vi.spyOn(db, "listIntegrationsForUser").mockResolvedValue([] as never);
+    const createTask = vi.spyOn(db, "createTaskForUser");
+    const enqueueTask = vi.spyOn(queue, "enqueueTaskCycle");
+
+    await expect(appRouter.createCaller(createContext()).tasks.create({
+      goal: "Prepare a consent-first customer follow-up brief.",
+      autonomySettings: {
+        mode: "ask_before_risky",
+        allowWebSearch: false,
+        allowCodeExecution: false,
+        allowFileWrites: false,
+        selectedConnectedApps: ["gmail"],
+      },
+      involvesCode: false,
+    })).rejects.toMatchObject({ code: "FORBIDDEN", message: "Connect each selected app before adding it to this task." });
+
+    expect(createTask).not.toHaveBeenCalled();
+    expect(enqueueTask).not.toHaveBeenCalled();
+  });
+
   it("lists only the caller's user-owned scheduled workflows without querying raw Heartbeat jobs", async () => {
     const workflows = [{ id: projectId, userId: 7, name: "Morning review", status: "paused" }];
     vi.spyOn(db, "listScheduledWorkflowsForUser").mockResolvedValue(workflows as never);

@@ -60,6 +60,12 @@ The authorization flow is selected-app-only. A protected API validates a conserv
 
 > **Current boundary:** rendering the app catalog, searching, filtering, opening the connection manager, and running local tests do not create a third-party connection, OAuth consent window, account lookup, app action, or provider request. A future app action remains unavailable until a user connects a specific app and then approves a task-scoped proposal.
 
+### Brand-mark sourcing for the expanded directory
+
+The expanded directory will use the public Simple Icons CDN only for recognizable application identity marks. Its public package documents more than 3,400 brand SVGs and version-pinned, color-aware CDN URLs, enabling Synthia to render a broad directory without inventing third-party logos.[11] Catalog metadata remains local; a logo image load is not an authorization, account, or action request.
+
+The project retains a review record because Simple Icons explains that its project license does not itself clear every included trademark and asks implementers to review individual licenses and brand guidelines.[12] Synthia uses these marks only to identify optional integrations and does not imply partnership, endorsement, or connection status.
+
 ## References
 
 [1]: https://docs.zapier.com/mcp/manage/security "Zapier MCP security: SOC 2 access controls & compliance"
@@ -72,3 +78,5 @@ The authorization flow is selected-app-only. A protected API validates a conserv
 [8]: https://pipedream.com/docs/connect/api-reference/sdks "Pipedream Connect SDKs"
 [9]: https://pipedream.com/docs/connect/api-reference/create-connect-token "Create Pipedream Connect token"
 [10]: https://docs.composio.dev/reference/api-reference/connected-accounts/postConnectedAccountsLink "Create Composio auth link session"
+[11]: https://www.npmjs.com/package/simple-icons "Simple Icons package documentation"
+[12]: https://github.com/simple-icons/simple-icons/blob/develop/DISCLAIMER.md "Simple Icons trademark and license disclaimer"

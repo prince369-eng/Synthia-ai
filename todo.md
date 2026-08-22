@@ -3237,9 +3237,24 @@
 - [x] Extend protected connection contracts to request an authorization session for a selected app only after an explicit user click.
 - [x] Update connected-app management, deterministic coverage, documentation, validation, and a checkpoint for the app-first catalog.
 
+## Browseable app directory and composer connector picker
+
+- [x] Expand the user-facing app catalog to an initial high-quality directory of approximately 150 recognizable applications with category, capability, and public brand identity metadata.
+- [x] Add a scalable directory browsing flow with search, category filtering, compact featured cards, and progressive loading instead of rendering all app cards at once.
+- [x] Add an accessible connector picker to the chat composer that shows connected and available apps, supports app-specific connection initiation, and never exposes private authorization routes.
+- [x] Preserve explicit authorization, task-scoped proposal, and final approval gates for all external app actions; add deterministic privacy, interaction, and responsive regression coverage.
+- [x] Document the app-directory sourcing and governance boundary, perform type/test/build and desktop/mobile verification, and checkpoint the completed experience.
+
 ## Artifact provenance bundles
 
 - [x] Map owner-scoped task, deliverable, proof, and ordered event facts into a read-only provenance representation without retrieving artifact bytes.
 - [x] Add protected provenance bundle APIs that preserve ownership, exclude secrets and provider credentials, and cannot alter task state.
 - [x] Render a task-workspace provenance panel with transparent lineage fields, empty states, and an owner-triggered metadata-only download.
 - [x] Add deterministic authorization and non-mutation coverage, safe-use documentation, validation, and a checkpoint for provenance bundles.
+
+## Policy-aware handoffs and recovery playbooks
+
+- [ ] Define owner-scoped policy contracts for proposed specialist handoffs, including bounded scope, evidence requirements, budget, time limit, and approval state.
+- [ ] Define owner-curated recovery playbooks with blast-radius previews, rollback guidance, explicit applicability, and no automatic remediation path.
+- [ ] Add protected APIs and task-workspace controls that create only proposals and durable audit events; never delegate or repair automatically.
+- [ ] Add deterministic authorization and non-mutation coverage, documentation, responsive verification, validation, and a checkpoint for policy-aware handoffs and recovery playbooks.

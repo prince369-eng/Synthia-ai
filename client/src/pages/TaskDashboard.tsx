@@ -1,6 +1,6 @@
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
-import { ArrowUp, ArrowUpRight, AudioLines, BarChart3, BookOpen, Bot, CalendarClock, Code2, FileText, FolderOpen, Gauge, ImageIcon, Loader2, MessageSquare, Mic, MoreHorizontal, Play, Plus, Search, Share2, SlidersHorizontal, Sparkles, Table2, Upload, Video } from "lucide-react";
+import { ArrowUp, ArrowUpRight, AudioLines, BarChart3, BookOpen, Bot, Cable, CalendarClock, CheckCircle2, Code2, FileText, FolderOpen, Gauge, ImageIcon, Loader2, MessageSquare, Mic, MoreHorizontal, Play, Plus, Search, Share2, SlidersHorizontal, Sparkles, Table2, Upload, Video } from "lucide-react";
 import React, { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
@@ -73,6 +73,8 @@ export default function TaskDashboard() {
   const [centerMoreOpen, setCenterMoreOpen] = useState(false);
   const [taskControlsOpen, setTaskControlsOpen] = useState(false);
   const [modelMenuOpen, setModelMenuOpen] = useState(false);
+  const [connectorPickerOpen, setConnectorPickerOpen] = useState(false);
+  const [selectedConnectedApps, setSelectedConnectedApps] = useState<string[]>([]);
   const [selectedModelId, setSelectedModelId] = useState("");
   const [voiceState, setVoiceState] = useState<"idle" | "recording" | "transcribing">("idle");
   const [voicePermissionBlocked, setVoicePermissionBlocked] = useState(false);
@@ -88,6 +90,8 @@ export default function TaskDashboard() {
   const usage = trpc.workspace.usage.useQuery(undefined, { retry: false });
   const availableModels = trpc.catalog.models.useQuery(undefined, { retry: false });
   const mediaCapabilities = trpc.catalog.media.useQuery(undefined, { retry: false });
+  const appCatalog = trpc.integrations.appCatalog.useQuery(undefined, { enabled: isAuthenticated, staleTime: 60_000 });
+  const connectedApps = trpc.workspace.integrations.useQuery(undefined, { enabled: isAuthenticated, staleTime: 30_000 });
   const uploadAttachment = trpc.tasks.uploadAttachment.useMutation();
   const transcribeVoice = trpc.tasks.transcribeVoice.useMutation();
   const createTask = trpc.tasks.create.useMutation({
@@ -117,6 +121,8 @@ export default function TaskDashboard() {
   }), [attachments, goal, mediaCapabilities.data]);
   const welcome = useMemo(() => workspaceWelcome(user?.name), [user?.name]);
   const promptGuidance = useMemo(() => promptGuidanceForGoal(goal), [goal]);
+  const composerApps = useMemo(() => (appCatalog.data ?? []).slice(0, 10), [appCatalog.data]);
+  const connectedAppLabels = useMemo(() => new Set((connectedApps.data ?? []).map(app => app.label.toLowerCase())), [connectedApps.data]);
 
   useEffect(() => {
     if (preferencesApplied || !settings.data) return;
@@ -168,6 +174,7 @@ export default function TaskDashboard() {
         mode,
         ...capabilities,
         selectedModel: selectedModel ? { provider: selectedModel.provider, model: selectedModel.model } : undefined,
+        selectedConnectedApps,
       },
       attachments: buildTaskAttachmentRefs(attachments),
     });
@@ -330,6 +337,10 @@ export default function TaskDashboard() {
               <div className="relative">
                 <button type="button" className={cn("synthia-composer-toggle", mediaMenuOpen && "active")} aria-label="View media capabilities" aria-expanded={mediaMenuOpen} onClick={() => setMediaMenuOpen(value => !value)}><Sparkles size={13} /><span>Media</span></button>
                 {mediaMenuOpen ? <div className="synthia-model-menu synthia-media-menu" data-testid="media-capability-menu"><div className="synthia-media-capability"><ImageIcon size={14} /><span><b>Image generation</b><small>{composerMediaCapabilityLabel(mediaCapabilities.data?.image, "Image", mediaCapabilities.isLoading)}</small></span><em className={mediaCapabilities.isLoading ? "pending" : mediaCapabilities.data?.image.configured ? "ready" : "pending"}>{mediaCapabilities.isLoading ? "Checking" : mediaCapabilities.data?.image.configured ? "Ready" : "Unavailable"}</em></div><div className="synthia-media-capability"><Video size={14} /><span><b>Video generation</b><small>{composerMediaCapabilityLabel(mediaCapabilities.data?.video, "Video", mediaCapabilities.isLoading)}</small></span><em className={mediaCapabilities.isLoading ? "pending" : mediaCapabilities.data?.video.configured ? "ready" : "pending"}>{mediaCapabilities.isLoading ? "Checking" : mediaCapabilities.data?.video.configured ? "Ready" : "Unavailable"}</em></div><div className="synthia-media-capability"><AudioLines size={14} /><span><b>Audio generation</b><small>{composerMediaCapabilityLabel(mediaCapabilities.data?.audio, "Audio", mediaCapabilities.isLoading)}</small></span><em className={mediaCapabilities.isLoading ? "pending" : mediaCapabilities.data?.audio.configured ? "ready" : "pending"}>{mediaCapabilities.isLoading ? "Checking" : mediaCapabilities.data?.audio.configured ? "Ready" : "Unavailable"}</em></div><div className="synthia-media-capability"><Video size={14} /><span><b>Public video understanding</b><small>{mediaCapabilities.isLoading ? "Checking public-link availability…" : mediaCapabilities.data?.publicMedia.configured ? "Ready for eligible public video links" : "Add a Supadata key to enable public video links."}</small></span><em className={mediaCapabilities.isLoading ? "pending" : mediaCapabilities.data?.publicMedia.configured ? "ready" : "pending"}>{mediaCapabilities.isLoading ? "Checking" : mediaCapabilities.data?.publicMedia.configured ? "Ready" : "Unavailable"}</em></div><p>Ready media tools are used only within a task after you explicitly start it.</p></div> : null}
+              </div>
+              <div className="relative" onPointerEnter={() => setConnectorPickerOpen(true)} onPointerLeave={() => setConnectorPickerOpen(false)}>
+                <button type="button" className={cn("synthia-composer-toggle", connectorPickerOpen && "active")} aria-label="Choose connected apps for this task" aria-expanded={connectorPickerOpen} aria-controls="composer-connector-picker" onClick={() => setConnectorPickerOpen(true)} onKeyDown={event => { if (event.key === "Escape") setConnectorPickerOpen(false); }}><Cable size={13} /><span>Apps</span>{selectedConnectedApps.length ? <b className="synthia-composer-connector-count">{selectedConnectedApps.length}</b> : null}</button>
+                {connectorPickerOpen ? <div id="composer-connector-picker" className="synthia-composer-connector-picker" role="dialog" aria-label="Choose apps for this task"><div className="synthia-composer-connector-picker-head"><span><Cable size={14} /><b>Apps for this task</b></span><button type="button" onClick={() => { setConnectorPickerOpen(false); setLocation("/plugins"); }}>Manage apps</button></div><p>Select connected apps as task context. Synthia will still propose every external action for your approval.</p><div className="synthia-composer-connector-list">{composerApps.map(app => { const connected = connectedAppLabels.has(app.slug.toLowerCase()); const selected = selectedConnectedApps.includes(app.slug); return <button type="button" key={app.slug} className={cn("synthia-composer-connector-option", selected && "selected", !connected && "available")} onClick={() => { if (!connected) { setConnectorPickerOpen(false); setLocation(`/plugins?app=${encodeURIComponent(app.slug)}`); return; } setSelectedConnectedApps(current => selected ? current.filter(slug => slug !== app.slug) : [...current, app.slug].slice(0, 6)); }}><span className="synthia-composer-app-icon"><img src={app.iconUrl} alt="" referrerPolicy="no-referrer" onError={event => { event.currentTarget.style.display = "none"; }} />{app.name.slice(0, 1)}</span><span><b>{app.name}</b><small>{connected ? selected ? "Included as task context" : "Connected · select to include" : "Connect to use"}</small></span>{connected && selected ? <CheckCircle2 size={14} /> : <span className="synthia-composer-connect-label">{connected ? "Select" : "Connect"}</span>}</button>; })}{appCatalog.isLoading ? <p className="synthia-composer-connector-loading"><Loader2 className="animate-spin" size={13} />Loading apps…</p> : null}</div><button type="button" className="synthia-composer-connector-browse" onClick={() => { setConnectorPickerOpen(false); setLocation("/plugins"); }}><Search size={13} />Browse all available apps</button></div> : null}
               </div>
               <div className="relative">
                 <button type="button" className={cn("synthia-composer-toggle synthia-model-trigger", modelMenuOpen && "active")} aria-label="Choose model" aria-expanded={modelMenuOpen} onClick={() => setModelMenuOpen(value => !value)}><Bot size={13} /><span>{selectedModel?.model ?? "Automatic"}</span></button>

@@ -12,6 +12,8 @@ const dashboardState = vi.hoisted(() => ({
   taskQueryOptions: undefined as { enabled?: boolean } | undefined,
   models: [] as Array<{ id: string; provider: string; model: string; label: string; capabilities: string[] }>,
   media: { data: { image: { models: ["flux"], configured: true }, video: { models: ["ltx"], configured: true }, audio: { models: ["tracks"], configured: true }, publicMedia: { configured: false } } as { image: { models: string[]; configured: boolean }; video: { models: string[]; configured: boolean }; audio: { models: string[]; configured: boolean }; publicMedia: { configured: boolean } } | undefined, isLoading: false, isError: false },
+  appCatalog: { data: [] as Array<{ slug: string; name: string; description: string; categories: string[]; scopeOptions: string[]; iconUrl: string }>, isLoading: false, isError: false },
+  connectedApps: { data: [] as Array<{ id: string; label: string; provider: string; availableToAllTasks: boolean }>, isLoading: false, isError: false },
 }));
 
 vi.mock("@/lib/trpc", () => ({
@@ -27,7 +29,11 @@ vi.mock("@/lib/trpc", () => ({
     },
     projects: { list: { useQuery: () => ({ data: [], isLoading: false, isError: false }) } },
     settings: { get: { useQuery: () => ({ data: undefined, isLoading: false, isError: false }) } },
-    workspace: { usage: { useQuery: () => ({ data: { creditsBalance: 25 }, isLoading: false, isError: false }) } },
+    workspace: {
+      usage: { useQuery: () => ({ data: { creditsBalance: 25 }, isLoading: false, isError: false }) },
+      integrations: { useQuery: () => dashboardState.connectedApps },
+    },
+    integrations: { appCatalog: { useQuery: () => dashboardState.appCatalog } },
     catalog: {
       estimateTask: { useQuery: () => ({ data: undefined, isLoading: false, isError: false }) },
       models: { useQuery: () => ({ data: { models: dashboardState.models }, isLoading: false, isError: false }) },
@@ -48,6 +54,8 @@ afterEach(() => {
   dashboardState.taskQueryOptions = undefined;
   dashboardState.models = [];
   dashboardState.media = { data: { image: { models: ["flux"], configured: true }, video: { models: ["ltx"], configured: true }, audio: { models: ["tracks"], configured: true }, publicMedia: { configured: false } }, isLoading: false, isError: false };
+  dashboardState.appCatalog = { data: [], isLoading: false, isError: false };
+  dashboardState.connectedApps = { data: [], isLoading: false, isError: false };
 });
 
 describe("task composer attachments", () => {
@@ -106,6 +114,27 @@ describe("task composer attachments", () => {
     expect(screen.getByText("Wide Research")).toBeTruthy();
     expect(screen.getByText("Scheduled task")).toBeTruthy();
     expect(screen.getByText("Playbook")).toBeTruthy();
+  });
+
+  it("offers connected apps as explicit task context while directing unavailable apps to the app directory", async () => {
+    const user = userEvent.setup();
+    dashboardState.appCatalog = {
+      data: [
+        { slug: "gmail", name: "Gmail", description: "Read and draft mail", categories: ["Communication"], scopeOptions: ["Read messages"], iconUrl: "https://cdn.simpleicons.org/gmail" },
+        { slug: "slack", name: "Slack", description: "Coordinate work", categories: ["Communication"], scopeOptions: ["Read channels"], iconUrl: "https://cdn.simpleicons.org/slack" },
+      ],
+      isLoading: false,
+      isError: false,
+    };
+    dashboardState.connectedApps = { data: [{ id: "integration-gmail", label: "Gmail", provider: "pipedream_connect", availableToAllTasks: false }], isLoading: false, isError: false };
+    render(<TaskDashboard />);
+
+    await user.click(screen.getByRole("button", { name: "Choose connected apps for this task" }));
+    expect(screen.getByText("Apps for this task")).toBeTruthy();
+    expect(screen.getByText(/Synthia will still propose every external action/)).toBeTruthy();
+    expect(screen.getByText("Connected · select to include")).toBeTruthy();
+    expect(screen.getByText("Connect to use")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Browse all available apps" })).toBeTruthy();
   });
 
   it("keeps long configured model catalogs in a bounded scrollable selector with model names and capabilities only", async () => {

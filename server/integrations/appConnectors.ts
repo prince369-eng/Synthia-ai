@@ -25,25 +25,49 @@ export type UserFacingApp = {
   scopeOptions: string[];
   authorizationRequired: true;
   approvalRequired: true;
+  featured: boolean;
 };
 
-const USER_FACING_APP_CATALOG: UserFacingApp[] = [
-  { slug: "gmail", name: "Gmail", description: "Prepare and organize email work in reviewable task proposals.", iconUrl: "", categories: ["Communication", "Productivity"], scopeOptions: ["Email", "Drafts"], authorizationRequired: true, approvalRequired: true },
-  { slug: "google_drive", name: "Google Drive", description: "Find, organize, and prepare files for approved delivery work.", iconUrl: "", categories: ["Productivity", "Files"], scopeOptions: ["Files", "Folders"], authorizationRequired: true, approvalRequired: true },
-  { slug: "google_calendar", name: "Google Calendar", description: "Plan calendar work with proposals shown before any event changes.", iconUrl: "", categories: ["Productivity", "Scheduling"], scopeOptions: ["Events", "Availability"], authorizationRequired: true, approvalRequired: true },
-  { slug: "google_sheets", name: "Google Sheets", description: "Prepare spreadsheet updates for explicit review and approval.", iconUrl: "", categories: ["Productivity", "Data"], scopeOptions: ["Spreadsheets", "Worksheets"], authorizationRequired: true, approvalRequired: true },
-  { slug: "notion", name: "Notion", description: "Organize pages and databases through reviewable task proposals.", iconUrl: "", categories: ["Knowledge", "Productivity"], scopeOptions: ["Pages", "Databases"], authorizationRequired: true, approvalRequired: true },
-  { slug: "slack", name: "Slack", description: "Draft and coordinate message work without automatic posting.", iconUrl: "", categories: ["Communication", "Collaboration"], scopeOptions: ["Messages", "Channels"], authorizationRequired: true, approvalRequired: true },
-  { slug: "github", name: "GitHub", description: "Prepare repository and issue work for your approval.", iconUrl: "", categories: ["Developer tools", "Collaboration"], scopeOptions: ["Repositories", "Issues"], authorizationRequired: true, approvalRequired: true },
-  { slug: "linear", name: "Linear", description: "Organize issue and project work as explicit task proposals.", iconUrl: "", categories: ["Developer tools", "Project management"], scopeOptions: ["Issues", "Projects"], authorizationRequired: true, approvalRequired: true },
-  { slug: "jira", name: "Jira", description: "Prepare issue and project updates for a deliberate review step.", iconUrl: "", categories: ["Project management", "Developer tools"], scopeOptions: ["Issues", "Projects"], authorizationRequired: true, approvalRequired: true },
-  { slug: "trello", name: "Trello", description: "Organize board and card work through approval-gated proposals.", iconUrl: "", categories: ["Project management", "Collaboration"], scopeOptions: ["Boards", "Cards"], authorizationRequired: true, approvalRequired: true },
-  { slug: "airtable", name: "Airtable", description: "Prepare structured record work for your explicit authorization.", iconUrl: "", categories: ["Data", "Productivity"], scopeOptions: ["Bases", "Records"], authorizationRequired: true, approvalRequired: true },
-  { slug: "dropbox", name: "Dropbox", description: "Organize file and folder work in reviewable task proposals.", iconUrl: "", categories: ["Files", "Productivity"], scopeOptions: ["Files", "Folders"], authorizationRequired: true, approvalRequired: true },
-  { slug: "hubspot", name: "HubSpot", description: "Prepare CRM updates for approval before any customer record changes.", iconUrl: "", categories: ["CRM", "Sales"], scopeOptions: ["Contacts", "Deals"], authorizationRequired: true, approvalRequired: true },
-  { slug: "salesforce", name: "Salesforce", description: "Prepare CRM work as a task proposal for your review.", iconUrl: "", categories: ["CRM", "Sales"], scopeOptions: ["Accounts", "Leads"], authorizationRequired: true, approvalRequired: true },
-  { slug: "asana", name: "Asana", description: "Coordinate task and project work with approval before changes.", iconUrl: "", categories: ["Project management", "Collaboration"], scopeOptions: ["Tasks", "Projects"], authorizationRequired: true, approvalRequired: true },
+type CuratedAppSeed = readonly [slug: string, name: string, category: string, iconSlug?: string];
+
+const CURATED_APP_SEEDS: CuratedAppSeed[] = [
+  ["gmail", "Gmail", "Communication"], ["google_drive", "Google Drive", "Files", "googledrive"], ["google_calendar", "Google Calendar", "Scheduling", "googlecalendar"], ["google_sheets", "Google Sheets", "Data", "googlesheets"], ["google_docs", "Google Docs", "Productivity", "googledocs"], ["google_forms", "Google Forms", "Forms", "googleforms"], ["google_contacts", "Google Contacts", "CRM", "googlecontacts"], ["google_chat", "Google Chat", "Communication", "googlechat"],
+  ["microsoft_outlook", "Microsoft Outlook", "Communication", "microsoftoutlook"], ["microsoft_onedrive", "Microsoft OneDrive", "Files", "microsoftonedrive"], ["microsoft_excel", "Microsoft Excel", "Data", "microsoftexcel"], ["microsoft_teams", "Microsoft Teams", "Communication", "microsoftteams"], ["microsoft_todo", "Microsoft To Do", "Productivity", "microsofttodo"], ["sharepoint", "Microsoft SharePoint", "Files", "microsoftsharepoint"], ["microsoft_azure", "Microsoft Azure", "Developer tools", "microsoftazure"],
+  ["notion", "Notion", "Knowledge"], ["coda", "Coda", "Knowledge"], ["clickup", "ClickUp", "Project management"], ["monday", "monday.com", "Project management", "monday"], ["asana", "Asana", "Project management"], ["trello", "Trello", "Project management"], ["todoist", "Todoist", "Productivity"], ["wrike", "Wrike", "Project management"], ["smartsheet", "Smartsheet", "Project management"], ["basecamp", "Basecamp", "Project management"], ["teamwork", "Teamwork", "Project management"], ["height", "Height", "Project management"], ["motion", "Motion", "Productivity"], ["sunsama", "Sunsama", "Productivity"], ["any_do", "Any.do", "Productivity", "anydo"], ["ticktick", "TickTick", "Productivity"],
+  ["slack", "Slack", "Communication"], ["discord", "Discord", "Communication"], ["zoom", "Zoom", "Communication"], ["webex", "Webex", "Communication"], ["telegram", "Telegram", "Communication"], ["whatsapp_business", "WhatsApp Business", "Communication", "whatsapp"], ["twilio", "Twilio", "Communication"], ["intercom", "Intercom", "Communication"], ["front", "Front", "Communication"], ["helpscout", "Help Scout", "Customer support", "helpscout"], ["zendesk", "Zendesk", "Customer support"], ["freshdesk", "Freshdesk", "Customer support"], ["crisp", "Crisp", "Customer support"], ["drift", "Drift", "Communication"], ["ringcentral", "RingCentral", "Communication"], ["dialpad", "Dialpad", "Communication"], ["loom", "Loom", "Communication"],
+  ["github", "GitHub", "Developer tools"], ["gitlab", "GitLab", "Developer tools"], ["bitbucket", "Bitbucket", "Developer tools"], ["jira", "Jira", "Project management"], ["linear", "Linear", "Project management"], ["azure_devops", "Azure DevOps", "Developer tools", "azuredevops"], ["circleci", "CircleCI", "Developer tools"], ["jenkins", "Jenkins", "Developer tools"], ["sentry", "Sentry", "Developer tools"], ["datadog", "Datadog", "Developer tools"], ["new_relic", "New Relic", "Developer tools", "newrelic"], ["pagerduty", "PagerDuty", "Developer tools"], ["opsgenie", "Opsgenie", "Developer tools"], ["vercel", "Vercel", "Developer tools"], ["netlify", "Netlify", "Developer tools"], ["cloudflare", "Cloudflare", "Developer tools"], ["aws", "Amazon Web Services", "Developer tools", "amazonwebservices"], ["docker", "Docker", "Developer tools"], ["digitalocean", "DigitalOcean", "Developer tools"], ["postman", "Postman", "Developer tools"], ["supabase", "Supabase", "Developer tools"], ["firebase", "Firebase", "Developer tools"], ["railway", "Railway", "Developer tools"], ["render", "Render", "Developer tools"], ["snyk", "Snyk", "Developer tools"], ["sonarcloud", "SonarCloud", "Developer tools"], ["launchdarkly", "LaunchDarkly", "Developer tools"],
+  ["airtable", "Airtable", "Data"], ["google_bigquery", "Google BigQuery", "Data", "googlebigquery"], ["snowflake", "Snowflake", "Data"], ["postgres", "PostgreSQL", "Data", "postgresql"], ["mysql", "MySQL", "Data"], ["microsoft_sql_server", "Microsoft SQL Server", "Data", "microsoftsqlserver"], ["mongodb", "MongoDB", "Data"], ["redis", "Redis", "Data"], ["elasticsearch", "Elasticsearch", "Data"], ["looker", "Looker", "Analytics"], ["tableau", "Tableau", "Analytics"], ["power_bi", "Microsoft Power BI", "Analytics", "powerbi"], ["google_analytics", "Google Analytics", "Analytics", "googleanalytics"], ["mixpanel", "Mixpanel", "Analytics"], ["amplitude", "Amplitude", "Analytics"], ["segment", "Segment", "Data"], ["fivetran", "Fivetran", "Data"], ["dbt_cloud", "dbt Cloud", "Data", "dbt"], ["metabase", "Metabase", "Analytics"], ["hex", "Hex", "Data"], ["retool", "Retool", "Developer tools"], ["rows", "Rows", "Data"],
+  ["hubspot", "HubSpot", "CRM"], ["salesforce", "Salesforce", "CRM"], ["pipedrive", "Pipedrive", "CRM"], ["close", "Close", "CRM"], ["zoho_crm", "Zoho CRM", "CRM", "zoho"], ["freshsales", "Freshsales", "CRM"], ["copper", "Copper", "CRM"], ["insightly", "Insightly", "CRM"], ["keap", "Keap", "CRM"], ["activecampaign", "ActiveCampaign", "Marketing"], ["mailchimp", "Mailchimp", "Marketing"], ["klaviyo", "Klaviyo", "Marketing"], ["brevo", "Brevo", "Marketing"], ["campaign_monitor", "Campaign Monitor", "Marketing", "campaignmonitor"], ["convertkit", "Kit", "Marketing", "kit"], ["marketo", "Adobe Marketo Engage", "Marketing", "adobemarketo"], ["customer_io", "Customer.io", "Marketing", "customerio"], ["braze", "Braze", "Marketing"], ["sendgrid", "Twilio SendGrid", "Marketing", "sendgrid"], ["postmark", "Postmark", "Marketing"],
+  ["shopify", "Shopify", "Commerce"], ["woocommerce", "WooCommerce", "Commerce"], ["stripe", "Stripe", "Commerce"], ["square", "Square", "Commerce"], ["paypal", "PayPal", "Commerce"], ["quickbooks", "QuickBooks", "Finance"], ["xero", "Xero", "Finance"], ["freshbooks", "FreshBooks", "Finance"], ["chargebee", "Chargebee", "Commerce"], ["paddle", "Paddle", "Commerce"], ["gumroad", "Gumroad", "Commerce"], ["shippo", "Shippo", "Commerce"], ["shipstation", "ShipStation", "Commerce"],
+  ["linkedin", "LinkedIn", "Social"], ["x", "X", "Social"], ["facebook_pages", "Facebook Pages", "Social", "facebook"], ["instagram_business", "Instagram Business", "Social", "instagram"], ["youtube", "YouTube", "Social"], ["tiktok", "TikTok", "Social"], ["buffer", "Buffer", "Social"], ["hootsuite", "Hootsuite", "Social"], ["later", "Later", "Social"],
+  ["typeform", "Typeform", "Forms"], ["jotform", "Jotform", "Forms"], ["tally", "Tally", "Forms"], ["surveymonkey", "SurveyMonkey", "Forms"], ["calendly", "Calendly", "Scheduling"], ["cal_com", "Cal.com", "Scheduling", "caldotcom"], ["eventbrite", "Eventbrite", "Scheduling"],
+  ["dropbox", "Dropbox", "Files"], ["box", "Box", "Files"], ["egnyte", "Egnyte", "Files"], ["webflow", "Webflow", "Content"], ["wordpress", "WordPress", "Content"], ["framer", "Framer", "Content"], ["wix", "Wix", "Content"], ["contentful", "Contentful", "Content"], ["sanity", "Sanity", "Content"], ["ghost", "Ghost", "Content"],
 ];
+
+function capabilityLabels(category: string) {
+  const labels: Record<string, string[]> = {
+    "Communication": ["Messages", "Drafts"], "Customer support": ["Tickets", "Replies"], "Files": ["Files", "Folders"], "Scheduling": ["Events", "Availability"], "Data": ["Records", "Data sets"], "Analytics": ["Reports", "Dashboards"], "Forms": ["Forms", "Responses"], "Knowledge": ["Pages", "Databases"], "Productivity": ["Tasks", "Documents"], "Project management": ["Projects", "Tasks"], "Developer tools": ["Projects", "Issues"], "CRM": ["Contacts", "Records"], "Marketing": ["Audiences", "Campaigns"], "Commerce": ["Orders", "Products"], "Finance": ["Invoices", "Transactions"], "Social": ["Posts", "Channels"], "Content": ["Content", "Publishing"],
+  };
+  return labels[category] ?? ["Records", "Updates"];
+}
+
+function descriptionForCategory(category: string) {
+  const focus: Record<string, string> = {
+    "Communication": "message work", "Customer support": "support work", "Files": "file work", "Scheduling": "scheduling work", "Data": "structured data work", "Analytics": "reporting work", "Forms": "form work", "Knowledge": "knowledge work", "Productivity": "productivity work", "Project management": "project work", "Developer tools": "development work", "CRM": "customer-record work", "Marketing": "marketing work", "Commerce": "commerce work", "Finance": "finance work", "Social": "social publishing work", "Content": "content work",
+  };
+  return `Prepare ${focus[category] ?? "app work"} as a reviewable task proposal.`;
+}
+
+function simpleIconUrl(iconSlug: string) {
+  return `https://cdn.simpleicons.org/${encodeURIComponent(iconSlug)}?viewbox=auto`;
+}
+
+function toUserFacingApp(seed: CuratedAppSeed, index: number): UserFacingApp {
+  const [slug, name, category, iconSlug = slug] = seed;
+  return { slug, name, description: descriptionForCategory(category), iconUrl: simpleIconUrl(iconSlug), categories: [category], scopeOptions: capabilityLabels(category), authorizationRequired: true, approvalRequired: true, featured: index < 24 };
+}
+
+const USER_FACING_APP_CATALOG: UserFacingApp[] = CURATED_APP_SEEDS.map(toUserFacingApp);
 
 export function appConnectorReadiness(): AppConnectorReadiness[] {
   return [
@@ -118,6 +142,41 @@ function requireAppSlug(appSlug: string) {
 
 export function listUserFacingApps(): UserFacingApp[] {
   return USER_FACING_APP_CATALOG.map(app => ({ ...app, categories: [...app.categories], scopeOptions: [...app.scopeOptions] }));
+}
+
+export async function browseAdditionalUserFacingApps(input: { query?: string; after?: string; limit: number }) {
+  requireConfigured("pipedream");
+  const query = input.query?.trim();
+  try {
+    const page = await pipedreamClient().apps.list({
+      after: input.after,
+      limit: input.limit,
+      q: query || undefined,
+      sortKey: "featured_weight",
+      sortDirection: "desc",
+      hasComponents: true,
+    });
+    const excluded = new Set(USER_FACING_APP_CATALOG.map(app => app.slug));
+    const apps = page.data
+      .filter(app => !excluded.has(app.nameSlug))
+      .map(app => ({
+        slug: app.nameSlug,
+        name: app.name,
+        description: app.description?.trim() || "Prepare work in this app as a reviewable task proposal.",
+        iconUrl: app.imgSrc?.trim() || simpleIconUrl(app.nameSlug),
+        categories: app.categories.length ? app.categories.slice(0, 2) : ["More apps"],
+        scopeOptions: app.scopeProfiles.map(profile => profile.name).filter(Boolean).slice(0, 2).length
+          ? app.scopeProfiles.map(profile => profile.name).filter(Boolean).slice(0, 2)
+          : ["Permissions shown before connection"],
+        authorizationRequired: true as const,
+        approvalRequired: true as const,
+        featured: false,
+      }));
+    return { apps, nextCursor: page.response.pageInfo.endCursor ?? null, totalCount: page.response.pageInfo.totalCount ?? null };
+  } catch (error) {
+    console.error(JSON.stringify({ event: "app_directory_browse_failed", hasQuery: Boolean(query), message: error instanceof Error ? error.message : "unknown" }));
+    throw new TRPCError({ code: "BAD_GATEWAY", message: "More apps could not be loaded right now. Try again shortly." });
+  }
 }
 
 export async function startAppConnectorAuthorization(input: { appSlug: string; userId: number; requestOrigin: string }) {

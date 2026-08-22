@@ -214,6 +214,26 @@ button:not(:disabled):active { transform: scale(.97); }
   .synthia-media-capability em { @apply shrink-0 rounded-full border px-1.5 py-0.5 text-[9px] not-italic; }
   .synthia-media-capability em.ready { @apply border-emerald-300/20 bg-emerald-400/[.08] text-emerald-200; }
   .synthia-media-capability em.pending { @apply border-teal-300/20 bg-teal-400/[.08] text-cyan-200; }
+  .synthia-composer-connector-count { @apply -ml-0.5 grid h-3.5 min-w-3.5 place-items-center rounded-full bg-cyan-300 px-1 text-[8px] font-bold text-[#09211e]; }
+  .synthia-composer-connector-picker { @apply absolute bottom-[calc(100%+.4rem)] right-0 z-30 grid w-[min(21rem,calc(100vw-2.5rem))] gap-2 rounded-lg border border-white/10 bg-[#1d2927] p-2 shadow-xl; }
+  .synthia-composer-connector-picker-head { @apply flex items-center justify-between gap-3 px-1; }
+  .synthia-composer-connector-picker-head > span { @apply flex items-center gap-1.5 text-[11px] text-[#e5f2ef]; }
+  .synthia-composer-connector-picker-head svg { @apply text-cyan-200; }
+  .synthia-composer-connector-picker-head button { @apply text-[10px] font-medium text-cyan-200 hover:text-cyan-100; }
+  .synthia-composer-connector-picker > p { @apply px-1 text-[10px] leading-4 text-[#91a7a1]; }
+  .synthia-composer-connector-list { @apply grid max-h-70 gap-0.5 overflow-y-auto overscroll-contain; scrollbar-color: rgb(34 211 238 / .6) transparent; scrollbar-width: thin; }
+  .synthia-composer-connector-option { @apply flex items-center gap-2 rounded-md border border-transparent px-1.5 py-1.5 text-left hover:border-teal-300/15 hover:bg-teal-400/[.08]; }
+  .synthia-composer-connector-option.selected { @apply border-cyan-300/20 bg-cyan-300/[.07]; }
+  .synthia-composer-connector-option.available { @apply opacity-85; }
+  .synthia-composer-app-icon { @apply relative grid h-6 w-6 shrink-0 place-items-center overflow-hidden rounded-md bg-[#263330] text-[10px] font-bold text-[#bcefe8]; }
+  .synthia-composer-app-icon img { @apply absolute inset-0 h-full w-full object-cover bg-[#263330]; }
+  .synthia-composer-connector-option > span:nth-child(2) { @apply min-w-0 flex-1; }
+  .synthia-composer-connector-option b { @apply block truncate text-[10px] font-medium text-[#e5f2ef]; }
+  .synthia-composer-connector-option small { @apply block truncate text-[9px] text-[#91a7a1]; }
+  .synthia-composer-connector-option > svg { @apply shrink-0 text-cyan-200; }
+  .synthia-composer-connect-label { @apply shrink-0 text-[9px] text-cyan-200; }
+  .synthia-composer-connector-loading { @apply flex items-center gap-1 px-1 py-2 text-[10px] text-[#91a7a1]; }
+  .synthia-composer-connector-browse { @apply flex h-7 items-center justify-center gap-1 rounded-md border border-cyan-300/15 bg-cyan-300/[.045] text-[10px] font-medium text-cyan-100 hover:bg-cyan-300/[.1]; }
   .synthia-mic-button { @apply grid w-7 place-items-center px-0; }
   .synthia-recording-dot { @apply h-1.5 w-1.5 rounded-full bg-rose-300; }
   .synthia-estimate { @apply mt-2 px-1 text-[11px] text-[#778985]; }

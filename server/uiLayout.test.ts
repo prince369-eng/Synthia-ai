@@ -59,6 +59,10 @@ describe("compact workspace layout contract", () => {
     const routers = readFileSync(new URL("../server/routers.ts", import.meta.url), "utf8");
 
     expect(plugins).toContain("trpc.integrations.appCatalog.useQuery");
+    expect(plugins).toContain("const [visibleCount, setVisibleCount] = useState(24)");
+    expect(plugins).toContain("Show more apps");
+    expect(plugins).toContain("Browse beyond the curated directory");
+    expect(plugins).toContain("trpc.integrations.browseAppDirectory.useMutation");
     expect(plugins).not.toContain("trpc.integrations.appReadiness.useQuery");
     expect(plugins).toContain("Available app connections");
     expect(plugins).toContain("Authorize an app directly; task actions still need your approval.");
@@ -76,6 +80,24 @@ describe("compact workspace layout contract", () => {
     expect(routers).toContain("appSlug: z.string().trim().min(2).max(128)");
     expect(settings).toContain("Synthia does not expose its internal service configuration here.");
     expect(settings).toContain("Only your connected apps are listed here.");
+  });
+
+  it("offers an app-only composer picker that includes only connected apps as task context and routes setup to Plugins", () => {
+    const dashboard = readFileSync(new URL("../client/src/pages/TaskDashboard.tsx", import.meta.url), "utf8");
+    const routers = readFileSync(new URL("../server/routers.ts", import.meta.url), "utf8");
+    const css = readFileSync(new URL("../client/src/index.css", import.meta.url), "utf8");
+
+    expect(dashboard).toContain('aria-label="Choose connected apps for this task"');
+    expect(dashboard).toContain('id="composer-connector-picker"');
+    expect(dashboard).toContain('setLocation(`/plugins?app=${encodeURIComponent(app.slug)}`)');
+    expect(dashboard).toContain("selectedConnectedApps,");
+    expect(dashboard).toContain("Synthia will still propose every external action for your approval.");
+    expect(dashboard).not.toContain("Pipedream");
+    expect(dashboard).not.toContain("Composio");
+    expect(routers).toContain("selectedConnectedApps: z.array");
+    expect(routers).toContain("Connect each selected app before adding it to this task.");
+    expect(css).toContain(".synthia-composer-connector-picker");
+    expect(css).toContain(".synthia-composer-connector-option.selected");
   });
 
   it("renders an owner-scoped read-only comparison tab without a run, promotion, or configuration mutation", () => {
