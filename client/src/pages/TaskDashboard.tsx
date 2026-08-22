@@ -313,6 +313,10 @@ export default function TaskDashboard() {
         <h1 id="task-composer-title">{welcome.lead}</h1>
         <p className="synthia-chat-intro">{welcome.detail}</p>
         <form onSubmit={submit} className="synthia-chat-composer">
+          <div className="synthia-composer-head">
+            <span className="synthia-composer-head-title"><span className="synthia-composer-head-glyph"><Sparkles size={13} /></span><span><b>Start with a goal</b><small>Shape the outcome. Review consequential work before it happens.</small></span></span>
+            <span className="synthia-composer-safety"><span />Review-first</span>
+          </div>
           <label className="sr-only" htmlFor="task-goal">Task goal</label>
           <Textarea ref={composerRef} id="task-goal" value={goal} onChange={event => setGoal(event.target.value)} placeholder="Ask Synthia anything — no task runs until you start it" className="synthia-chat-input" />
           {promptGuidance.length ? <aside className="synthia-prompt-guidance" aria-label="Smart prompt suggestions" aria-live="polite"><div><Sparkles size={13} /><span><b>Smart suggestions</b><small>Local guidance only — your goal stays in your control.</small></span></div><div className="synthia-prompt-guidance-actions">{promptGuidance.map(suggestion => <button key={suggestion.id} type="button" title={suggestion.detail} onClick={() => setGoal(current => applyPromptGuidance(current, suggestion))}>{suggestion.label}<ArrowUpRight size={12} /></button>)}</div></aside> : null}

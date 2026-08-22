@@ -53,7 +53,7 @@
 }
 
 * { @apply border-border outline-ring/50; }
-body { @apply bg-background text-foreground; font-family: Inter, ui-sans-serif, system-ui, sans-serif; }
+body { @apply bg-background text-foreground; font-family: Manrope, ui-sans-serif, system-ui, sans-serif; }
 button:not(:disabled), [role="button"]:not([aria-disabled="true"]), [type="button"]:not(:disabled), [type="submit"]:not(:disabled), a[href] { @apply cursor-pointer; }
 button:not(:disabled):active { transform: scale(.97); }
 
@@ -372,6 +372,30 @@ p[role="alert"].text-amber-200 { --synthia-amber-allowed: 1; }
 @layer components {
   .synthia-workspace-focus > .grid { @apply lg:grid-cols-1; }
   .synthia-workspace-focus > .grid > section { @apply hidden; }
+  .synthia-workspace { background: radial-gradient(78rem 40rem at 88% -16%, rgb(34 211 238 / .07), transparent 49%), radial-gradient(58rem 34rem at 2% 96%, rgb(20 184 166 / .055), transparent 58%), #0c1514; }
+  .synthia-workspace-header { height: 4.25rem; border-color: rgb(207 250 254 / .07); background: rgb(10 20 18 / .72); backdrop-filter: blur(18px); }
+  .synthia-workspace-header h1 { font-family: "Instrument Serif", Georgia, serif; font-size: 1.24rem; font-weight: 400; letter-spacing: -.015em; }
+  .synthia-workspace-grid { min-height: calc(100vh - 4.25rem); }
+  .synthia-workspace-conversation { background: linear-gradient(165deg, rgb(18 32 29 / .74), rgb(11 21 19 / .42)); }
+  .synthia-objective-panel { background: linear-gradient(118deg, rgb(45 212 191 / .055), transparent 58%); }
+  .synthia-task-messages { scrollbar-color: rgb(103 232 249 / .38) transparent; }
+  .synthia-task-messages article { box-shadow: 0 12px 26px rgb(0 0 0 / .10); }
+  .synthia-task-composer { background: rgb(9 18 16 / .56); backdrop-filter: blur(16px); }
+  .synthia-task-composer > div { border: 1px solid rgb(207 250 254 / .08); border-radius: .9rem; background: rgb(16 29 26 / .88); padding: .34rem; }
+  .synthia-task-composer input { border-color: transparent !important; background: transparent !important; }
+  .synthia-task-composer input:focus-visible { box-shadow: none; }
+  .synthia-computer { background: linear-gradient(160deg, rgb(13 25 22 / .93), rgb(8 17 15 / .96)); }
+  .synthia-computer-header { background: rgb(16 31 28 / .46); }
+  .synthia-computer-tabs { background: rgb(7 16 14 / .20); scrollbar-width: none; }
+  .synthia-computer-tabs::-webkit-scrollbar { display: none; }
+  .synthia-computer-tabs button { border-radius: .45rem .45rem 0 0; }
+  .synthia-computer-tabs button[aria-selected="true"] { background: rgb(45 212 191 / .055); }
+  .synthia-computer-panel { padding: 1rem; }
+  @media (max-width: 1023px) {
+    .synthia-workspace-header { height: auto; min-height: 4.25rem; align-items: flex-start; padding-top: .75rem; padding-bottom: .75rem; }
+    .synthia-workspace-header > div:last-child { flex-wrap: wrap; justify-content: flex-end; }
+    .synthia-workspace-grid { min-height: auto; }
+  }
   .synthia-computer-mode-button { @apply grid h-7 w-7 place-items-center rounded-md border border-cyan-300/15 bg-cyan-300/[.05] text-cyan-200 transition-colors hover:border-cyan-300/35 hover:bg-cyan-300/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/60; }
   .synthia-computer-panel { transition: opacity 180ms cubic-bezier(.23,1,.32,1), transform 180ms cubic-bezier(.23,1,.32,1); }
   .synthia-computer-panel-pending { opacity: .82; }
@@ -401,6 +425,92 @@ p[role="alert"].text-amber-200 { --synthia-amber-allowed: 1; }
 
 @media (prefers-reduced-motion: reduce) {
   .synthia-computer-panel, .synthia-computer-skeleton span, .synthia-voice-live-indicator::after, .synthia-screen-share-live-indicator::after { animation: none; transition: none; }
+}
+
+/* Authenticated command-center refinement: quieter surfaces, clearer hierarchy, and compact utility controls. */
+@layer components {
+  .synthia-shell { position: relative; background-color: #0e1716; background-image: radial-gradient(ellipse 70% 36% at 54% -12%, rgba(20,184,166,.09), transparent 70%), linear-gradient(rgba(128,195,184,.022) 1px, transparent 1px), linear-gradient(90deg, rgba(128,195,184,.022) 1px, transparent 1px); background-size: auto, 42px 42px, 42px 42px; }
+  .synthia-nav { width: 14.75rem; padding: 1rem .65rem .75rem; border-right-color: rgba(208,245,238,.075); background: linear-gradient(180deg, rgba(19,31,29,.98), rgba(15,24,23,.98)); box-shadow: 16px 0 42px rgba(0,0,0,.06); }
+  .synthia-nav.collapsed { width: 4.25rem; padding-inline: .45rem; }
+  .synthia-main { padding-left: 14.75rem; }
+  .synthia-shell-collapsed .synthia-main { padding-left: 4.25rem; }
+  .synthia-nav-topline { height: 2.25rem; padding-inline: .35rem; }
+  .synthia-brand { gap: .6rem; color: #f4fffc; font-size: .84rem; font-weight: 800; letter-spacing: -.035em; }
+  .synthia-brand b { color: #78e7df; font-weight: 700; }
+  .synthia-logo-mark { width: 1.9rem; height: 1.9rem; border: 1px solid rgba(189,251,239,.38); border-radius: .62rem; background: linear-gradient(145deg, #43d6c3, #5ddbed); box-shadow: inset 0 1px 0 rgba(255,255,255,.42), 0 8px 22px rgba(20,184,166,.16); }
+  .synthia-collapse-button { color: #809893; }
+  .synthia-new-task { height: 2.5rem; margin-top: 1.35rem; border-color: rgba(103,232,249,.24); border-radius: .68rem; background: linear-gradient(100deg, rgba(20,184,166,.15), rgba(34,211,238,.09)); font-size: .72rem; letter-spacing: -.01em; }
+  .synthia-nav-links { margin-top: 1.4rem; }
+  .synthia-nav-item { height: 2.35rem; gap: .72rem; border-radius: .62rem; padding-inline: .7rem; color: #9cb4af; font-size: .72rem; font-weight: 600; }
+  .synthia-nav-item.active { color: #c9fffa; box-shadow: inset 2px 0 0 #5eead4; }
+  .synthia-task-rail { margin-top: 1.7rem; padding-top: 1rem; }
+  .synthia-task-rail > p { font-family: "DM Mono", ui-monospace, monospace; font-size: .56rem; letter-spacing: .14em; }
+  .synthia-task-rail-item { padding: .48rem .7rem; font-size: .66rem; }
+  .synthia-account-trigger { padding: .8rem .55rem 0; }
+  .synthia-avatar { height: 1.9rem; width: 1.9rem; border: 1px solid rgba(103,232,249,.18); background: rgba(45,212,191,.1); }
+  .synthia-dashboard { background: transparent; }
+  .synthia-dashboard-header { height: 3.6rem; border-bottom-color: rgba(208,245,238,.07); padding-inline: clamp(1.25rem, 3vw, 2.6rem); background: rgba(14,23,22,.55); backdrop-filter: blur(18px); }
+  .synthia-dashboard-header-actions { color: #91aaa5; }
+  .synthia-header-action { width: 1.9rem; height: 1.9rem; border: 1px solid transparent; border-radius: .55rem; }
+  .synthia-header-action:hover { border-color: rgba(103,232,249,.16); background: rgba(45,212,191,.07); }
+  .synthia-chat-stage { max-width: 50rem; align-items: stretch; padding-top: clamp(2.75rem, 7vh, 5.25rem); padding-bottom: 4.5rem; }
+  .synthia-workspace-kicker { width: fit-content; margin-bottom: .9rem; border: 1px solid rgba(103,232,249,.14); border-radius: 999px; background: rgba(45,212,191,.055); padding: .32rem .6rem; font-family: "DM Mono", ui-monospace, monospace; font-size: .59rem; letter-spacing: .055em; }
+  .synthia-chat-stage h1 { max-width: 43rem; font-family: Manrope, ui-sans-serif, sans-serif; font-size: clamp(1.85rem, 3.4vw, 2.7rem); font-weight: 700; line-height: 1.12; letter-spacing: -.055em; text-align: left; }
+  .synthia-chat-intro { max-width: 38rem; margin-top: .85rem; font-size: .82rem; line-height: 1.7; text-align: left; }
+  .synthia-chat-composer { position: relative; margin-top: 2rem; overflow: visible; border-color: rgba(189,244,235,.13); border-radius: 1.05rem; background: linear-gradient(145deg, rgba(26,41,38,.95), rgba(18,30,28,.97)); padding: .8rem; box-shadow: 0 22px 60px rgba(0,0,0,.2), inset 0 1px 0 rgba(255,255,255,.025); }
+  .synthia-chat-composer:focus-within { border-color: rgba(103,232,249,.34); box-shadow: 0 22px 60px rgba(0,0,0,.24), 0 0 0 3px rgba(34,211,238,.055), inset 0 1px 0 rgba(255,255,255,.03); }
+  .synthia-composer-head { display: flex; align-items: center; justify-content: space-between; gap: 1rem; border-bottom: 1px solid rgba(217,251,245,.065); padding: .05rem .25rem .65rem; }
+  .synthia-composer-head-title { display: flex; min-width: 0; align-items: center; gap: .55rem; }
+  .synthia-composer-head-title > span:last-child { min-width: 0; }
+  .synthia-composer-head-title b { display: block; color: #e5f6f2; font-size: .67rem; font-weight: 700; letter-spacing: -.01em; }
+  .synthia-composer-head-title small { display: block; overflow: hidden; color: #809c96; font-size: .58rem; line-height: 1.35; text-overflow: ellipsis; white-space: nowrap; }
+  .synthia-composer-head-glyph { display: grid; width: 1.55rem; height: 1.55rem; flex: 0 0 auto; place-items: center; border: 1px solid rgba(103,232,249,.18); border-radius: .5rem; color: #82f1e6; background: rgba(45,212,191,.08); }
+  .synthia-composer-safety { display: inline-flex; flex: 0 0 auto; align-items: center; gap: .35rem; color: #98b8b1; font-family: "DM Mono", ui-monospace, monospace; font-size: .56rem; letter-spacing: .01em; }
+  .synthia-composer-safety > span { width: .36rem; height: .36rem; border-radius: 999px; background: #5eead4; box-shadow: 0 0 0 3px rgba(94,234,212,.1); }
+  .synthia-chat-input { min-height: 7.25rem; padding: 1rem .5rem .7rem; font-size: .88rem; line-height: 1.7; }
+  .synthia-composer-actions { gap: .6rem; padding-top: .65rem; }
+  .synthia-composer-control-group { gap: .18rem; }
+  .synthia-composer-toggle { height: 1.95rem; gap: .38rem; border-radius: .52rem; padding-inline: .55rem; color: #9bb1ac; font-size: .64rem; font-weight: 600; }
+  .synthia-composer-plus { width: 1.95rem; height: 1.95rem; border-radius: .52rem; }
+  .synthia-send-button { width: 2rem; height: 2rem; box-shadow: 0 6px 18px rgba(45,212,191,.17); }
+  .synthia-prompt-chips { justify-content: flex-start; margin-top: 1.15rem; gap: .45rem; }
+  .synthia-prompt-chips button { border-color: rgba(211,249,242,.09); background: rgba(255,255,255,.012); padding: .4rem .64rem; color: #96aca7; font-size: .63rem; font-weight: 600; }
+  .synthia-dashboard-tasks { margin-top: 3.5rem; padding-top: 1.05rem; }
+  .synthia-section-heading h2 { font-size: .76rem; letter-spacing: -.01em; }
+  .synthia-section-heading span { font-family: "DM Mono", ui-monospace, monospace; font-size: .58rem; }
+  .synthia-task-row { border-color: rgba(215,248,242,.06); background: rgba(255,255,255,.012); padding: .7rem .8rem; }
+  .synthia-task-row:hover { border-color: rgba(103,232,249,.16); background: rgba(45,212,191,.04); }
+  .synthia-connectors-page { width: min(100% - 2.5rem, 74rem); padding-top: 2.5rem; }
+  .synthia-connectors-head { align-items: flex-start; }
+  .synthia-connectors-head h1, .synthia-page-head h1 { font-family: Manrope, ui-sans-serif, sans-serif; font-size: clamp(1.5rem, 2.7vw, 2.15rem); font-weight: 700; letter-spacing: -.055em; }
+  .synthia-connectors-head > div > p:last-child { max-width: 36rem; font-size: .76rem; line-height: 1.65; }
+  .synthia-connector-overview { gap: .65rem; }
+  .synthia-connector-overview > article { min-height: 4.65rem; border-color: rgba(217,251,245,.085); background: rgba(255,255,255,.018); }
+  .synthia-connector-overview b { font-size: .86rem; }
+  .synthia-connector-overview small { font-size: .6rem; }
+  .synthia-connector-discovery { margin-top: 1.25rem; border-color: rgba(217,251,245,.09); border-radius: 1rem; background: linear-gradient(145deg, rgba(21,35,32,.68), rgba(13,23,21,.76)); box-shadow: inset 0 1px 0 rgba(255,255,255,.018); }
+  .synthia-connector-discovery-heading { padding: 1.25rem 1.25rem .8rem; }
+  .synthia-connector-discovery-heading h2 { font-size: .93rem; letter-spacing: -.025em; }
+  .synthia-connector-toolbar { padding: 0 1.25rem .85rem; }
+  .synthia-directory-summary { padding: .65rem 1.25rem; border-block-color: rgba(217,251,245,.06); font-size: .62rem; }
+  .synthia-app-connector-grid { gap: .6rem; padding: 1rem 1.25rem; }
+  .synthia-app-connector-card { min-height: 0; border-color: rgba(217,251,245,.075); border-radius: .78rem; background: rgba(10,20,18,.28); padding: .8rem; }
+  .synthia-app-connector-card:hover { border-color: rgba(103,232,249,.24); background: rgba(45,212,191,.035); }
+  .synthia-app-connector-card-head { gap: .55rem; }
+  .synthia-app-connector-card-head b { font-size: .72rem; letter-spacing: -.01em; }
+  .synthia-app-connector-card-head p { margin-top: .06rem; font-size: .55rem; }
+  .synthia-app-connector-glyph { width: 1.7rem; height: 1.7rem; border-radius: .48rem; font-size: .58rem; }
+  .synthia-status-pill { padding: .2rem .38rem; font-family: "DM Mono", ui-monospace, monospace; font-size: .48rem; letter-spacing: .01em; }
+  .synthia-app-connector-description { display: -webkit-box; min-height: 2.35em; margin-top: .6rem; overflow: hidden; color: #8ca7a0; font-size: .59rem; line-height: 1.45; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+  .synthia-app-connector-scopes { display: flex; min-height: 1.4rem; flex-wrap: wrap; gap: .22rem; margin-top: .55rem; }
+  .synthia-app-connector-scopes > span { border: 1px solid rgba(103,232,249,.11); border-radius: 999px; background: rgba(45,212,191,.05); padding: .16rem .34rem; color: #a5d8d1; font-size: .5rem; font-weight: 600; }
+  .synthia-app-connector-card-foot { margin-top: .68rem; padding-top: .58rem; border-top: 1px solid rgba(217,251,245,.06); }
+  .synthia-app-approval-cue { display: inline-flex; align-items: center; gap: .25rem; color: #8ba5a0; font-size: .54rem; }
+  .synthia-app-connector-note { min-height: 1.1em; margin-top: .42rem; color: #69807b; font-size: .51rem; line-height: 1.35; }
+  .synthia-extended-directory { margin: 0 1.25rem 1.15rem; border-color: rgba(103,232,249,.12); background: rgba(45,212,191,.025); }
+  .synthia-connector-safety-note { margin-top: .9rem; border-radius: .75rem; }
+  @media (max-width: 1023px) { .synthia-main, .synthia-shell-collapsed .synthia-main { padding-left: 0; } }
+  @media (max-width: 639px) { .synthia-chat-stage { padding-inline: 1rem; padding-top: 2rem; } .synthia-chat-stage h1 { font-size: 1.9rem; } .synthia-composer-head-title small { display: none; } .synthia-composer-safety { font-size: .52rem; } .synthia-composer-control-group-end { width: 100%; justify-content: flex-end; } .synthia-composer-toggle { padding-inline: .48rem; } .synthia-composer-toggle span { display: none; } .synthia-composer-connector-count { display: grid !important; } .synthia-connectors-page { width: min(100% - 1.25rem, 74rem); padding-top: 1.5rem; } .synthia-connector-discovery-heading, .synthia-connector-toolbar { padding-inline: .85rem; } .synthia-app-connector-grid { grid-template-columns: 1fr; padding: .75rem .85rem; } .synthia-directory-summary { padding-inline: .85rem; } .synthia-extended-directory { margin-inline: .85rem; } }
 }
 
 /* Public landing experience */

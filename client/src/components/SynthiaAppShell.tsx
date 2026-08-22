@@ -3,7 +3,7 @@ import { startGoogleLogin, startLogin, startSignup } from "@/const";
 import { isSidebarCollapsed, PROFILE_MENU_DESTINATIONS, SIDEBAR_COLLAPSE_STORAGE_KEY } from "@/lib/workspaceLayout";
 import { trpc } from "@/lib/trpc";
 import { cn } from "@/lib/utils";
-import { BookOpenText, Bot, Cable, CalendarClock, ChevronRight, Command, CreditCard, FolderKanban, Home, Loader2, LogOut, PanelLeftClose, PanelLeftOpen, Plus, Settings2, SlidersHorizontal, Sparkles, UserRound } from "lucide-react";
+import { BookOpenText, Bot, Cable, CalendarClock, ChevronRight, Command, CreditCard, FolderKanban, Home, Loader2, LogOut, Orbit, PanelLeftClose, PanelLeftOpen, Plus, Settings2, SlidersHorizontal, Sparkles, UserRound } from "lucide-react";
 import React, { type ReactNode, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { Button } from "./ui/button";
@@ -110,7 +110,7 @@ export function SynthiaAppShell({ children }: { children: ReactNode }) {
       <aside className={cn("synthia-nav", sidebarCollapsed && "collapsed")} aria-label="Primary navigation">
         <div className="synthia-nav-topline">
           <button className="synthia-brand" onClick={() => setLocation("/")} aria-label="Go to Synthia tasks">
-          <span className="synthia-logo-mark"><Sparkles size={17} /></span>
+          <span className="synthia-logo-mark"><Orbit size={17} strokeWidth={2.2} /></span>
             <span className="synthia-brand-copy">Synthia <b>AI</b></span>
           </button>
           <button className="synthia-collapse-button" type="button" onClick={() => setSidebarCollapsed(value => !value)} aria-label={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"} title={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}>

@@ -58,8 +58,19 @@ function descriptionForCategory(category: string) {
   return `Prepare ${focus[category] ?? "app work"} as a reviewable task proposal.`;
 }
 
+const ICON_COLORS: Record<string, string> = {
+  airtable: "18BFFF", asana: "F06A6A", atlassian: "1868DB", calendly: "006BFF", clickup: "7B68EE",
+  discord: "5865F2", dropbox: "0061FF", facebook: "1877F2", figma: "F24E1E", github: "F0F6FC",
+  gmail: "EA4335", googledrive: "4285F4", googlecalendar: "4285F4", googlesheets: "34A853", googledocs: "4285F4",
+  hubspot: "FF7A59", instagram: "E4405F", jira: "2684FF", linear: "F4F4F5", linkedin: "0A66C2",
+  mailchimp: "FFE01B", microsoftoutlook: "0078D4", microsoftteams: "6264A7", notion: "F4F4F5", openai: "F4F4F5",
+  salesforce: "00A1E0", shopify: "7AB55C", slack: "4A154B", stripe: "635BFF", trello: "0C66E4",
+  twilio: "F22F46", typeform: "F4F4F5", whatsapp: "25D366", wordpress: "21759B", youtube: "FF0000", zoom: "2D8CFF",
+};
+
 function simpleIconUrl(iconSlug: string) {
-  return `https://cdn.simpleicons.org/${encodeURIComponent(iconSlug)}?viewbox=auto`;
+  const color = ICON_COLORS[iconSlug] ?? "A7F3D0";
+  return `https://cdn.simpleicons.org/${encodeURIComponent(iconSlug)}/${color}?viewbox=auto`;
 }
 
 function toUserFacingApp(seed: CuratedAppSeed, index: number): UserFacingApp {

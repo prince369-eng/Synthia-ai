@@ -3258,3 +3258,11 @@
 - [ ] Define owner-curated recovery playbooks with blast-radius previews, rollback guidance, explicit applicability, and no automatic remediation path.
 - [ ] Add protected APIs and task-workspace controls that create only proposals and durable audit events; never delegate or repair automatically.
 - [ ] Add deterministic authorization and non-mutation coverage, documentation, responsive verification, validation, and a checkpoint for policy-aware handoffs and recovery playbooks.
+
+## Modern workspace UI and UX refinement
+
+- [x] Audit the authenticated shell, dashboard composer, workspace panels, typography, iconography, spacing, hierarchy, and responsive behavior against current productivity-agent interaction patterns.
+- [x] Define and implement a calmer contemporary visual system with more deliberate type scale, spacing rhythm, surface hierarchy, semantic color usage, and modern icon treatments.
+- [x] Redesign the app shell and primary task composer for a more organized, discoverable, compact workflow without removing existing capabilities or safety controls.
+- [x] Refine secondary workspace panels, empty/loading/error states, keyboard affordances, and desktop/mobile layouts for clearer progressive disclosure.
+- [x] Add visual and behavioral regression coverage, run responsive verification, validate the build, and checkpoint the UI/UX refinement.

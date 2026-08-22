@@ -20,7 +20,7 @@ const Plugins = lazy(() => import("./pages/Plugins"));
 const Docs = lazy(() => import("./pages/Docs"));
 
 function RouteFallback() {
-  return <div className="flex min-h-screen items-center justify-center bg-[#100e0c] text-sm text-[#b9aa99]">Loading Synthia workspace…</div>;
+  return <div className="flex min-h-screen items-center justify-center bg-[#0e1716] text-sm text-[#9cb4af]">Loading Synthia workspace…</div>;
 }
 
 function SynthiaRoute({ children }: { children: React.ReactNode }) {
