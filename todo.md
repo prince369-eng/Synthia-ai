@@ -3332,6 +3332,12 @@
 - [x] Preserve generic internal client errors and procedure-authored public errors while replacing raw formatter exception logging with stable structured metadata and a constant message.
 - [x] Extend logging-boundary coverage; document, validate, and checkpoint the tRPC diagnostic hardening without external workloads.
 
+## Chart style-generation hardening
+
+- [x] Audit the reusable dynamic chart style renderer for future configuration-driven CSS injection paths.
+- [x] Normalize chart identifiers, restrict custom-property keys, and reject fetch-capable or declaration-breaking style values before CSS generation.
+- [x] Add deterministic chart-style safety coverage; document, validate, and checkpoint the client-only hardening without external workloads.
+
 ## Modern workspace UI and UX refinement
 
 - [x] Audit the authenticated shell, dashboard composer, workspace panels, typography, iconography, spacing, hierarchy, and responsive behavior against current productivity-agent interaction patterns.
