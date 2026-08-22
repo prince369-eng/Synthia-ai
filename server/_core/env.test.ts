@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { boundedPositiveInteger, configuredProviderDefaults, isExplicitlyEnabled } from "./env";
+import { boundedPositiveInteger, configuredProviderDefaults, isExplicitlyEnabled, publicHostnameAllowlist } from "./env";
 
 describe("configuredProviderDefaults", () => {
   it("uses the user-approved free-tier, vision, Pixazo, and public-facing task defaults when no non-secret override exists", () => {
@@ -46,5 +46,13 @@ describe("configuredProviderDefaults", () => {
     expect(boundedPositiveInteger("3600.5", 7_200, taskTimeout)).toBe(7_200);
     expect(boundedPositiveInteger("3600", 7_200, taskTimeout)).toBe(3_600);
     expect(boundedPositiveInteger("90000", 7_200, taskTimeout)).toBe(86_400);
+  });
+
+  it("normalizes host allowlists to unique public domain names without URL or local-network syntax", () => {
+    expect(publicHostnameAllowlist(" Docs.Example.Test.,docs.example.test,cdn.aihubmix.com ")).toEqual([
+      "docs.example.test",
+      "cdn.aihubmix.com",
+    ]);
+    expect(publicHostnameAllowlist("https://example.test,example.test:443,127.0.0.1,::1,localhost,api.local,metadata.google.internal,*.example.test,example")).toEqual([]);
   });
 });

@@ -4,6 +4,31 @@ const list = (value?: string) =>
     .map(item => item.trim().toLowerCase())
     .filter(Boolean);
 
+const BLOCKED_ALLOWLIST_HOSTS = new Set([
+  "localhost",
+  "localhost.localdomain",
+  "metadata",
+  "metadata.google.internal",
+  "instance-data",
+]);
+
+const DOMAIN_LABEL = "[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?";
+const PUBLIC_DOMAIN_NAME = new RegExp(`^(?:${DOMAIN_LABEL}\\.)+${DOMAIN_LABEL}$`);
+
+/**
+ * Configuration allowlists accept only normalized domain names. They intentionally
+ * exclude URL syntax, ports, IP literals, local names, and wildcard entries so the
+ * downstream capability boundary cannot be broadened accidentally by an env value.
+ */
+export function publicHostnameAllowlist(value?: string) {
+  return Array.from(new Set(list(value).map(host => host.replace(/\.$/, "")).filter(host => {
+    if (!PUBLIC_DOMAIN_NAME.test(host)) return false;
+    if (/^\d{1,3}(?:\.\d{1,3}){3}$/.test(host)) return false;
+    if (BLOCKED_ALLOWLIST_HOSTS.has(host)) return false;
+    return !host.endsWith(".localhost") && !host.endsWith(".local") && !host.endsWith(".internal");
+  })));
+}
+
 const modelList = (value?: string) =>
   (value ?? "")
     .split(",")
@@ -96,7 +121,7 @@ export const ENV = {
   hopxBaseUrl: process.env.HOPX_BASE_URL ?? "https://api.hopx.dev",
   hopxSandboxTimeoutSeconds: boundedPositiveInteger(process.env.HOPX_SANDBOX_TIMEOUT_SECONDS, 82_800, { min: 60, max: 82_800 }),
   dockerSandboxImage: process.env.SYNTHIA_DOCKER_SANDBOX_IMAGE ?? "synthia-sandbox:latest",
-  sandboxAllowedHosts: list(process.env.SYNTHIA_SANDBOX_ALLOWED_HOSTS),
+  sandboxAllowedHosts: publicHostnameAllowlist(process.env.SYNTHIA_SANDBOX_ALLOWED_HOSTS),
   sandboxPublicWebAccess: isExplicitlyEnabled(process.env.SYNTHIA_SANDBOX_PUBLIC_WEB_ACCESS),
   sandboxRegion: process.env.SYNTHIA_SANDBOX_REGION ?? "us",
   orchestratorProvider: process.env.SYNTHIA_ORCHESTRATOR_PROVIDER ?? "aihubmix",
@@ -128,7 +153,7 @@ export const ENV = {
   aihubmixVideoModels: modelList(process.env.AIHUBMIX_VIDEO_MODELS),
   aihubmixAudioModels: modelList(process.env.AIHUBMIX_AUDIO_MODELS),
   aihubmixAudioVoice: process.env.AIHUBMIX_AUDIO_VOICE ?? "alloy",
-  aihubmixArtifactAllowedHosts: list(process.env.AIHUBMIX_ARTIFACT_ALLOWED_HOSTS),
+  aihubmixArtifactAllowedHosts: publicHostnameAllowlist(process.env.AIHUBMIX_ARTIFACT_ALLOWED_HOSTS),
   aihubmixGenerationEnabled: process.env.SYNTHIA_AIHUBMIX_GENERATION_ENABLED === "true",
   openRouterApiKey: process.env.OPENROUTER_API_KEY ?? "",
   openRouterHttpReferer: process.env.OPENROUTER_HTTP_REFERER ?? "",
@@ -139,7 +164,7 @@ export const ENV = {
   hyperbrowserApiKey: process.env.HYPERBROWSER_API_KEY ?? "",
   hyperbrowserBaseUrl: process.env.HYPERBROWSER_BASE_URL ?? "https://api.hyperbrowser.ai",
   hyperbrowserTimeoutMinutes: boundedPositiveInteger(process.env.SYNTHIA_HYPERBROWSER_TIMEOUT_MINUTES, 10, { min: 5, max: 30 }),
-  hyperbrowserAllowedHosts: list(process.env.SYNTHIA_HYPERBROWSER_ALLOWED_HOSTS),
+  hyperbrowserAllowedHosts: publicHostnameAllowlist(process.env.SYNTHIA_HYPERBROWSER_ALLOWED_HOSTS),
   hyperbrowserPublicWebAccess: isExplicitlyEnabled(process.env.SYNTHIA_HYPERBROWSER_PUBLIC_WEB_ACCESS),
   supadataApiKey: process.env.SUPADATA_API_KEY ?? "",
   searchPrimary: process.env.SYNTHIA_SEARCH_PRIMARY ?? "tavily",

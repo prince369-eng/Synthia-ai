@@ -3397,3 +3397,8 @@
 - [x] Replace direct numeric environment coercion for task caps, retention, sandbox timeouts, and browser session timeouts with safe bounded parsing.
 - [x] Make blank, fractional, negative, non-finite, and unsafe values fall back to documented defaults while clamping valid extreme values at safety limits.
 - [x] Add deterministic parsing regressions and validate task-runner, sandbox, browser, full-suite, and production-build compatibility without starting any workload.
+
+## Public host-allowlist normalization
+- [x] Normalize configured sandbox, remote-browser, and media-artifact host allowlists to unique public domain names before capability setup.
+- [x] Reject URL syntax, ports, wildcard syntax, literal IPs, local/internal names, metadata aliases, malformed names, and duplicate entries without any DNS lookup or outbound request.
+- [x] Add deterministic boundary coverage and validate sandbox, remote-browser, media, policy, full-suite, and production-build compatibility without starting a workload.
