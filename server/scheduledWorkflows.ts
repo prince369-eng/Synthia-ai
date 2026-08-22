@@ -71,8 +71,14 @@ export async function runScheduledWorkflow(req: Request, res: Response) {
     await enqueueTaskCycle(task.id);
     res.status(202).json({ ok: true, workflowId: claimed.workflow.id, taskId: task.id });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "unknown scheduled workflow error";
-    logger.error({ event: "scheduled_workflow_failed", error: message, method: req.method }, "Scheduled workflow invocation failed");
+    logger.error(
+      {
+        event: "scheduled_workflow_failed",
+        errorType: error instanceof Error ? error.name : "unknown",
+        method: req.method,
+      },
+      "Scheduled workflow invocation failed",
+    );
     res.status(500).json({ error: "scheduled-workflow-failed" });
   }
 }

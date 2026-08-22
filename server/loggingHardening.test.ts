@@ -17,6 +17,7 @@ describe("structured logging hardening", () => {
       "_core/vite.ts",
       "integrations/appConnectors.ts",
       "realtime/taskEventStream.ts",
+      "scheduledWorkflows.ts",
     ];
 
     for (const path of modules) {

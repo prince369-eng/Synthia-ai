@@ -3367,9 +3367,13 @@
 - [x] Add layout and authentication-boundary regression coverage, validate responsive views, run type/test/build, and checkpoint the completed refinement.
 
 ## Composer control-bar and popover refinement
-
 - [x] Audit the task composer control-bar hierarchy and every control/model popover against the supplied workspace capture.
 - [x] Keep Media and Apps visible in the composer controls while preserving existing task-level consent and connected-app boundaries.
 - [x] Replace user-facing automatic-routing/provider wording with a selected model name and model capability labels only.
 - [x] Position composer control and model-selection surfaces below the composer so they do not obscure the prompt or suggested-query area.
 - [x] Add deterministic interaction/layout regression coverage, verify desktop and mobile rendering, validate, and checkpoint the composer refinement.
+
+## Scheduled-workflow diagnostic redaction
+- [x] Audit cron-only workflow authentication, run claiming, public failure behavior, and structured diagnostic fields without running a schedule.
+- [x] Preserve cron-only authentication, queue gating, duplicate protection, and generic public errors while replacing raw exception text with a stable error classification.
+- [x] Extend structured logging coverage; document, validate, and checkpoint the scheduling hardening without creating or executing a workflow.
