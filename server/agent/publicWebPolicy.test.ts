@@ -19,6 +19,7 @@ describe("public-web destination policy", () => {
     "https://metadata.google.internal/computeMetadata/v1/",
     "http://169.254.169.254/latest/meta-data/",
     "https://user:password@example.com/",
+    "https://www.google.com:8443/",
     "http://192.168.1.10/",
   ])("blocks non-public or credential-bearing destinations: %s", async value => {
     await expect(assertPublicWebDestination(value)).rejects.toThrow("not available for public-web research");

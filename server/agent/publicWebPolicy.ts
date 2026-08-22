@@ -52,6 +52,7 @@ export async function assertPublicWebDestination(value: string): Promise<URL> {
   }
   if (destination.protocol !== "http:" && destination.protocol !== "https:") blocked("only HTTP and HTTPS destinations are allowed.");
   if (destination.username || destination.password) blocked("URLs containing credentials are not allowed.");
+  if (destination.port) blocked("only standard HTTP and HTTPS ports are allowed.");
 
   const hostname = destination.hostname.toLowerCase().replace(/^\[|\]$/g, "");
   if (isBlockedHostname(hostname)) blocked("local, private, and cloud-metadata hostnames are blocked.");

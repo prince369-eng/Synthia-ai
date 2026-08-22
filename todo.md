@@ -3320,6 +3320,12 @@
 - [x] Apply the same network, filesystem, resource, and PID isolation arguments to fresh and restored local Docker sandboxes, with validated application-owned descriptors.
 - [x] Add deterministic restored-runtime and descriptor coverage; document, validate, and checkpoint the development-only sandbox hardening without starting a container.
 
+## Public-web destination hardening
+
+- [x] Audit shared public-web URL parsing, DNS checks, redirect handling, and consumers for bounded SSRF-risk reductions.
+- [x] Restrict accepted public-web destinations to standard implicit HTTP/HTTPS ports while retaining existing protocol, credential, hostname, literal-IP, and DNS-address checks.
+- [x] Add deterministic non-standard-port coverage; document, validate, and checkpoint the policy change without performing an outbound request.
+
 ## Modern workspace UI and UX refinement
 
 - [x] Audit the authenticated shell, dashboard composer, workspace panels, typography, iconography, spacing, hierarchy, and responsive behavior against current productivity-agent interaction patterns.
