@@ -3254,10 +3254,10 @@
 
 ## Policy-aware handoffs and recovery playbooks
 
-- [ ] Define owner-scoped policy contracts for proposed specialist handoffs, including bounded scope, evidence requirements, budget, time limit, and approval state.
-- [ ] Define owner-curated recovery playbooks with blast-radius previews, rollback guidance, explicit applicability, and no automatic remediation path.
-- [ ] Add protected APIs and task-workspace controls that create only proposals and durable audit events; never delegate or repair automatically.
-- [ ] Add deterministic authorization and non-mutation coverage, documentation, responsive verification, validation, and a checkpoint for policy-aware handoffs and recovery playbooks.
+- [x] Define owner-scoped policy contracts for proposed specialist handoffs, including bounded scope, evidence requirements, budget, time limit, and approval state.
+- [x] Define owner-curated recovery playbooks with blast-radius previews, rollback guidance, explicit applicability, and no automatic remediation path.
+- [x] Add protected APIs and task-workspace controls that create only proposals and durable audit events; never delegate or repair automatically.
+- [x] Add deterministic authorization and non-mutation coverage, documentation, responsive verification, validation, and a checkpoint for policy-aware handoffs and recovery playbooks.
 
 ## Modern workspace UI and UX refinement
 

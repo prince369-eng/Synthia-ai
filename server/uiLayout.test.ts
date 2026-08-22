@@ -116,6 +116,37 @@ describe("compact workspace layout contract", () => {
     expect(routers).toContain("compare: protectedProcedure");
   });
 
+  it("keeps specialist handoffs and recovery playbooks owner-curated, bounded, and approval-only", () => {
+    const workspace = readFileSync(new URL("../client/src/pages/TaskWorkspace.tsx", import.meta.url), "utf8");
+    const controls = readFileSync(new URL("../client/src/components/TaskOfficeControls.tsx", import.meta.url), "utf8");
+    const routers = readFileSync(new URL("../server/routers.ts", import.meta.url), "utf8");
+    const db = readFileSync(new URL("../server/db.ts", import.meta.url), "utf8");
+    const schema = readFileSync(new URL("../drizzle/schema.ts", import.meta.url), "utf8");
+
+    expect(workspace).toContain('id: "handoffs", label: "Handoffs"');
+    expect(workspace).toContain('id: "playbooks", label: "Playbooks"');
+    expect(workspace).toContain('<TaskHandoffPolicyPanel taskId={taskId} policies={data.handoffPolicies} readOnly={replayMode} />');
+    expect(workspace).toContain('<TaskRecoveryPlaybookPanel taskId={taskId} playbooks={data.recoveryPlaybooks} readOnly={replayMode} />');
+    expect(controls).toContain('aria-label="Policy-aware specialist handoffs"');
+    expect(controls).toContain('aria-label="Recovery playbooks"');
+    expect(controls).toContain("cannot create, approve, queue, or execute a delegation");
+    expect(controls).toContain("never detects a failure, starts a recovery, or changes a task on its own");
+    expect(controls).toContain("Synthia will not infer delegation preferences or delegate work automatically.");
+    expect(controls).toContain("Synthia will not infer failures, trigger a playbook, or repair a task automatically.");
+    expect(routers).toContain("createHandoffPolicy: protectedProcedure");
+    expect(routers).toContain("updateHandoffPolicy: protectedProcedure");
+    expect(routers).toContain("archiveHandoffPolicy: protectedProcedure");
+    expect(routers).toContain("createRecoveryPlaybook: protectedProcedure");
+    expect(routers).toContain("updateRecoveryPlaybook: protectedProcedure");
+    expect(routers).toContain("archiveRecoveryPlaybook: protectedProcedure");
+    expect(db).toContain("export async function createTaskHandoffPolicyForUser");
+    expect(db).toContain("export async function createTaskRecoveryPlaybookForUser");
+    expect(db).toContain('execution: "proposal_only"');
+    expect(schema).toContain("export const taskHandoffPolicies");
+    expect(schema).toContain("export const taskRecoveryPlaybooks");
+    expect(schema).toContain('requiresApproval: boolean("requires_approval").notNull().default(true)');
+  });
+
   it("does not delay the unavailable state when the external task store is absent", () => {
     expect(TASK_HISTORY_QUERY_OPTIONS).toEqual({ retry: false });
   });

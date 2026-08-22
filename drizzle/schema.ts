@@ -17,7 +17,7 @@ import {
 const userRoleEnum = pgEnum("user_role", ["user", "admin"]);
 const taskStatusEnum = pgEnum("task_status", ["queued", "booting", "planning", "running", "needs_input", "paused", "completed", "failed", "cancelled"]);
 const estimateBandEnum = pgEnum("estimate_band", ["quick", "standard", "extensive"]);
-const eventTypeEnum = pgEnum("event_type", ["user_message", "agent_message", "clarifying_question", "plan_update", "tool_call", "tool_result", "approval_request", "approval_response", "screenshot", "error", "status_change", "context_summary", "user_file_edit", "user_terminal_command", "task_metadata", "skill_loaded", "voice_session", "voice_transcript", "screen_share", "proof_record", "pipeline_health", "remediation_proposal", "delegation"]);
+const eventTypeEnum = pgEnum("event_type", ["user_message", "agent_message", "clarifying_question", "plan_update", "tool_call", "tool_result", "approval_request", "approval_response", "screenshot", "error", "status_change", "context_summary", "user_file_edit", "user_terminal_command", "task_metadata", "skill_loaded", "voice_session", "voice_transcript", "screen_share", "proof_record", "pipeline_health", "remediation_proposal", "delegation", "handoff_policy", "recovery_playbook"]);
 const messageRoleEnum = pgEnum("message_role", ["user", "agent"]);
 const voiceSessionStatusEnum = pgEnum("voice_session_status", ["starting", "active", "ended", "failed"]);
 const proofVerificationStatusEnum = pgEnum("proof_verification_status", ["self_attested", "unverified", "corroborated", "contradicted", "needs_review"]);
@@ -27,6 +27,8 @@ const schemaDriftTypeEnum = pgEnum("schema_drift_type", ["none", "additive", "br
 const remediationStatusEnum = pgEnum("remediation_status", ["draft", "proposed", "approved", "rejected", "applied", "failed", "expired"]);
 const specialistRoleEnum = pgEnum("specialist_role", ["coordinator", "researcher", "analyst", "writer", "coder", "reviewer"]);
 const delegationStatusEnum = pgEnum("delegation_status", ["proposed", "approved", "queued", "running", "blocked", "completed", "failed", "cancelled"]);
+const handoffPolicyStatusEnum = pgEnum("handoff_policy_status", ["active", "archived"]);
+const recoveryPlaybookStatusEnum = pgEnum("recovery_playbook_status", ["active", "archived"]);
 const sandboxProviderEnum = pgEnum("sandbox_provider", ["docker", "e2b", "hopx"]);
 const sandboxStatusEnum = pgEnum("sandbox_status", ["booting", "active", "checkpointed", "destroyed"]);
 const riskLevelEnum = pgEnum("risk_level", ["low", "medium", "high"]);
@@ -55,7 +57,7 @@ export const users = pgTable("users", {
 });
 
 export const taskStatuses = ["queued", "booting", "planning", "running", "needs_input", "paused", "completed", "failed", "cancelled"] as const;
-export const eventTypes = ["user_message", "agent_message", "clarifying_question", "plan_update", "tool_call", "tool_result", "approval_request", "approval_response", "screenshot", "error", "status_change", "context_summary", "user_file_edit", "user_terminal_command", "task_metadata", "skill_loaded", "voice_session", "voice_transcript", "screen_share", "proof_record", "pipeline_health", "remediation_proposal", "delegation"] as const;
+export const eventTypes = ["user_message", "agent_message", "clarifying_question", "plan_update", "tool_call", "tool_result", "approval_request", "approval_response", "screenshot", "error", "status_change", "context_summary", "user_file_edit", "user_terminal_command", "task_metadata", "skill_loaded", "voice_session", "voice_transcript", "screen_share", "proof_record", "pipeline_health", "remediation_proposal", "delegation", "handoff_policy", "recovery_playbook"] as const;
 
 export const projects = pgTable("projects", {
   id: varchar("id", { length: 36 }).primaryKey(),
@@ -431,6 +433,59 @@ export const taskDelegations = pgTable("task_delegations", {
   index("task_delegations_task_created_idx").on(table.taskId, table.createdAt),
   index("task_delegations_user_status_idx").on(table.userId, table.status, table.updatedAt),
   uniqueIndex("task_delegations_event_unique").on(table.eventId),
+]);
+
+/**
+ * Owner-authored delegation preferences. A policy only shapes a future handoff
+ * proposal; it cannot create, approve, queue, or execute specialist work.
+ */
+export const taskHandoffPolicies = pgTable("task_handoff_policies", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  sourceTaskId: varchar("source_task_id", { length: 36 }).notNull().references(() => tasks.id, { onDelete: "cascade" }),
+  eventId: varchar("event_id", { length: 36 }).notNull().references(() => taskEvents.id, { onDelete: "cascade" }),
+  title: varchar("title", { length: 160 }).notNull(),
+  taskCategory: varchar("task_category", { length: 100 }).notNull(),
+  specialistRole: specialistRoleEnum("specialist_role").notNull(),
+  boundedScope: text("bounded_scope").notNull(),
+  evidenceRequirements: jsonb("evidence_requirements").notNull().default([]),
+  budgetLimit: integer("budget_limit").notNull(),
+  timeLimitMinutes: integer("time_limit_minutes").notNull(),
+  requiresApproval: boolean("requires_approval").notNull().default(true),
+  status: handoffPolicyStatusEnum("status").notNull().default("active"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+}, table => [
+  index("task_handoff_policies_source_created_idx").on(table.sourceTaskId, table.createdAt),
+  index("task_handoff_policies_user_status_updated_idx").on(table.userId, table.status, table.updatedAt),
+  uniqueIndex("task_handoff_policies_event_unique").on(table.eventId),
+]);
+
+/**
+ * Owner-curated recovery guidance for known failure modes. A playbook is an
+ * inspectable proposal template only and never starts remediation by itself.
+ */
+export const taskRecoveryPlaybooks = pgTable("task_recovery_playbooks", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  sourceTaskId: varchar("source_task_id", { length: 36 }).notNull().references(() => tasks.id, { onDelete: "cascade" }),
+  eventId: varchar("event_id", { length: 36 }).notNull().references(() => taskEvents.id, { onDelete: "cascade" }),
+  title: varchar("title", { length: 160 }).notNull(),
+  triggerConditions: jsonb("trigger_conditions").notNull().default([]),
+  recoverySteps: jsonb("recovery_steps").notNull().default([]),
+  applicability: text("applicability").notNull(),
+  blastRadiusPreview: text("blast_radius_preview").notNull(),
+  rollbackGuidance: text("rollback_guidance").notNull(),
+  evidenceRequirements: jsonb("evidence_requirements").notNull().default([]),
+  riskLevel: riskLevelEnum("risk_level").notNull().default("medium"),
+  requiresApproval: boolean("requires_approval").notNull().default(true),
+  status: recoveryPlaybookStatusEnum("status").notNull().default("active"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+}, table => [
+  index("task_recovery_playbooks_source_created_idx").on(table.sourceTaskId, table.createdAt),
+  index("task_recovery_playbooks_user_status_updated_idx").on(table.userId, table.status, table.updatedAt),
+  uniqueIndex("task_recovery_playbooks_event_unique").on(table.eventId),
 ]);
 
 /**

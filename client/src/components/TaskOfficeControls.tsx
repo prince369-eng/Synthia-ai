@@ -1,8 +1,8 @@
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { trpc } from "@/lib/trpc";
-import { BarChart3, BookOpenText, ClipboardCheck, FileText } from "lucide-react";
-import { useState } from "react";
+import { BarChart3, BookOpenText, ClipboardCheck, FileText, GitFork, RotateCcw } from "lucide-react";
+import { useState, type FormEvent, type ReactNode } from "react";
 
 export function TaskOfficeExportMenu({ taskId }: { taskId: string }) {
   const utils = trpc.useUtils();
@@ -97,6 +97,101 @@ export function TaskRunComparisonPanel({ taskId }: { taskId: string }) {
     {data && current ? <><label className="block text-[11px] text-[#a8bbb6]" htmlFor="comparison-baseline">Compare against<select id="comparison-baseline" value={comparisonTaskId || baseline?.taskId || ""} onChange={event => setComparisonTaskId(event.target.value)} className="mt-1.5 w-full rounded-lg border border-white/10 bg-[#0e1716] px-2 py-1.5 text-xs text-[#e5f2ef] outline-none focus:border-cyan-300/45"><option value="">Most recent completed task</option>{data.availableBaselines.map(task => <option key={task.id} value={task.id}>{task.title} · {task.status.replace(/_/g, " ")}</option>)}</select></label>{!baseline ? <p className="rounded-lg border border-dashed border-white/12 p-3 text-[11px] leading-5 text-[#91a7a1]">No other owner-scoped task is available yet. Complete another task to compare persisted outcomes; Synthia will not invent a baseline or start one for you.</p> : <><div className="overflow-x-auto rounded-lg border border-white/8"><table className="w-full min-w-[420px] text-left text-[11px]"><thead className="bg-white/[.03] text-[#91a7a1]"><tr><th className="px-3 py-2 font-medium">Metric</th><th className="px-3 py-2 font-medium">This task</th><th className="px-3 py-2 font-medium">Comparison task</th></tr></thead><tbody>{comparisonRows.map(row => <tr key={row.label} className="border-t border-white/6"><th className="px-3 py-2 font-medium text-[#c7ddd7]">{row.label}</th><td className="px-3 py-2 text-cyan-100">{row.value(current)}</td><td className="px-3 py-2 text-[#a8bbb6]">{row.value(baseline)}</td></tr>)}</tbody></table></div><div className="space-y-2">{data.signals.length === 0 ? <p className="rounded-lg border border-dashed border-white/12 p-3 text-[11px] text-[#91a7a1]">No review signals crossed the dashboard threshold. This is not a quality guarantee; inspect the evidence and evaluation records when relevant.</p> : data.signals.map(signal => <article key={signal.id} className="rounded-lg border border-amber-300/15 bg-amber-300/[.035] p-3"><p className="text-[11px] font-semibold text-amber-100">{signal.title}</p><p className="mt-1 text-[11px] leading-5 text-[#c7bca8]">{signal.detail}</p></article>)}</div></>}</> : null}
   </section>;
 }
+
+type HandoffPolicy = {
+  id: string;
+  title: string;
+  taskCategory: string;
+  specialistRole: "coordinator" | "researcher" | "analyst" | "writer" | "coder" | "reviewer";
+  boundedScope: string;
+  evidenceRequirements: unknown;
+  budgetLimit: number;
+  timeLimitMinutes: number;
+  requiresApproval: boolean;
+  status: string;
+};
+
+type RecoveryPlaybook = {
+  id: string;
+  title: string;
+  triggerConditions: unknown;
+  recoverySteps: unknown;
+  applicability: string;
+  blastRadiusPreview: string;
+  rollbackGuidance: string;
+  evidenceRequirements: unknown;
+  riskLevel: "low" | "medium" | "high";
+  requiresApproval: boolean;
+  status: string;
+};
+
+const specialistRoles = ["coordinator", "researcher", "analyst", "writer", "coder", "reviewer"] as const;
+const asLines = (value: unknown) => Array.isArray(value) ? value.filter((item): item is string => typeof item === "string").join("\n") : "";
+const lines = (value: string) => value.split("\n").map(item => item.trim()).filter(Boolean);
+
+function PanelNotice({ children }: { children: ReactNode }) {
+  return <div className="rounded-xl border border-teal-300/15 bg-teal-300/[.04] p-3 text-[11px] leading-5 text-[#a8bbb6]">{children}</div>;
+}
+
+/** Owner-authored delegation guidance only; policy records never queue or execute specialist work. */
+export function TaskHandoffPolicyPanel({ taskId, policies, readOnly }: { taskId: string; policies: HandoffPolicy[]; readOnly: boolean }) {
+  const utils = trpc.useUtils();
+  const emptyDraft = { title: "", taskCategory: "", specialistRole: "researcher" as HandoffPolicy["specialistRole"], boundedScope: "", evidenceRequirements: "", budgetLimit: "100", timeLimitMinutes: "60" };
+  const [draft, setDraft] = useState(emptyDraft);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [open, setOpen] = useState(false);
+  const refresh = () => void utils.tasks.get.invalidate({ taskId });
+  const create = trpc.tasks.createHandoffPolicy.useMutation({ onSuccess: () => { setDraft(emptyDraft); setOpen(false); refresh(); } });
+  const update = trpc.tasks.updateHandoffPolicy.useMutation({ onSuccess: () => { setDraft(emptyDraft); setEditingId(null); setOpen(false); refresh(); } });
+  const archive = trpc.tasks.archiveHandoffPolicy.useMutation({ onSuccess: refresh });
+  const save = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const input = { taskId, title: draft.title.trim(), taskCategory: draft.taskCategory.trim(), specialistRole: draft.specialistRole, boundedScope: draft.boundedScope.trim(), evidenceRequirements: lines(draft.evidenceRequirements), budgetLimit: Number(draft.budgetLimit), timeLimitMinutes: Number(draft.timeLimitMinutes) };
+    if (editingId) update.mutate({ ...input, policyId: editingId }); else create.mutate(input);
+  };
+  const edit = (policy: HandoffPolicy) => { setDraft({ title: policy.title, taskCategory: policy.taskCategory, specialistRole: policy.specialistRole, boundedScope: policy.boundedScope, evidenceRequirements: asLines(policy.evidenceRequirements), budgetLimit: String(policy.budgetLimit), timeLimitMinutes: String(policy.timeLimitMinutes) }); setEditingId(policy.id); setOpen(true); };
+  const mutationError = create.error?.message ?? update.error?.message ?? archive.error?.message;
+  return <section className="space-y-3" aria-label="Policy-aware specialist handoffs">
+    <PanelNotice><div className="flex items-start gap-2"><GitFork size={16} className="mt-0.5 shrink-0 text-cyan-300" /><div><h2 className="text-xs font-semibold text-[#e5f2ef]">Policy-aware handoffs</h2><p className="mt-1">Create an owner-scoped template for a future specialist proposal. A policy cannot create, approve, queue, or execute a delegation. Each later handoff still requires explicit approval.</p></div></div></PanelNotice>
+    {readOnly ? <p className="rounded-lg border border-white/8 bg-white/[.03] p-3 text-[11px] text-[#a8bbb6]">Replay mode is read-only. Open the live task to curate handoff guidance.</p> : <div className="flex justify-end"><Button size="sm" onClick={() => { setEditingId(null); setDraft(emptyDraft); setOpen(value => !value); }} className="h-7 bg-teal-400 px-2 text-[11px] text-[#072a27] hover:bg-cyan-300">{open ? "Cancel" : "Add handoff policy"}</Button></div>}
+    {open && !readOnly ? <form onSubmit={save} className="space-y-2.5 rounded-xl border border-white/8 bg-[#14201e] p-3"><div className="grid gap-2 sm:grid-cols-2"><FormText label="Policy title" value={draft.title} onChange={value => setDraft(item => ({ ...item, title: value }))} placeholder="Research review handoff" required /><FormText label="Task category" value={draft.taskCategory} onChange={value => setDraft(item => ({ ...item, taskCategory: value }))} placeholder="Market research" required /></div><label className="block text-[10px] font-semibold uppercase tracking-[.12em] text-[#9ab2ad]">Specialist role<select value={draft.specialistRole} onChange={event => setDraft(item => ({ ...item, specialistRole: event.target.value as HandoffPolicy["specialistRole"] }))} className="mt-1.5 h-8 w-full rounded-md border border-white/10 bg-[#0e1716] px-2 text-xs font-normal normal-case tracking-normal text-[#e5f2ef] outline-none focus:border-cyan-300/45">{specialistRoles.map(role => <option key={role} value={role}>{role}</option>)}</select></label><FormArea label="Bounded scope" value={draft.boundedScope} onChange={value => setDraft(item => ({ ...item, boundedScope: value }))} placeholder="Describe exactly what a future proposal may cover and its boundary." /><FormArea label="Required evidence (one item per line)" value={draft.evidenceRequirements} onChange={value => setDraft(item => ({ ...item, evidenceRequirements: value }))} placeholder="Source references to inspect before proposing a handoff" /><div className="grid gap-2 sm:grid-cols-2"><FormNumber label="Maximum budget" value={draft.budgetLimit} onChange={value => setDraft(item => ({ ...item, budgetLimit: value }))} min={1} max={1000000} /><FormNumber label="Maximum minutes" value={draft.timeLimitMinutes} onChange={value => setDraft(item => ({ ...item, timeLimitMinutes: value }))} min={1} max={10080} /></div><div className="flex items-center justify-between gap-2"><span className="text-[10px] text-[#778985]">Saved as an approval-only proposal template.</span><Button type="submit" size="sm" disabled={create.isPending || update.isPending || draft.title.trim().length < 3 || draft.taskCategory.trim().length < 2 || draft.boundedScope.trim().length < 12 || lines(draft.evidenceRequirements).length === 0} className="h-7 bg-teal-400 px-2 text-[11px] text-[#072a27] hover:bg-cyan-300">{create.isPending || update.isPending ? "Saving…" : editingId ? "Save policy" : "Create policy"}</Button></div></form> : null}
+    {mutationError ? <p role="alert" className="rounded-lg border border-rose-300/20 bg-rose-300/[.05] p-3 text-[11px] text-rose-200">{mutationError}</p> : null}
+    <PolicyCards policies={policies} readOnly={readOnly} onEdit={edit} onArchive={policyId => archive.mutate({ taskId, policyId })} archiving={archive.isPending} />
+  </section>;
+}
+
+/** Owner-curated recovery templates only; every future recovery remains a reviewed proposal. */
+export function TaskRecoveryPlaybookPanel({ taskId, playbooks, readOnly }: { taskId: string; playbooks: RecoveryPlaybook[]; readOnly: boolean }) {
+  const utils = trpc.useUtils();
+  const emptyDraft = { title: "", triggerConditions: "", recoverySteps: "", applicability: "", blastRadiusPreview: "", rollbackGuidance: "", evidenceRequirements: "", riskLevel: "medium" as RecoveryPlaybook["riskLevel"] };
+  const [draft, setDraft] = useState(emptyDraft);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [open, setOpen] = useState(false);
+  const refresh = () => void utils.tasks.get.invalidate({ taskId });
+  const create = trpc.tasks.createRecoveryPlaybook.useMutation({ onSuccess: () => { setDraft(emptyDraft); setOpen(false); refresh(); } });
+  const update = trpc.tasks.updateRecoveryPlaybook.useMutation({ onSuccess: () => { setDraft(emptyDraft); setEditingId(null); setOpen(false); refresh(); } });
+  const archive = trpc.tasks.archiveRecoveryPlaybook.useMutation({ onSuccess: refresh });
+  const save = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const input = { taskId, title: draft.title.trim(), triggerConditions: lines(draft.triggerConditions), recoverySteps: lines(draft.recoverySteps), applicability: draft.applicability.trim(), blastRadiusPreview: draft.blastRadiusPreview.trim(), rollbackGuidance: draft.rollbackGuidance.trim(), evidenceRequirements: lines(draft.evidenceRequirements), riskLevel: draft.riskLevel };
+    if (editingId) update.mutate({ ...input, playbookId: editingId }); else create.mutate(input);
+  };
+  const edit = (playbook: RecoveryPlaybook) => { setDraft({ title: playbook.title, triggerConditions: asLines(playbook.triggerConditions), recoverySteps: asLines(playbook.recoverySteps), applicability: playbook.applicability, blastRadiusPreview: playbook.blastRadiusPreview, rollbackGuidance: playbook.rollbackGuidance, evidenceRequirements: asLines(playbook.evidenceRequirements), riskLevel: playbook.riskLevel }); setEditingId(playbook.id); setOpen(true); };
+  const mutationError = create.error?.message ?? update.error?.message ?? archive.error?.message;
+  return <section className="space-y-3" aria-label="Recovery playbooks">
+    <PanelNotice><div className="flex items-start gap-2"><RotateCcw size={16} className="mt-0.5 shrink-0 text-cyan-300" /><div><h2 className="text-xs font-semibold text-[#e5f2ef]">Recovery playbooks</h2><p className="mt-1">Document a bounded response to a known failure mode. A playbook never detects a failure, starts a recovery, or changes a task on its own; every use is a separate approval-required proposal.</p></div></div></PanelNotice>
+    {readOnly ? <p className="rounded-lg border border-white/8 bg-white/[.03] p-3 text-[11px] text-[#a8bbb6]">Replay mode is read-only. Open the live task to curate recovery guidance.</p> : <div className="flex justify-end"><Button size="sm" onClick={() => { setEditingId(null); setDraft(emptyDraft); setOpen(value => !value); }} className="h-7 bg-teal-400 px-2 text-[11px] text-[#072a27] hover:bg-cyan-300">{open ? "Cancel" : "Add recovery playbook"}</Button></div>}
+    {open && !readOnly ? <form onSubmit={save} className="space-y-2.5 rounded-xl border border-white/8 bg-[#14201e] p-3"><FormText label="Playbook title" value={draft.title} onChange={value => setDraft(item => ({ ...item, title: value }))} placeholder="Schema change review" required /><FormArea label="Trigger conditions (one per line)" value={draft.triggerConditions} onChange={value => setDraft(item => ({ ...item, triggerConditions: value }))} placeholder="A condition that warrants a reviewed recovery proposal" /><FormArea label="Proposed recovery steps (one per line)" value={draft.recoverySteps} onChange={value => setDraft(item => ({ ...item, recoverySteps: value }))} placeholder="A bounded step to review; not an automatic action" /><FormArea label="Applicability" value={draft.applicability} onChange={value => setDraft(item => ({ ...item, applicability: value }))} placeholder="When this playbook is relevant and when it is not." /><FormArea label="Blast-radius preview" value={draft.blastRadiusPreview} onChange={value => setDraft(item => ({ ...item, blastRadiusPreview: value }))} placeholder="What could be affected if a later proposal is approved." /><FormArea label="Rollback guidance" value={draft.rollbackGuidance} onChange={value => setDraft(item => ({ ...item, rollbackGuidance: value }))} placeholder="How a separately approved recovery could be reversed." /><div className="grid gap-2 sm:grid-cols-2"><FormArea label="Required evidence (one per line)" value={draft.evidenceRequirements} onChange={value => setDraft(item => ({ ...item, evidenceRequirements: value }))} placeholder="Evidence required before a proposal" /><label className="block text-[10px] font-semibold uppercase tracking-[.12em] text-[#9ab2ad]">Risk level<select value={draft.riskLevel} onChange={event => setDraft(item => ({ ...item, riskLevel: event.target.value as RecoveryPlaybook["riskLevel"] }))} className="mt-1.5 h-8 w-full rounded-md border border-white/10 bg-[#0e1716] px-2 text-xs font-normal normal-case tracking-normal text-[#e5f2ef] outline-none focus:border-cyan-300/45"><option value="low">low</option><option value="medium">medium</option><option value="high">high</option></select></label></div><div className="flex items-center justify-between gap-2"><span className="text-[10px] text-[#778985]">Saved for review only; no recovery is run.</span><Button type="submit" size="sm" disabled={create.isPending || update.isPending || draft.title.trim().length < 3 || lines(draft.triggerConditions).length === 0 || lines(draft.recoverySteps).length === 0 || draft.applicability.trim().length < 12 || draft.blastRadiusPreview.trim().length < 12 || draft.rollbackGuidance.trim().length < 12 || lines(draft.evidenceRequirements).length === 0} className="h-7 bg-teal-400 px-2 text-[11px] text-[#072a27] hover:bg-cyan-300">{create.isPending || update.isPending ? "Saving…" : editingId ? "Save playbook" : "Create playbook"}</Button></div></form> : null}
+    {mutationError ? <p role="alert" className="rounded-lg border border-rose-300/20 bg-rose-300/[.05] p-3 text-[11px] text-rose-200">{mutationError}</p> : null}
+    <PlaybookCards playbooks={playbooks} readOnly={readOnly} onEdit={edit} onArchive={playbookId => archive.mutate({ taskId, playbookId })} archiving={archive.isPending} />
+  </section>;
+}
+
+function FormText({ label, value, onChange, placeholder, required = false }: { label: string; value: string; onChange: (value: string) => void; placeholder: string; required?: boolean }) { return <label className="block text-[10px] font-semibold uppercase tracking-[.12em] text-[#9ab2ad]">{label}<input required={required} minLength={required ? 2 : undefined} maxLength={160} value={value} onChange={event => onChange(event.target.value)} placeholder={placeholder} className="mt-1.5 h-8 w-full rounded-md border border-white/10 bg-[#0e1716] px-2 text-xs font-normal normal-case tracking-normal text-[#e5f2ef] outline-none placeholder:text-[#6d837d] focus:border-cyan-300/45" /></label>; }
+function FormNumber({ label, value, onChange, min, max }: { label: string; value: string; onChange: (value: string) => void; min: number; max: number }) { return <label className="block text-[10px] font-semibold uppercase tracking-[.12em] text-[#9ab2ad]">{label}<input required type="number" min={min} max={max} value={value} onChange={event => onChange(event.target.value)} className="mt-1.5 h-8 w-full rounded-md border border-white/10 bg-[#0e1716] px-2 text-xs font-normal normal-case tracking-normal text-[#e5f2ef] outline-none focus:border-cyan-300/45" /></label>; }
+function FormArea({ label, value, onChange, placeholder }: { label: string; value: string; onChange: (value: string) => void; placeholder: string }) { return <label className="block text-[10px] font-semibold uppercase tracking-[.12em] text-[#9ab2ad]">{label}<textarea required minLength={4} maxLength={3000} value={value} onChange={event => onChange(event.target.value)} placeholder={placeholder} className="mt-1.5 min-h-20 w-full resize-y rounded-md border border-white/10 bg-[#0e1716] px-2.5 py-2 text-xs font-normal normal-case tracking-normal text-[#e5f2ef] outline-none placeholder:text-[#6d837d] focus:border-cyan-300/45" /></label>; }
+function PolicyCards({ policies, readOnly, onEdit, onArchive, archiving }: { policies: HandoffPolicy[]; readOnly: boolean; onEdit: (policy: HandoffPolicy) => void; onArchive: (policyId: string) => void; archiving: boolean }) { return <div className="space-y-2">{policies.length === 0 ? <p className="rounded-lg border border-dashed border-white/12 p-3 text-[11px] leading-5 text-[#91a7a1]">No handoff policies have been saved for this task. Synthia will not infer delegation preferences or delegate work automatically.</p> : policies.map(policy => <article key={policy.id} className="rounded-lg border border-white/8 bg-white/[.025] p-3"><div className="flex flex-wrap items-start justify-between gap-2"><div><p className="text-xs font-semibold text-[#e5f2ef]">{policy.title}</p><p className="mt-1 text-[10px] text-cyan-100">{policy.taskCategory} · {policy.specialistRole} · {policy.budgetLimit} budget · {policy.timeLimitMinutes} min</p></div><span className="rounded-full border border-teal-300/15 bg-teal-300/[.05] px-2 py-0.5 text-[9px] text-teal-100">Approval required</span></div><p className="mt-2 text-[11px] leading-5 text-[#a8bbb6]">{policy.boundedScope}</p><p className="mt-2 text-[10px] text-[#778985]">Evidence: {asLines(policy.evidenceRequirements).split("\n").filter(Boolean).join(" · ")}</p>{!readOnly ? <div className="mt-3 flex gap-2"><Button size="sm" variant="outline" onClick={() => onEdit(policy)} className="h-7 border-white/12 px-2 text-[11px] text-[#c7ddd7] hover:bg-white/5">Edit</Button><Button size="sm" variant="outline" onClick={() => onArchive(policy.id)} disabled={archiving} className="h-7 border-rose-300/20 px-2 text-[11px] text-rose-200 hover:bg-rose-300/10">Archive</Button></div> : null}</article>)}</div>; }
+function PlaybookCards({ playbooks, readOnly, onEdit, onArchive, archiving }: { playbooks: RecoveryPlaybook[]; readOnly: boolean; onEdit: (playbook: RecoveryPlaybook) => void; onArchive: (playbookId: string) => void; archiving: boolean }) { return <div className="space-y-2">{playbooks.length === 0 ? <p className="rounded-lg border border-dashed border-white/12 p-3 text-[11px] leading-5 text-[#91a7a1]">No recovery playbooks have been saved. Synthia will not infer failures, trigger a playbook, or repair a task automatically.</p> : playbooks.map(playbook => <article key={playbook.id} className="rounded-lg border border-white/8 bg-white/[.025] p-3"><div className="flex flex-wrap items-start justify-between gap-2"><div><p className="text-xs font-semibold text-[#e5f2ef]">{playbook.title}</p><p className="mt-1 text-[10px] text-cyan-100">Risk: {playbook.riskLevel} · approval required</p></div><span className="rounded-full border border-teal-300/15 bg-teal-300/[.05] px-2 py-0.5 text-[9px] text-teal-100">Proposal only</span></div><p className="mt-2 text-[11px] leading-5 text-[#a8bbb6]">{playbook.applicability}</p><p className="mt-2 text-[10px] text-[#91a7a1]">Triggers: {asLines(playbook.triggerConditions).split("\n").filter(Boolean).join(" · ")}</p><p className="mt-1 text-[10px] text-[#91a7a1]">Steps: {asLines(playbook.recoverySteps).split("\n").filter(Boolean).join(" · ")}</p>{!readOnly ? <div className="mt-3 flex gap-2"><Button size="sm" variant="outline" onClick={() => onEdit(playbook)} className="h-7 border-white/12 px-2 text-[11px] text-[#c7ddd7] hover:bg-white/5">Edit</Button><Button size="sm" variant="outline" onClick={() => onArchive(playbook.id)} disabled={archiving} className="h-7 border-rose-300/20 px-2 text-[11px] text-rose-200 hover:bg-rose-300/10">Archive</Button></div> : null}</article>)}</div>; }
 
 /** Shows only durable owner-scoped lineage metadata; downloading remains a local, explicit browser action. */
 export function TaskProvenancePanel({ taskId }: { taskId: string }) {

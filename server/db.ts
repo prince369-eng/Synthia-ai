@@ -23,9 +23,11 @@ import {
   taskEvaluationResults,
   taskEvents,
   taskEventSequences,
+  taskHandoffPolicies,
   taskMessages,
   taskPipelineHealthSignals,
   taskProofRecords,
+  taskRecoveryPlaybooks,
   taskRemediationProposals,
   taskSkillSelections,
   tasks,
@@ -1140,6 +1142,37 @@ export type TaskDelegationInput = {
   dependencyIds: string[];
 };
 
+type SpecialistRole = "coordinator" | "researcher" | "analyst" | "writer" | "coder" | "reviewer";
+
+export type TaskHandoffPolicyInput = {
+  taskId: string;
+  userId: number;
+  title: string;
+  taskCategory: string;
+  specialistRole: SpecialistRole;
+  boundedScope: string;
+  evidenceRequirements: string[];
+  budgetLimit: number;
+  timeLimitMinutes: number;
+};
+
+export type TaskHandoffPolicyUpdateInput = TaskHandoffPolicyInput & { policyId: string };
+
+export type TaskRecoveryPlaybookInput = {
+  taskId: string;
+  userId: number;
+  title: string;
+  triggerConditions: string[];
+  recoverySteps: string[];
+  applicability: string;
+  blastRadiusPreview: string;
+  rollbackGuidance: string;
+  evidenceRequirements: string[];
+  riskLevel: "low" | "medium" | "high";
+};
+
+export type TaskRecoveryPlaybookUpdateInput = TaskRecoveryPlaybookInput & { playbookId: string };
+
 export async function listTaskPipelineHealthSignalsForUser(taskId: string, userId: number) {
   const database = databaseRequired(await getDb());
   return database
@@ -1165,6 +1198,205 @@ export async function listTaskDelegationsForUser(taskId: string, userId: number)
     .from(taskDelegations)
     .where(and(eq(taskDelegations.taskId, taskId), eq(taskDelegations.userId, userId)))
     .orderBy(asc(taskDelegations.createdAt));
+}
+
+/**
+ * These durable records are owner-scoped review artifacts. None of these
+ * helpers approve, queue, delegate, remediate, or execute a task action.
+ */
+export async function listTaskHandoffPoliciesForUser(taskId: string, userId: number) {
+  const database = databaseRequired(await getDb());
+  return database
+    .select()
+    .from(taskHandoffPolicies)
+    .where(and(eq(taskHandoffPolicies.sourceTaskId, taskId), eq(taskHandoffPolicies.userId, userId)))
+    .orderBy(desc(taskHandoffPolicies.updatedAt));
+}
+
+export async function listTaskRecoveryPlaybooksForUser(taskId: string, userId: number) {
+  const database = databaseRequired(await getDb());
+  return database
+    .select()
+    .from(taskRecoveryPlaybooks)
+    .where(and(eq(taskRecoveryPlaybooks.sourceTaskId, taskId), eq(taskRecoveryPlaybooks.userId, userId)))
+    .orderBy(desc(taskRecoveryPlaybooks.updatedAt));
+}
+
+export async function createTaskHandoffPolicyForUser(input: TaskHandoffPolicyInput) {
+  const database = databaseRequired(await getDb());
+  return database.transaction(async transaction => {
+    const event = await appendTaskEventInTransaction(transaction, input.taskId, {
+      type: "handoff_policy",
+      payload: {
+        action: "created",
+        title: input.title,
+        taskCategory: input.taskCategory,
+        specialistRole: input.specialistRole,
+        requiresApproval: true,
+        execution: "proposal_only",
+      },
+    });
+    const record = {
+      id: randomUUID(),
+      userId: input.userId,
+      sourceTaskId: input.taskId,
+      eventId: event.id,
+      title: input.title,
+      taskCategory: input.taskCategory,
+      specialistRole: input.specialistRole,
+      boundedScope: input.boundedScope,
+      evidenceRequirements: input.evidenceRequirements,
+      budgetLimit: input.budgetLimit,
+      timeLimitMinutes: input.timeLimitMinutes,
+      requiresApproval: true,
+      status: "active" as const,
+    };
+    await transaction.insert(taskHandoffPolicies).values(record);
+    return record;
+  });
+}
+
+export async function createTaskRecoveryPlaybookForUser(input: TaskRecoveryPlaybookInput) {
+  const database = databaseRequired(await getDb());
+  return database.transaction(async transaction => {
+    const event = await appendTaskEventInTransaction(transaction, input.taskId, {
+      type: "recovery_playbook",
+      payload: {
+        action: "created",
+        title: input.title,
+        riskLevel: input.riskLevel,
+        triggerCount: input.triggerConditions.length,
+        stepCount: input.recoverySteps.length,
+        requiresApproval: true,
+        execution: "proposal_only",
+      },
+    });
+    const record = {
+      id: randomUUID(),
+      userId: input.userId,
+      sourceTaskId: input.taskId,
+      eventId: event.id,
+      title: input.title,
+      triggerConditions: input.triggerConditions,
+      recoverySteps: input.recoverySteps,
+      applicability: input.applicability,
+      blastRadiusPreview: input.blastRadiusPreview,
+      rollbackGuidance: input.rollbackGuidance,
+      evidenceRequirements: input.evidenceRequirements,
+      riskLevel: input.riskLevel,
+      requiresApproval: true,
+      status: "active" as const,
+    };
+    await transaction.insert(taskRecoveryPlaybooks).values(record);
+    return record;
+  });
+}
+
+export async function updateTaskHandoffPolicyForUser(input: TaskHandoffPolicyUpdateInput) {
+  const database = databaseRequired(await getDb());
+  return database.transaction(async transaction => {
+    const [policy] = await transaction
+      .select({ id: taskHandoffPolicies.id, status: taskHandoffPolicies.status })
+      .from(taskHandoffPolicies)
+      .where(and(eq(taskHandoffPolicies.id, input.policyId), eq(taskHandoffPolicies.sourceTaskId, input.taskId), eq(taskHandoffPolicies.userId, input.userId)))
+      .limit(1);
+    if (!policy || policy.status !== "active") throw new Error("That active handoff policy is unavailable.");
+    await appendTaskEventInTransaction(transaction, input.taskId, {
+      type: "handoff_policy",
+      payload: { action: "updated", policyId: input.policyId, requiresApproval: true, execution: "proposal_only" },
+    });
+    const [updated] = await transaction
+      .update(taskHandoffPolicies)
+      .set({
+        title: input.title,
+        taskCategory: input.taskCategory,
+        specialistRole: input.specialistRole,
+        boundedScope: input.boundedScope,
+        evidenceRequirements: input.evidenceRequirements,
+        budgetLimit: input.budgetLimit,
+        timeLimitMinutes: input.timeLimitMinutes,
+        updatedAt: new Date(),
+      })
+      .where(eq(taskHandoffPolicies.id, input.policyId))
+      .returning();
+    return updated;
+  });
+}
+
+export async function archiveTaskHandoffPolicyForUser(input: { taskId: string; userId: number; policyId: string }) {
+  const database = databaseRequired(await getDb());
+  return database.transaction(async transaction => {
+    const [policy] = await transaction
+      .select({ id: taskHandoffPolicies.id, status: taskHandoffPolicies.status })
+      .from(taskHandoffPolicies)
+      .where(and(eq(taskHandoffPolicies.id, input.policyId), eq(taskHandoffPolicies.sourceTaskId, input.taskId), eq(taskHandoffPolicies.userId, input.userId)))
+      .limit(1);
+    if (!policy || policy.status !== "active") throw new Error("That active handoff policy is unavailable.");
+    await appendTaskEventInTransaction(transaction, input.taskId, {
+      type: "handoff_policy",
+      payload: { action: "archived", policyId: input.policyId, requiresApproval: true, execution: "proposal_only" },
+    });
+    const [updated] = await transaction
+      .update(taskHandoffPolicies)
+      .set({ status: "archived", updatedAt: new Date() })
+      .where(eq(taskHandoffPolicies.id, input.policyId))
+      .returning();
+    return updated;
+  });
+}
+
+export async function updateTaskRecoveryPlaybookForUser(input: TaskRecoveryPlaybookUpdateInput) {
+  const database = databaseRequired(await getDb());
+  return database.transaction(async transaction => {
+    const [playbook] = await transaction
+      .select({ id: taskRecoveryPlaybooks.id, status: taskRecoveryPlaybooks.status })
+      .from(taskRecoveryPlaybooks)
+      .where(and(eq(taskRecoveryPlaybooks.id, input.playbookId), eq(taskRecoveryPlaybooks.sourceTaskId, input.taskId), eq(taskRecoveryPlaybooks.userId, input.userId)))
+      .limit(1);
+    if (!playbook || playbook.status !== "active") throw new Error("That active recovery playbook is unavailable.");
+    await appendTaskEventInTransaction(transaction, input.taskId, {
+      type: "recovery_playbook",
+      payload: { action: "updated", playbookId: input.playbookId, requiresApproval: true, execution: "proposal_only" },
+    });
+    const [updated] = await transaction
+      .update(taskRecoveryPlaybooks)
+      .set({
+        title: input.title,
+        triggerConditions: input.triggerConditions,
+        recoverySteps: input.recoverySteps,
+        applicability: input.applicability,
+        blastRadiusPreview: input.blastRadiusPreview,
+        rollbackGuidance: input.rollbackGuidance,
+        evidenceRequirements: input.evidenceRequirements,
+        riskLevel: input.riskLevel,
+        updatedAt: new Date(),
+      })
+      .where(eq(taskRecoveryPlaybooks.id, input.playbookId))
+      .returning();
+    return updated;
+  });
+}
+
+export async function archiveTaskRecoveryPlaybookForUser(input: { taskId: string; userId: number; playbookId: string }) {
+  const database = databaseRequired(await getDb());
+  return database.transaction(async transaction => {
+    const [playbook] = await transaction
+      .select({ id: taskRecoveryPlaybooks.id, status: taskRecoveryPlaybooks.status })
+      .from(taskRecoveryPlaybooks)
+      .where(and(eq(taskRecoveryPlaybooks.id, input.playbookId), eq(taskRecoveryPlaybooks.sourceTaskId, input.taskId), eq(taskRecoveryPlaybooks.userId, input.userId)))
+      .limit(1);
+    if (!playbook || playbook.status !== "active") throw new Error("That active recovery playbook is unavailable.");
+    await appendTaskEventInTransaction(transaction, input.taskId, {
+      type: "recovery_playbook",
+      payload: { action: "archived", playbookId: input.playbookId, requiresApproval: true, execution: "proposal_only" },
+    });
+    const [updated] = await transaction
+      .update(taskRecoveryPlaybooks)
+      .set({ status: "archived", updatedAt: new Date() })
+      .where(eq(taskRecoveryPlaybooks.id, input.playbookId))
+      .returning();
+    return updated;
+  });
 }
 
 export async function createTaskPipelineHealthSignalForUser(input: PipelineHealthSignalInput) {

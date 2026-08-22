@@ -11,8 +11,10 @@ import {
   createTaskDelegationForUser,
   createTaskEvaluationPackForUser,
   createTaskEvaluationResultForUser,
+  createTaskHandoffPolicyForUser,
   createTaskPipelineHealthSignalForUser,
   createTaskProofRecordForUser,
+  createTaskRecoveryPlaybookForUser,
   createTaskRemediationProposalForUser,
   createDeliverable,
   createProjectForUser,
@@ -43,8 +45,10 @@ import {
   listTaskDelegationsForUser,
   listTaskEvaluationPacksForUser,
   listTaskEvaluationResultsForUser,
+  listTaskHandoffPoliciesForUser,
   listTaskPipelineHealthSignalsForUser,
   listTaskProofRecordsForUser,
+  listTaskRecoveryPlaybooksForUser,
   listTaskRemediationProposalsForUser,
   listTaskSandboxes,
   listTasksForUser,
@@ -52,6 +56,8 @@ import {
   resolveApprovalForTask,
   softDeleteTaskForUser,
   updateTaskForUser,
+  updateTaskHandoffPolicyForUser,
+  updateTaskRecoveryPlaybookForUser,
   updateUserPreferences,
   updatePersonalizationMemory,
   updatePersonalizationProfile,
@@ -72,6 +78,8 @@ import {
   softDeleteScheduledWorkflowForUser,
   updateScheduledWorkflowForUser,
   updateVoiceSessionForUser,
+  archiveTaskHandoffPolicyForUser,
+  archiveTaskRecoveryPlaybookForUser,
 } from "./db";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
@@ -241,6 +249,31 @@ const taskDelegationSchema = taskIdSchema.extend({
   contextSummary: z.string().trim().min(12).max(3_000),
   dependencyIds: z.array(z.string().uuid()).max(12).default([]),
 });
+const specialistRoleSchema = z.enum(["coordinator", "researcher", "analyst", "writer", "coder", "reviewer"]);
+const boundedEvidenceSchema = z.array(z.string().trim().min(4).max(240)).min(1).max(12);
+const handoffPolicySchema = taskIdSchema.extend({
+  title: z.string().trim().min(3).max(160),
+  taskCategory: z.string().trim().min(2).max(100),
+  specialistRole: specialistRoleSchema,
+  boundedScope: z.string().trim().min(12).max(1_500),
+  evidenceRequirements: boundedEvidenceSchema,
+  budgetLimit: z.number().int().min(1).max(1_000_000),
+  timeLimitMinutes: z.number().int().min(1).max(10_080),
+});
+const updateHandoffPolicySchema = handoffPolicySchema.extend({ policyId: z.string().uuid() });
+const archiveHandoffPolicySchema = taskIdSchema.extend({ policyId: z.string().uuid() });
+const recoveryPlaybookSchema = taskIdSchema.extend({
+  title: z.string().trim().min(3).max(160),
+  triggerConditions: z.array(z.string().trim().min(4).max(240)).min(1).max(12),
+  recoverySteps: z.array(z.string().trim().min(4).max(500)).min(1).max(12),
+  applicability: z.string().trim().min(12).max(1_500),
+  blastRadiusPreview: z.string().trim().min(12).max(1_500),
+  rollbackGuidance: z.string().trim().min(12).max(1_500),
+  evidenceRequirements: boundedEvidenceSchema,
+  riskLevel: z.enum(["low", "medium", "high"]),
+});
+const updateRecoveryPlaybookSchema = recoveryPlaybookSchema.extend({ playbookId: z.string().uuid() });
+const archiveRecoveryPlaybookSchema = taskIdSchema.extend({ playbookId: z.string().uuid() });
 export const attachmentMimeSchema = z.string().trim().min(3).max(100).regex(
   /^(application\/(pdf|json|zip|x-7z-compressed|x-tar|vnd\.(openxmlformats-officedocument\.(wordprocessingml\.document|spreadsheetml\.sheet)|ms-excel|msword))|text\/(plain|csv|markdown)|image\/(png|jpeg|webp)|video\/(mp4|webm|quicktime))$/,
   "This file type is not supported.",
@@ -682,7 +715,7 @@ export const appRouter = router({
     }),
     get: protectedProcedure.input(taskIdSchema).query(async ({ ctx, input }) => {
       const task = await requireOwnedTask(input.taskId, ctx.user.id);
-      const [events, messages, approvals, deliverables, attachments, sandboxRows, skillSelections, proofRecords, pipelineHealthSignals, remediationProposals, delegations, pendingTaskLessons, evaluationPacks, evaluationResults] = await Promise.all([
+      const [events, messages, approvals, deliverables, attachments, sandboxRows, skillSelections, proofRecords, pipelineHealthSignals, remediationProposals, delegations, handoffPolicies, recoveryPlaybooks, pendingTaskLessons, evaluationPacks, evaluationResults] = await Promise.all([
         listTaskEvents(task.id),
         listTaskMessages(task.id),
         listTaskApprovals(task.id),
@@ -694,11 +727,13 @@ export const appRouter = router({
         listTaskPipelineHealthSignalsForUser(task.id, ctx.user.id),
         listTaskRemediationProposalsForUser(task.id, ctx.user.id),
         listTaskDelegationsForUser(task.id, ctx.user.id),
+        listTaskHandoffPoliciesForUser(task.id, ctx.user.id),
+        listTaskRecoveryPlaybooksForUser(task.id, ctx.user.id),
         listPendingTaskLessonsForUser({ taskId: task.id, userId: ctx.user.id }),
         listTaskEvaluationPacksForUser(task.id, ctx.user.id),
         listTaskEvaluationResultsForUser(task.id, ctx.user.id),
       ]);
-      return { task, events, messages, approvals, deliverables, attachments, sandboxes: sandboxRows, skillSelections, proofRecords, pipelineHealthSignals, remediationProposals, delegations, pendingTaskLessons, evaluationPacks, evaluationResults };
+      return { task, events, messages, approvals, deliverables, attachments, sandboxes: sandboxRows, skillSelections, proofRecords, pipelineHealthSignals, remediationProposals, delegations, handoffPolicies, recoveryPlaybooks, pendingTaskLessons, evaluationPacks, evaluationResults };
     }),
     exportOffice: protectedProcedure
       .input(taskOfficeExportSchema)
@@ -896,6 +931,86 @@ export const appRouter = router({
           if (message.includes("delegation")) throw new TRPCError({ code: "NOT_FOUND", message });
           console.error(JSON.stringify({ event: "task_delegation_proposal_failed", taskId: input.taskId, userId: ctx.user.id, message }));
           throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "The specialist delegation could not be saved. Please retry." });
+        }
+      }),
+    createHandoffPolicy: protectedProcedure
+      .input(handoffPolicySchema)
+      .mutation(async ({ ctx, input }) => {
+        await enforceUserMutationLimit(ctx.user.id, "task-handoff-policy-create", 30, 3_600);
+        await requireOwnedTask(input.taskId, ctx.user.id);
+        try {
+          return await createTaskHandoffPolicyForUser({ ...input, userId: ctx.user.id });
+        } catch (error) {
+          console.error(JSON.stringify({ event: "task_handoff_policy_create_failed", taskId: input.taskId, userId: ctx.user.id, message: error instanceof Error ? error.message : "unknown" }));
+          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "The handoff policy could not be saved. Please retry." });
+        }
+      }),
+    updateHandoffPolicy: protectedProcedure
+      .input(updateHandoffPolicySchema)
+      .mutation(async ({ ctx, input }) => {
+        await enforceUserMutationLimit(ctx.user.id, "task-handoff-policy-update", 50, 3_600);
+        await requireOwnedTask(input.taskId, ctx.user.id);
+        try {
+          return await updateTaskHandoffPolicyForUser({ ...input, userId: ctx.user.id });
+        } catch (error) {
+          const message = error instanceof Error ? error.message : "The handoff policy could not be updated.";
+          if (message.includes("unavailable")) throw new TRPCError({ code: "NOT_FOUND", message });
+          console.error(JSON.stringify({ event: "task_handoff_policy_update_failed", taskId: input.taskId, userId: ctx.user.id, message }));
+          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "The handoff policy could not be updated. Please retry." });
+        }
+      }),
+    archiveHandoffPolicy: protectedProcedure
+      .input(archiveHandoffPolicySchema)
+      .mutation(async ({ ctx, input }) => {
+        await enforceUserMutationLimit(ctx.user.id, "task-handoff-policy-archive", 30, 3_600);
+        await requireOwnedTask(input.taskId, ctx.user.id);
+        try {
+          return await archiveTaskHandoffPolicyForUser({ ...input, userId: ctx.user.id });
+        } catch (error) {
+          const message = error instanceof Error ? error.message : "The handoff policy could not be archived.";
+          if (message.includes("unavailable")) throw new TRPCError({ code: "NOT_FOUND", message });
+          console.error(JSON.stringify({ event: "task_handoff_policy_archive_failed", taskId: input.taskId, userId: ctx.user.id, message }));
+          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "The handoff policy could not be archived. Please retry." });
+        }
+      }),
+    createRecoveryPlaybook: protectedProcedure
+      .input(recoveryPlaybookSchema)
+      .mutation(async ({ ctx, input }) => {
+        await enforceUserMutationLimit(ctx.user.id, "task-recovery-playbook-create", 30, 3_600);
+        await requireOwnedTask(input.taskId, ctx.user.id);
+        try {
+          return await createTaskRecoveryPlaybookForUser({ ...input, userId: ctx.user.id });
+        } catch (error) {
+          console.error(JSON.stringify({ event: "task_recovery_playbook_create_failed", taskId: input.taskId, userId: ctx.user.id, message: error instanceof Error ? error.message : "unknown" }));
+          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "The recovery playbook could not be saved. Please retry." });
+        }
+      }),
+    updateRecoveryPlaybook: protectedProcedure
+      .input(updateRecoveryPlaybookSchema)
+      .mutation(async ({ ctx, input }) => {
+        await enforceUserMutationLimit(ctx.user.id, "task-recovery-playbook-update", 50, 3_600);
+        await requireOwnedTask(input.taskId, ctx.user.id);
+        try {
+          return await updateTaskRecoveryPlaybookForUser({ ...input, userId: ctx.user.id });
+        } catch (error) {
+          const message = error instanceof Error ? error.message : "The recovery playbook could not be updated.";
+          if (message.includes("unavailable")) throw new TRPCError({ code: "NOT_FOUND", message });
+          console.error(JSON.stringify({ event: "task_recovery_playbook_update_failed", taskId: input.taskId, userId: ctx.user.id, message }));
+          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "The recovery playbook could not be updated. Please retry." });
+        }
+      }),
+    archiveRecoveryPlaybook: protectedProcedure
+      .input(archiveRecoveryPlaybookSchema)
+      .mutation(async ({ ctx, input }) => {
+        await enforceUserMutationLimit(ctx.user.id, "task-recovery-playbook-archive", 30, 3_600);
+        await requireOwnedTask(input.taskId, ctx.user.id);
+        try {
+          return await archiveTaskRecoveryPlaybookForUser({ ...input, userId: ctx.user.id });
+        } catch (error) {
+          const message = error instanceof Error ? error.message : "The recovery playbook could not be archived.";
+          if (message.includes("unavailable")) throw new TRPCError({ code: "NOT_FOUND", message });
+          console.error(JSON.stringify({ event: "task_recovery_playbook_archive_failed", taskId: input.taskId, userId: ctx.user.id, message }));
+          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "The recovery playbook could not be archived. Please retry." });
         }
       }),
     generateMedia: protectedProcedure.input(mediaGenerationSchema).mutation(async ({ ctx, input }) => {
