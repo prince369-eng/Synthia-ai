@@ -783,6 +783,13 @@ describe("compact workspace layout contract", () => {
     expect(settings).not.toContain("configured external database and object storage");
   });
 
+  it("keeps Settings personalization availability guidance user-focused without exposing storage implementation details", () => {
+    const settings = readFileSync(new URL("../client/src/pages/Settings.tsx", import.meta.url), "utf8");
+
+    expect(settings).toContain("Personalization is temporarily unavailable. Refresh the workspace or try again shortly.");
+    expect(settings).not.toContain("Personalization data will be available after the external Synthia data store is configured.");
+  });
+
   it("keeps pipeline repair proposals and specialist delegation explicit, task-owned, and non-executing", () => {
     const workspace = readFileSync(new URL("../client/src/pages/TaskWorkspace.tsx", import.meta.url), "utf8");
     const router = readFileSync(new URL("../server/routers.ts", import.meta.url), "utf8");
