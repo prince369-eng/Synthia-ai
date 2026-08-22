@@ -10,6 +10,9 @@ const modelList = (value?: string) =>
     .map(item => item.trim())
     .filter(Boolean);
 
+/** Public-web access is privileged capability configuration and must be explicit. */
+export const isExplicitlyEnabled = (value?: string) => value === "true";
+
 const APPROVED_FREE_MODELS = [
   "aihubmix:glm-5.2-free",
   "aihubmix:gemini-3.7-flash-free",
@@ -78,7 +81,7 @@ export const ENV = {
   hopxSandboxTimeoutSeconds: Number(process.env.HOPX_SANDBOX_TIMEOUT_SECONDS ?? 82800),
   dockerSandboxImage: process.env.SYNTHIA_DOCKER_SANDBOX_IMAGE ?? "synthia-sandbox:latest",
   sandboxAllowedHosts: list(process.env.SYNTHIA_SANDBOX_ALLOWED_HOSTS),
-  sandboxPublicWebAccess: (process.env.SYNTHIA_SANDBOX_PUBLIC_WEB_ACCESS ?? "true") === "true",
+  sandboxPublicWebAccess: isExplicitlyEnabled(process.env.SYNTHIA_SANDBOX_PUBLIC_WEB_ACCESS),
   sandboxRegion: process.env.SYNTHIA_SANDBOX_REGION ?? "us",
   orchestratorProvider: process.env.SYNTHIA_ORCHESTRATOR_PROVIDER ?? "aihubmix",
   orchestratorModel: process.env.SYNTHIA_ORCHESTRATOR_MODEL ?? "glm-5.2-free",
@@ -121,7 +124,7 @@ export const ENV = {
   hyperbrowserBaseUrl: process.env.HYPERBROWSER_BASE_URL ?? "https://api.hyperbrowser.ai",
   hyperbrowserTimeoutMinutes: Number(process.env.SYNTHIA_HYPERBROWSER_TIMEOUT_MINUTES ?? 10),
   hyperbrowserAllowedHosts: list(process.env.SYNTHIA_HYPERBROWSER_ALLOWED_HOSTS),
-  hyperbrowserPublicWebAccess: (process.env.SYNTHIA_HYPERBROWSER_PUBLIC_WEB_ACCESS ?? "true") === "true",
+  hyperbrowserPublicWebAccess: isExplicitlyEnabled(process.env.SYNTHIA_HYPERBROWSER_PUBLIC_WEB_ACCESS),
   supadataApiKey: process.env.SUPADATA_API_KEY ?? "",
   searchPrimary: process.env.SYNTHIA_SEARCH_PRIMARY ?? "tavily",
   tavilyApiKey: process.env.TAVILY_API_KEY ?? "",

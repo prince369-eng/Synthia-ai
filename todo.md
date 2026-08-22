@@ -3387,3 +3387,8 @@
 - [x] Add protected, rate-limited create, update, archive, and snapshot contracts that treat target URLs only as inert review references.
 - [x] Add a compact Changes workspace tab with replay-safe owner controls and explicit no-browser/no-navigation/no-credentials/no-upload/no-submit/no-execution boundaries.
 - [x] Add deterministic snapshot and source-safety regression coverage, complete validation, and preserve the task-runner non-integration boundary.
+
+## Explicit public-web opt-in
+- [x] Remove implicit public-web enablement for sandbox and remote-browser configuration while preserving an explicit `true` operator choice.
+- [x] Add deterministic environment-boundary coverage for absent, false, malformed, and explicit enabled values without starting a browser or outbound request.
+- [x] Validate the hardened configuration boundary with strict typing, focused policy/catalog regressions, the full deterministic suite, and a production build.

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { configuredProviderDefaults } from "./env";
+import { configuredProviderDefaults, isExplicitlyEnabled } from "./env";
 
 describe("configuredProviderDefaults", () => {
   it("uses the user-approved free-tier, vision, Pixazo, and public-facing task defaults when no non-secret override exists", () => {
@@ -25,5 +25,13 @@ describe("configuredProviderDefaults", () => {
     expect(result.pixazoImageModels).toEqual(["custom-flux"]);
     expect(result.pixazoAudioModels).toEqual(["custom-tracks"]);
     expect(result.pixazoGenerationEnabled).toBe("false");
+  });
+
+  it("requires an explicit true value before public-web capability configuration is enabled", () => {
+    expect(isExplicitlyEnabled(undefined)).toBe(false);
+    expect(isExplicitlyEnabled("")).toBe(false);
+    expect(isExplicitlyEnabled("false")).toBe(false);
+    expect(isExplicitlyEnabled("TRUE")).toBe(false);
+    expect(isExplicitlyEnabled("true")).toBe(true);
   });
 });
