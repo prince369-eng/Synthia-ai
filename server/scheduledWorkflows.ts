@@ -8,6 +8,7 @@ import {
   DEFAULT_AUTONOMY_SETTINGS,
 } from "./db";
 import { sdk } from "./_core/sdk";
+import { logger } from "./security/logger";
 
 const roundedMinute = (date: Date) => new Date(Math.floor(date.getTime() / 60_000) * 60_000);
 
@@ -71,12 +72,7 @@ export async function runScheduledWorkflow(req: Request, res: Response) {
     res.status(202).json({ ok: true, workflowId: claimed.workflow.id, taskId: task.id });
   } catch (error) {
     const message = error instanceof Error ? error.message : "unknown scheduled workflow error";
-    res.status(500).json({
-      error: "scheduled-workflow-failed",
-      message,
-      stack: error instanceof Error ? error.stack : undefined,
-      context: { url: req.originalUrl },
-      timestamp: new Date().toISOString(),
-    });
+    logger.error({ event: "scheduled_workflow_failed", error: message, method: req.method }, "Scheduled workflow invocation failed");
+    res.status(500).json({ error: "scheduled-workflow-failed" });
   }
 }

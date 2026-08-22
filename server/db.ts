@@ -934,6 +934,37 @@ export async function listTaskApprovals(taskId: string) {
     .orderBy(desc(approvalRequests.createdAt));
 }
 
+/**
+ * Verifies that a user can retrieve a storage object without trusting a URL path.
+ * User-scoped uploads retain their user-id prefix; task artifacts require a durable
+ * attachment or deliverable record owned by the caller.
+ */
+export async function canUserAccessStorageKey(userId: number, storageKey: string) {
+  const database = databaseRequired(await getDb());
+  const userScopedPrefixes = [
+    `task-inputs/${userId}/`,
+    `voice-inputs/${userId}/`,
+    `skill-resources/${userId}/`,
+    `generated-images/${userId}/`,
+  ];
+  if (userScopedPrefixes.some(prefix => storageKey.startsWith(prefix))) return true;
+
+  const [attachment] = await database
+    .select({ id: taskAttachments.id })
+    .from(taskAttachments)
+    .where(and(eq(taskAttachments.userId, userId), eq(taskAttachments.storageKey, storageKey)))
+    .limit(1);
+  if (attachment) return true;
+
+  const [deliverable] = await database
+    .select({ id: deliverables.id })
+    .from(deliverables)
+    .innerJoin(tasks, eq(deliverables.taskId, tasks.id))
+    .where(and(eq(tasks.userId, userId), eq(deliverables.storageKey, storageKey)))
+    .limit(1);
+  return Boolean(deliverable);
+}
+
 export async function listTaskSandboxes(taskId: string) {
   const database = databaseRequired(await getDb());
   return database

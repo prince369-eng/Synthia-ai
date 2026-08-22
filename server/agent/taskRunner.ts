@@ -11,6 +11,7 @@ import {
   getTaskById,
   getUserById,
   listTaskAttachments,
+  listTaskApprovals,
   listTaskEvents,
   listEnabledSkillCandidatesForUser,
   recordAgentMessage,
@@ -138,6 +139,44 @@ async function taskModelInput(input: {
   return [{ type: "text" as const, text }, ...visualParts] satisfies LlmContentPart[];
 }
 
+async function requireAutomaticMediaApproval(input: {
+  taskId: string;
+  kind: "image" | "video" | "audio" | "public_video";
+  provider: string;
+  model?: string;
+  sourceUrl?: string;
+}) {
+  const toolName = `media.${input.kind}`;
+  const approvals = await listTaskApprovals(input.taskId);
+  const approval = approvals.find(item => item.toolName === toolName);
+  if (approval?.status === "approved" || approval?.status === "edited") return false;
+  if (approval?.status === "pending") {
+    await updateTaskForWorker(input.taskId, { status: "needs_input", currentStepSummary: "Waiting for approval before a quota-consuming media request." });
+    return true;
+  }
+  if (approval?.status === "rejected") {
+    await updateTaskForWorker(input.taskId, { status: "needs_input", currentStepSummary: "The media request was declined. Update the task or request a new approval." });
+    return true;
+  }
+
+  const event = await appendTaskEvent(input.taskId, {
+    type: "approval_request",
+    payload: { tool: toolName, provider: input.provider, model: input.model, kind: input.kind, quotaConsuming: true },
+  });
+  await createApprovalForTask({
+    taskId: input.taskId,
+    eventId: event.id,
+    description: input.kind === "public_video"
+      ? "Analyze the requested public video using a configured media service. This may consume provider quota."
+      : `Generate the requested ${input.kind} using a configured media model. This may consume provider quota.`,
+    riskLevel: "medium",
+    toolName,
+    toolInput: { provider: input.provider, model: input.model, kind: input.kind, sourceUrl: input.sourceUrl },
+  });
+  await updateTaskForWorker(input.taskId, { status: "needs_input", currentStepSummary: "Waiting for approval before a quota-consuming media request." });
+  return true;
+}
+
 async function executeAction(taskId: string, action: AgentAction) {
   if (action.kind === "respond") {
     await recordAgentMessage(taskId, action.content);
@@ -220,6 +259,7 @@ export async function runTaskCycle(taskId: string) {
     const autonomySettings = task.autonomySettings as AutonomySettings;
     const automaticRoute = autonomySettings.automaticRoute;
     if (automaticRoute?.reason === "public_media" && automaticRoute.kind === "public_video" && automaticRoute.provider === "supadata" && automaticRoute.sourceUrl) {
+      if (await requireAutomaticMediaApproval({ taskId: task.id, kind: "public_video", provider: automaticRoute.provider, sourceUrl: automaticRoute.sourceUrl })) return;
       await updateTaskForWorker(task.id, { status: "running", currentStepSummary: "Understanding the requested public video." });
       const analysis = await executeSupadataPublicVideoUnderstanding({ taskId: task.id, userId: task.userId, sourceUrl: automaticRoute.sourceUrl, prompt: task.goal });
       const summary = `Created ${analysis.filename}.`;
@@ -231,6 +271,7 @@ export async function runTaskCycle(taskId: string) {
       return;
     }
     if (automaticRoute?.reason === "natural_language_media" && (automaticRoute.kind === "image" || automaticRoute.kind === "video" || automaticRoute.kind === "audio") && automaticRoute.provider !== "supadata" && automaticRoute.provider && automaticRoute.model) {
+      if (await requireAutomaticMediaApproval({ taskId: task.id, kind: automaticRoute.kind, provider: automaticRoute.provider, model: automaticRoute.model })) return;
       const label = automaticRoute.kind === "image" ? "image" : automaticRoute.kind === "video" ? "video" : "audio";
       await updateTaskForWorker(task.id, { status: "running", currentStepSummary: `Creating the requested ${label} artifact.` });
       const generated = await executeTaskMedia({

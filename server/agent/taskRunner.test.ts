@@ -11,6 +11,7 @@ const db = {
   getTaskById: vi.fn(),
   getUserById: vi.fn(),
   listTaskAttachments: vi.fn(),
+  listTaskApprovals: vi.fn(),
   listEnabledSkillCandidatesForUser: vi.fn(),
   cacheTaskSkillSelections: vi.fn(),
   listTaskEvents: vi.fn(),
@@ -60,6 +61,7 @@ beforeEach(() => {
   db.listEnabledSkillCandidatesForUser.mockResolvedValue([]);
   db.cacheTaskSkillSelections.mockResolvedValue([]);
   db.listTaskAttachments.mockResolvedValue([]);
+  db.listTaskApprovals.mockResolvedValue([]);
   db.listTaskEvents.mockResolvedValue([]);
   db.appendTaskEvent.mockResolvedValue({ id: "event-1", sequenceNumber: 1 });
   db.recordAgentMessage.mockResolvedValue(undefined);
@@ -168,7 +170,7 @@ describe("Synthia task worker recovery", () => {
     expect(llm.generateWithFallback).toHaveBeenCalledWith(expect.objectContaining({ selectedModel: { provider: "aihubmix", model: "coding-glm-5.2-free" } }));
   });
 
-  it("uses the configured Automatic video route after the user starts a natural-language media task without invoking the text-model adapter", async () => {
+  it("creates an approval request before automatic media routing can consume provider quota", async () => {
     db.getTaskById.mockResolvedValue({
       ...baseTask,
       autonomySettings: {
@@ -180,12 +182,30 @@ describe("Synthia task worker recovery", () => {
 
     await runTaskCycle(baseTask.id);
 
-    expect(taskMedia.executeTaskMedia).toHaveBeenCalledWith(expect.objectContaining({ taskId: "task-1", userId: 7, kind: "video", provider: "pixazo", model: "ltx", prompt: baseTask.goal }));
+    expect(taskMedia.executeTaskMedia).not.toHaveBeenCalled();
     expect(llm.generateWithFallback).not.toHaveBeenCalled();
-    expect(db.updateTaskForWorker).toHaveBeenLastCalledWith("task-1", expect.objectContaining({ status: "completed", currentStepSummary: "Created synthia-video-1.mp4." }));
+    expect(db.createApprovalForTask).toHaveBeenCalledWith(expect.objectContaining({ taskId: "task-1", toolName: "media.video", riskLevel: "medium" }));
+    expect(db.updateTaskForWorker).toHaveBeenLastCalledWith("task-1", expect.objectContaining({ status: "needs_input" }));
   });
 
-  it("uses the configured Automatic public-video route after the user starts a supported social-video task without invoking the text-model adapter", async () => {
+  it("runs an automatic media route only after the matching quota consent is approved", async () => {
+    db.getTaskById.mockResolvedValue({
+      ...baseTask,
+      autonomySettings: {
+        ...baseTask.autonomySettings,
+        automaticRoute: { kind: "video", reason: "natural_language_media", requestedKind: "video", provider: "pixazo", model: "ltx" },
+      },
+    });
+    db.listTaskApprovals.mockResolvedValue([{ toolName: "media.video", status: "approved" }]);
+    const { runTaskCycle } = await import("./taskRunner");
+
+    await runTaskCycle(baseTask.id);
+
+    expect(taskMedia.executeTaskMedia).toHaveBeenCalledWith(expect.objectContaining({ taskId: "task-1", userId: 7, kind: "video", provider: "pixazo", model: "ltx", prompt: baseTask.goal }));
+    expect(db.createApprovalForTask).not.toHaveBeenCalled();
+  });
+
+  it("creates an approval request before automatic public-video analysis can consume provider quota", async () => {
     db.getTaskById.mockResolvedValue({
       ...baseTask,
       goal: "Analyze https://www.youtube.com/watch?v=abc123 and return product lessons.",
@@ -198,8 +218,8 @@ describe("Synthia task worker recovery", () => {
 
     await runTaskCycle(baseTask.id);
 
-    expect(supadata.executeSupadataPublicVideoUnderstanding).toHaveBeenCalledWith(expect.objectContaining({ taskId: "task-1", userId: 7, sourceUrl: "https://www.youtube.com/watch?v=abc123" }));
+    expect(supadata.executeSupadataPublicVideoUnderstanding).not.toHaveBeenCalled();
     expect(llm.generateWithFallback).not.toHaveBeenCalled();
-    expect(db.updateTaskForWorker).toHaveBeenLastCalledWith("task-1", expect.objectContaining({ status: "completed", currentStepSummary: "Created synthia-public-video-analysis-1.json." }));
+    expect(db.createApprovalForTask).toHaveBeenCalledWith(expect.objectContaining({ taskId: "task-1", toolName: "media.public_video", riskLevel: "medium" }));
   });
 });

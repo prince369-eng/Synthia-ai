@@ -3259,6 +3259,15 @@
 - [x] Add protected APIs and task-workspace controls that create only proposals and durable audit events; never delegate or repair automatically.
 - [x] Add deterministic authorization and non-mutation coverage, documentation, responsive verification, validation, and a checkpoint for policy-aware handoffs and recovery playbooks.
 
+## Production security and implementation-completeness audit
+
+- [x] Inventory every application route, protected procedure, task worker, integration boundary, persistence helper, and externally reachable client surface.
+- [x] Audit authentication, session lifecycle, authorization, owner scoping, input validation, rate limits, CORS/CSP headers, error boundaries, structured logs, and secret exposure paths.
+- [x] Audit task execution, approval gates, task replay, artifact access, connector authorization, queue operations, file handling, and provider call boundaries for unsafe behavior or missing checks.
+- [x] Identify genuine placeholders, inert controls, unsupported claims, mocked data, and incomplete server/client paths; distinguish configuration-gated features from unfinished implementation.
+- [x] Implement prioritized, evidence-backed hardening and fully complete safe, non-external unfinished paths with regression coverage.
+- [x] Run strict validation, full tests, production build, document remediations and configuration-gated residuals, then checkpoint the audit.
+
 ## Modern workspace UI and UX refinement
 
 - [x] Audit the authenticated shell, dashboard composer, workspace panels, typography, iconography, spacing, hierarchy, and responsive behavior against current productivity-agent interaction patterns.
