@@ -3557,3 +3557,8 @@
 - [x] Replace the Library data-store configuration availability message with user-focused retry guidance.
 - [x] Add deterministic source-contract coverage that prevents this infrastructure disclosure from returning.
 - [x] Validate strict typing, focused tests, the full deterministic suite, production build, and diff hygiene without starting external work.
+
+## Docs presentation hardening
+- [x] Replace implementation-facing provider and environment documentation labels with user-facing onboarding guidance.
+- [x] Add deterministic source-contract coverage that prevents public Docs from linking to internal environment configuration references.
+- [x] Validate strict typing, focused tests, the full deterministic suite, production build, and diff hygiene without starting external work.

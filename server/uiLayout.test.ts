@@ -84,6 +84,17 @@ describe("compact workspace layout contract", () => {
     expect(settings).toContain("Only your connected apps are listed here.");
   });
 
+  it("keeps public Docs focused on user guidance rather than implementation configuration", () => {
+    const docs = readFileSync(new URL("../client/src/pages/Docs.tsx", import.meta.url), "utf8");
+
+    expect(docs).toContain("Getting started");
+    expect(docs).toContain("Settings & connected apps");
+    expect(docs).not.toContain("Provider configuration");
+    expect(docs).not.toContain("environment contract");
+    expect(docs).not.toContain("/docs/environment-reference.md");
+    expect(docs).not.toContain("sandbox output");
+  });
+
   it("keeps Projects availability guidance user-focused without exposing storage implementation details", () => {
     const projects = readFileSync(new URL("../client/src/pages/Projects.tsx", import.meta.url), "utf8");
 
@@ -285,8 +296,7 @@ describe("compact workspace layout contract", () => {
 
     expect(docs).toContain('className="synthia-docs-grid"');
     expect(docs).toContain('className="synthia-compact-card synthia-docs-card"');
-    expect(docs).toContain('href="/docs/environment-reference.md"');
-    expect(docs).toContain('target="_blank" rel="noopener noreferrer"');
+    expect(docs).toContain('button onClick={() => setLocation("/")}>Go to tasks</button>');
     expect(docs).toContain('setLocation("/settings/integrations")');
     expect(docs).toContain('setLocation("/")');
     expect(css).toContain(".synthia-docs-grid { @apply grid gap-2 md:grid-cols-2 xl:grid-cols-3; }");

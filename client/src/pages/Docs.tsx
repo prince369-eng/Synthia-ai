@@ -1,4 +1,4 @@
-import { BookOpenText, ExternalLink, FileText, ShieldCheck } from "lucide-react";
+import { BookOpenText, FileText, ShieldCheck } from "lucide-react";
 import { useLocation } from "wouter";
 
 export default function Docs() {
@@ -9,23 +9,23 @@ export default function Docs() {
       <div>
         <p className="synthia-eyebrow">Synthia reference</p>
         <h1>Docs</h1>
-        <p>Operational guidance for secure autonomous work, provider activation, and durable task delivery.</p>
+        <p>Practical guidance for secure autonomous work, approved app access, and durable task delivery.</p>
       </div>
     </header>
     <div className="synthia-docs-grid">
       <article className="synthia-compact-card synthia-docs-card">
         <FileText size={17} />
-        <div><b>Provider configuration</b><p>Review the environment contract before adding secure project secrets.</p></div>
-        <a href="/docs/environment-reference.md" target="_blank" rel="noopener noreferrer" aria-label="Open environment reference"><ExternalLink size={15} /></a>
+        <div><b>Getting started</b><p>Start with a clear task goal, review each proposed action, and keep control of your work.</p></div>
+        <button onClick={() => setLocation("/")}>Go to tasks</button>
       </article>
       <article className="synthia-compact-card synthia-docs-card">
         <ShieldCheck size={17} />
-        <div><b>Settings & integrations</b><p>Configure preferences and inspect connected providers for your account.</p></div>
+        <div><b>Settings & connected apps</b><p>Personalize your workspace and manage only the apps you choose to authorize.</p></div>
         <button onClick={() => setLocation("/settings/integrations")}>Open settings</button>
       </article>
       <article className="synthia-compact-card synthia-docs-card">
         <BookOpenText size={17} />
-        <div><b>Task workspaces</b><p>Tasks retain plans, approvals, events, sandbox output, and deliverables.</p></div>
+        <div><b>Task workspaces</b><p>Tasks retain plans, approvals, activity history, and deliverables.</p></div>
         <button onClick={() => setLocation("/")}>Go to tasks</button>
       </article>
     </div>
