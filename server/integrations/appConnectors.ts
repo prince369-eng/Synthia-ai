@@ -152,6 +152,27 @@ function requireAppSlug(appSlug: string) {
   }
 }
 
+export function trustedPipedreamAuthorizationUrl(value: string) {
+  let url: URL;
+  try {
+    url = new URL(value);
+  } catch {
+    throw new TRPCError({ code: "BAD_GATEWAY", message: "The authorization service returned an invalid destination." });
+  }
+
+  if (
+    url.protocol !== "https:" ||
+    url.hostname !== "connect.pipedream.com" ||
+    url.port ||
+    url.username ||
+    url.password
+  ) {
+    throw new TRPCError({ code: "BAD_GATEWAY", message: "The authorization service returned an untrusted destination." });
+  }
+
+  return url;
+}
+
 export function listUserFacingApps(): UserFacingApp[] {
   return USER_FACING_APP_CATALOG.map(app => ({ ...app, categories: [...app.categories], scopeOptions: [...app.scopeOptions] }));
 }
@@ -204,7 +225,7 @@ export async function startAppConnectorAuthorization(input: { appSlug: string; u
       expiresIn: 900,
       scope: "connect:accounts:read connect:accounts:write",
     });
-    const authorizationUrl = new URL(session.connectLinkUrl);
+    const authorizationUrl = trustedPipedreamAuthorizationUrl(session.connectLinkUrl);
     authorizationUrl.searchParams.set("app", input.appSlug);
     return { mode: "redirect" as const, authorizationUrl: authorizationUrl.toString(), expiresAt: session.expiresAt.getTime() };
   } catch (error) {

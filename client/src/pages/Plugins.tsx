@@ -31,6 +31,20 @@ function appIsConnected(app: AppConnectorState, integrations: Array<{ label: str
   return integrations.some(integration => integration.label.trim().toLowerCase() === normalizedName);
 }
 
+function trustedAuthorizationNavigation(value: string) {
+  const url = new URL(value, window.location.origin);
+  if (
+    url.protocol !== "https:" ||
+    url.hostname !== "connect.pipedream.com" ||
+    url.port ||
+    url.username ||
+    url.password
+  ) {
+    throw new Error("Untrusted authorization destination");
+  }
+  return url.toString();
+}
+
 export default function Plugins() {
   const [query, setQuery] = useState("");
   const [view, setView] = useState<"all" | "featured" | "connected">("all");
@@ -74,7 +88,7 @@ export default function Plugins() {
   const pending = startAuthorization.isPending || verifyApp.isPending;
   const begin = async (appSlug: string) => {
     const result = await startAuthorization.mutateAsync({ appSlug });
-    if (result.mode === "redirect") window.location.assign(result.authorizationUrl);
+    if (result.mode === "redirect") window.location.assign(trustedAuthorizationNavigation(result.authorizationUrl));
   };
   const browseMoreApps = () => {
     void browseDirectory.mutateAsync({ query: extendedQuery.trim() || undefined, after: extendedCursor ?? undefined });

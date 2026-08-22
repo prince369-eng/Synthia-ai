@@ -3308,6 +3308,12 @@
 - [x] Replace raw client error output with bounded categories and generic actionable startup recovery guidance without changing unauthorized redirect behavior.
 - [x] Add deterministic disclosure-boundary coverage; document, validate, and checkpoint the client-only hardening without external workloads.
 
+## Connector authorization redirect hardening
+
+- [x] Audit browser navigation and server authorization-URL construction for an arbitrary redirect boundary.
+- [x] Require canonical HTTPS provider-hosted authorization URLs with no explicit port or embedded credentials at both server and client navigation boundaries.
+- [x] Add deterministic hostile-destination coverage; document, validate, and checkpoint the redirect hardening without initiating an authorization flow.
+
 ## Modern workspace UI and UX refinement
 
 - [x] Audit the authenticated shell, dashboard composer, workspace panels, typography, iconography, spacing, hierarchy, and responsive behavior against current productivity-agent interaction patterns.

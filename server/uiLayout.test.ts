@@ -73,7 +73,8 @@ describe("compact workspace layout contract", () => {
     expect(connectorCard).toContain("not the app credential");
     expect(connectorCard).not.toContain("Pipedream");
     expect(connectorCard).not.toContain("Composio");
-    expect(plugins).toContain('window.location.assign(result.authorizationUrl)');
+    expect(plugins).toContain('window.location.assign(trustedAuthorizationNavigation(result.authorizationUrl))');
+    expect(plugins).toContain('url.hostname !== "connect.pipedream.com"');
     expect(plugins).not.toContain("trpc.workspace.serviceReadiness.useQuery()");
     expect(plugins).not.toContain("GOVERNED_CONNECTED_APPS");
     expect(routers).toContain("appCatalog: protectedProcedure");
