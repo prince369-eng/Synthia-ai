@@ -778,7 +778,7 @@ describe("compact workspace layout contract", () => {
     const settings = readFileSync(new URL("../client/src/pages/Settings.tsx", import.meta.url), "utf8");
 
     expect(settings).toContain("Synthia protects task records and user-owned attachments with secure workspace data handling.");
-    expect(settings).toContain("Internal access credentials and raw file locations are never displayed in Settings.");
+    expect(settings).toContain("Sensitive access details and file locations are never shown in Settings.");
     expect(settings).not.toContain("persisted in PostgreSQL");
     expect(settings).not.toContain("configured external database and object storage");
   });
@@ -788,6 +788,19 @@ describe("compact workspace layout contract", () => {
 
     expect(settings).toContain("Personalization is temporarily unavailable. Refresh the workspace or try again shortly.");
     expect(settings).not.toContain("Personalization data will be available after the external Synthia data store is configured.");
+  });
+
+  it("keeps Settings controls focused on user-facing access and review guidance", () => {
+    const settings = readFileSync(new URL("../client/src/pages/Settings.tsx", import.meta.url), "utf8");
+
+    expect(settings).toContain("Deletion and retention controls are not available in this workspace yet.");
+    expect(settings).toContain("Managed releases stay separate from task work while preserving reviewable source and checkpoint history.");
+    expect(settings).toContain("Secure developer access");
+    expect(settings).toContain("Developer access is protected and must be explicitly authorized before it can use workspace data or actions.");
+    expect(settings).not.toContain("server-side data-lifecycle workflow");
+    expect(settings).not.toContain("managed application runtime");
+    expect(settings).not.toContain("Provider and infrastructure secrets");
+    expect(settings).not.toContain("server-controlled");
   });
 
   it("keeps pipeline repair proposals and specialist delegation explicit, task-owned, and non-executing", () => {

@@ -3567,3 +3567,8 @@
 - [x] Replace the personalization data-store configuration message with user-focused retry guidance.
 - [x] Add deterministic source-contract coverage that prevents this infrastructure disclosure from returning.
 - [x] Validate strict typing, focused tests, the full deterministic suite, production build, and diff hygiene without starting external work.
+
+## Settings controls presentation hardening
+- [x] Replace remaining data-lifecycle, deployment, developer, secret, and server-implementation labels with user-focused controls guidance.
+- [x] Add deterministic source-contract coverage that prevents the replaced implementation labels from returning to Settings.
+- [x] Validate strict typing, focused tests, the full deterministic suite, production build, and diff hygiene without starting external work.
