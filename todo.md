@@ -3338,6 +3338,12 @@
 - [x] Normalize chart identifiers, restrict custom-property keys, and reject fetch-capable or declaration-breaking style values before CSS generation.
 - [x] Add deterministic chart-style safety coverage; document, validate, and checkpoint the client-only hardening without external workloads.
 
+## Authenticated storage redirect hardening
+
+- [x] Audit owner-scoped storage redirects, signed URL handling, and proxy diagnostics for arbitrary-navigation and raw-error exposure.
+- [x] Require credential-free default-port HTTPS signed destinations and apply no-store, no-referrer, and nosniff response protections while preserving owner access checks.
+- [x] Add deterministic signed-URL and diagnostic-boundary coverage; document, validate, and checkpoint the storage hardening without performing storage operations.
+
 ## Modern workspace UI and UX refinement
 
 - [x] Audit the authenticated shell, dashboard composer, workspace panels, typography, iconography, spacing, hierarchy, and responsive behavior against current productivity-agent interaction patterns.

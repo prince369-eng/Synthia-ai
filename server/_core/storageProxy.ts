@@ -12,6 +12,22 @@ export function normalizeStorageKey(value: string): string | null {
   return key;
 }
 
+export function normalizeSignedStorageRedirect(value: string): string | null {
+  try {
+    const url = new URL(value);
+    if (url.protocol !== "https:" || url.username || url.password || url.port) {
+      return null;
+    }
+    return url.toString();
+  } catch {
+    return null;
+  }
+}
+
+function errorKind(error: unknown): string {
+  return error instanceof Error && error.name ? error.name : "unknown";
+}
+
 export function registerStorageProxy(app: Express) {
   app.get("/manus-storage/*", async (req, res) => {
     const key = normalizeStorageKey((req.params as Record<string, string>)[0] ?? "");
@@ -29,7 +45,7 @@ export function registerStorageProxy(app: Express) {
     try {
       user = await sdk.authenticateRequest(req);
     } catch (err) {
-      logger.warn({ event: "storage_proxy_authentication_denied", error: err instanceof Error ? err.message : "unknown" }, "Storage proxy authentication was rejected");
+      logger.warn({ event: "storage_proxy_authentication_denied", errorType: errorKind(err) }, "Storage proxy authentication was rejected");
       res.status(401).send("Authentication required");
       return;
     }
@@ -55,16 +71,20 @@ export function registerStorageProxy(app: Express) {
         return;
       }
 
-      const { url } = (await forgeResp.json()) as { url: string };
-      if (!url) {
-        res.status(502).send("Empty signed URL from backend");
+      const { url } = (await forgeResp.json()) as { url?: string };
+      const signedUrl = typeof url === "string" ? normalizeSignedStorageRedirect(url) : null;
+      if (!signedUrl) {
+        logger.error({ event: "storage_proxy_invalid_signed_url", userId: user.id }, "Storage backend returned an invalid signed URL");
+        res.status(502).send("Storage backend error");
         return;
       }
 
       res.set("Cache-Control", "no-store");
-      res.redirect(307, url);
+      res.set("Referrer-Policy", "no-referrer");
+      res.set("X-Content-Type-Options", "nosniff");
+      res.redirect(307, signedUrl);
     } catch (err) {
-      logger.error({ event: "storage_proxy_failed", userId: user.id, error: err instanceof Error ? err.message : "unknown" }, "Storage proxy request failed");
+      logger.error({ event: "storage_proxy_failed", userId: user.id, errorType: errorKind(err) }, "Storage proxy request failed");
       res.status(502).send("Storage proxy error");
     }
   });
