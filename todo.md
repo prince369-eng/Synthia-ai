@@ -3482,3 +3482,8 @@
 - [x] Normalize extended catalog image URLs at the shared server-and-client rendering boundary before either connector surface uses an image source.
 - [x] Preserve legitimate public HTTPS icon query parameters while rejecting credentials, ports, fragments, local/internal hosts, and literal IPs without fetching an image.
 - [x] Add deterministic utility and UI source-contract regressions, then validate strict typing, focused tests, the full deterministic suite, production build, and diff hygiene without external work.
+
+## Browser connection-policy minimization
+- [x] Restrict the document CSP connection policy to the same-origin API and required secure socket transport after verifying client network calls are local API and event-stream paths.
+- [x] Add deterministic response-header contract coverage without making a browser or network request.
+- [x] Validate strict typing, focused tests, the full deterministic suite, production build, and diff hygiene without starting external work.
