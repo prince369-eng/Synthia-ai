@@ -3547,3 +3547,8 @@
 - [x] Identify why the application shell is remaining on the secure-workspace fallback in the user's browser.
 - [x] Repair the confirmed bootstrap or module-loading cause without weakening authentication or browser security controls.
 - [x] Add or update deterministic regression coverage and validate the repaired bootstrap behavior.
+
+## Projects availability-message hardening
+- [x] Replace the Projects database-configuration availability message with user-focused retry guidance.
+- [x] Add deterministic source-contract coverage that prevents this infrastructure disclosure from returning.
+- [x] Validate strict typing, focused tests, the full deterministic suite, production build, and diff hygiene without starting external work.

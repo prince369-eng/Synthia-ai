@@ -26,7 +26,7 @@ export default function Projects() {
   return <section className="synthia-page"><header className="synthia-page-head"><div><p className="synthia-eyebrow">Workspace context</p><h1>Projects</h1><p>Keep related autonomous tasks together without losing their individual replay history.</p></div><button className="synthia-compact-action" onClick={() => setShowForm(v => !v)}><Plus size={15} /> New project</button></header>
     {showForm ? <ProjectCreateForm pending={create.isPending} onCreate={input => create.mutate(input)} /> : null}
     {projects.isLoading ? <div className="synthia-empty-state"><Loader2 className="animate-spin" size={16} /> Loading projects…</div> : null}
-    {projects.isError ? <div className="synthia-empty-state">Projects will become available after the external Synthia PostgreSQL store is configured.</div> : null}
+    {projects.isError ? <div className="synthia-empty-state">Projects are temporarily unavailable. Refresh the workspace or try again shortly.</div> : null}
     {!projects.isLoading && !projects.isError && projects.data?.length === 0 ? <ProjectsEmptyState onOpenTasks={() => setLocation("/")} /> : null}
     <div className="synthia-compact-grid">{projects.data?.map(project => <article className="synthia-compact-card" key={project.id}><div><b>{project.name}</b><p>{project.description || "No project context added."}</p></div><ProjectWorkspaceLink onOpen={() => setLocation("/")} /></article>)}</div>
   </section>;

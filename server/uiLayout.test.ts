@@ -84,6 +84,14 @@ describe("compact workspace layout contract", () => {
     expect(settings).toContain("Only your connected apps are listed here.");
   });
 
+  it("keeps Projects availability guidance user-focused without exposing storage implementation details", () => {
+    const projects = readFileSync(new URL("../client/src/pages/Projects.tsx", import.meta.url), "utf8");
+
+    expect(projects).toContain("Projects are temporarily unavailable. Refresh the workspace or try again shortly.");
+    expect(projects).not.toContain("PostgreSQL");
+    expect(projects).not.toContain("store is configured");
+  });
+
   it("offers a compact, viewport-safe app-only composer picker that includes only connected apps as task context and routes setup to Plugins", () => {
     const dashboard = readFileSync(new URL("../client/src/pages/TaskDashboard.tsx", import.meta.url), "utf8");
     const routers = readFileSync(new URL("../server/routers.ts", import.meta.url), "utf8");
