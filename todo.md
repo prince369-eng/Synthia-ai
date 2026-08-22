@@ -3407,3 +3407,8 @@
 - [x] Require generated AIHubMix artifact URLs to remain HTTPS, allowlisted, credential-free, and free of non-standard ports before retrieval.
 - [x] Add deterministic hostile artifact-response regressions proving no artifact fetch occurs after credential-bearing or non-standard-port URLs are returned.
 - [x] Validate the media boundary with strict typing, focused media regressions, the full deterministic suite, and a production build without invoking a provider.
+
+## Media transport diagnostic redaction
+- [x] Replace raw AIHubMix image, video, and audio transport exception text with bounded timeout, network, or unknown classifications.
+- [x] Extend the central structured-logging regression to cover media transport diagnostics and prevent raw exception-message fields from returning.
+- [x] Validate logging and media behavior with strict typing, focused regressions, the full deterministic suite, and a production build without invoking a provider.

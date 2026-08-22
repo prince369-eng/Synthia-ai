@@ -16,6 +16,7 @@ describe("structured logging hardening", () => {
       "_core/trpc.ts",
       "_core/vite.ts",
       "integrations/appConnectors.ts",
+      "media/aihubmix.ts",
       "realtime/taskEventStream.ts",
       "scheduledWorkflows.ts",
     ];

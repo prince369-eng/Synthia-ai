@@ -147,6 +147,12 @@ function safeArtifactUrl(value: string) {
   return parsed.toString();
 }
 
+function transportErrorCategory(error: unknown) {
+  if (error instanceof Error && error.name === "AbortError") return "timeout";
+  if (error instanceof TypeError) return "network";
+  return "unknown";
+}
+
 async function requestJson(url: string, init: RequestInit, controller: AbortController) {
   const response = await fetch(url, { ...init, signal: controller.signal });
   if (!response.ok) {
@@ -193,8 +199,9 @@ async function generateImage(input: { prompt: string; model?: string; aspectRati
     return { kind: "image", provider: "aihubmix", model, interactionId: id, ...artifact };
   } catch (error) {
     if (error instanceof AIHubMixMediaError) throw error;
-    logger.warn({ event: "aihubmix_image_transport_error", error: error instanceof Error ? error.message : "unknown" }, "AIHubMix image transport failed");
-    throw new AIHubMixMediaError("PROVIDER_ERROR", error instanceof Error && error.name === "AbortError" ? "AIHubMix image generation timed out. Please retry shortly." : "AIHubMix image generation could not be reached. Please retry shortly.");
+    const errorCategory = transportErrorCategory(error);
+    logger.warn({ event: "aihubmix_image_transport_error", errorCategory }, "AIHubMix image transport failed");
+    throw new AIHubMixMediaError("PROVIDER_ERROR", errorCategory === "timeout" ? "AIHubMix image generation timed out. Please retry shortly." : "AIHubMix image generation could not be reached. Please retry shortly.");
   } finally { clearTimeout(timeout); }
 }
 
@@ -222,8 +229,9 @@ async function generateVideo(input: { prompt: string; model?: string; aspectRati
     throw new AIHubMixMediaError("PROVIDER_ERROR", "AIHubMix video generation timed out. Please retry shortly.");
   } catch (error) {
     if (error instanceof AIHubMixMediaError) throw error;
-    logger.warn({ event: "aihubmix_video_transport_error", error: error instanceof Error ? error.message : "unknown" }, "AIHubMix video transport failed");
-    throw new AIHubMixMediaError("PROVIDER_ERROR", error instanceof Error && error.name === "AbortError" ? "AIHubMix video generation timed out. Please retry shortly." : "AIHubMix video generation could not be reached. Please retry shortly.");
+    const errorCategory = transportErrorCategory(error);
+    logger.warn({ event: "aihubmix_video_transport_error", errorCategory }, "AIHubMix video transport failed");
+    throw new AIHubMixMediaError("PROVIDER_ERROR", errorCategory === "timeout" ? "AIHubMix video generation timed out. Please retry shortly." : "AIHubMix video generation could not be reached. Please retry shortly.");
   } finally {
     clearTimeout(timeout);
     if (id) void fetch(`${baseUrl()}/videos/${encodeURIComponent(id)}`, { method: "DELETE", headers: { Authorization: `Bearer ${ENV.aihubmixApiKey}` } }).catch(() => undefined);
@@ -240,8 +248,9 @@ async function generateAudio(input: { prompt: string; model?: string }): Promise
     return { kind: "audio", provider: "aihubmix", model, interactionId: response.headers.get("x-request-id"), mimeType: contentType("audio", response.headers.get("content-type")), bytes: assertBytes("audio", Buffer.from(await response.arrayBuffer())) };
   } catch (error) {
     if (error instanceof AIHubMixMediaError) throw error;
-    logger.warn({ event: "aihubmix_audio_transport_error", error: error instanceof Error ? error.message : "unknown" }, "AIHubMix audio transport failed");
-    throw new AIHubMixMediaError("PROVIDER_ERROR", error instanceof Error && error.name === "AbortError" ? "AIHubMix audio generation timed out. Please retry shortly." : "AIHubMix audio generation could not be reached. Please retry shortly.");
+    const errorCategory = transportErrorCategory(error);
+    logger.warn({ event: "aihubmix_audio_transport_error", errorCategory }, "AIHubMix audio transport failed");
+    throw new AIHubMixMediaError("PROVIDER_ERROR", errorCategory === "timeout" ? "AIHubMix audio generation timed out. Please retry shortly." : "AIHubMix audio generation could not be reached. Please retry shortly.");
   } finally { clearTimeout(timeout); }
 }
 
