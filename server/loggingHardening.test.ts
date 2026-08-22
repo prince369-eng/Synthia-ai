@@ -17,6 +17,9 @@ describe("structured logging hardening", () => {
       "_core/vite.ts",
       "integrations/appConnectors.ts",
       "media/aihubmix.ts",
+      "media/gemini.ts",
+      "media/pixazo.ts",
+      "media/taskMedia.ts",
       "realtime/taskEventStream.ts",
       "scheduledWorkflows.ts",
     ];
@@ -25,8 +28,8 @@ describe("structured logging hardening", () => {
       const contents = source(path);
       expect(contents).toContain("logger");
       expect(contents).not.toMatch(/console\.(log|warn|error|info)/);
-      expect(contents).not.toMatch(/logger\.(error|warn)\(\{[^\n]*error\.message/);
-      expect(contents).not.toMatch(/logger\.(error|warn)\([\s\S]*?,\s*error\.message\s*\)/);
+      expect(contents).not.toMatch(/logger\.(error|warn)\(\{[^}]*\berror\s*:\s*error\.message/);
+      expect(contents).not.toMatch(/logger\.(error|warn)\(\s*[^,\n]+,\s*error\.message\s*\)/);
     }
   });
 

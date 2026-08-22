@@ -3412,3 +3412,8 @@
 - [x] Replace raw AIHubMix image, video, and audio transport exception text with bounded timeout, network, or unknown classifications.
 - [x] Extend the central structured-logging regression to cover media transport diagnostics and prevent raw exception-message fields from returning.
 - [x] Validate logging and media behavior with strict typing, focused regressions, the full deterministic suite, and a production build without invoking a provider.
+
+## Cross-media diagnostic redaction
+- [x] Replace remaining Gemini, Pixazo, and task-image-reference raw transport exception text with bounded diagnostic categories.
+- [x] Retain typed provider failure codes and controlled user-facing messages while preventing arbitrary fallback exception text from entering task events or structured logs.
+- [x] Expand the central logging contract to all media and task-reference modules, then validate strict typing, focused regressions, the full deterministic suite, and a production build without invoking providers.

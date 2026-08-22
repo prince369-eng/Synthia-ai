@@ -134,10 +134,15 @@ async function createInteraction(input: Record<string, unknown>): Promise<Gemini
     }
   } catch (error) {
     if (error instanceof GeminiMediaError) throw error;
-    const message = error instanceof Error && error.name === "AbortError"
+    const errorCategory = error instanceof Error && error.name === "AbortError"
+      ? "timeout"
+      : error instanceof TypeError
+        ? "network"
+        : "unknown";
+    const message = errorCategory === "timeout"
       ? "Gemini media generation timed out. Please retry shortly."
       : "Gemini media generation could not be reached. Please retry shortly.";
-    logger.warn({ event: "gemini_media_transport_error", error: error instanceof Error ? error.message : "unknown" }, "Gemini media transport failed");
+    logger.warn({ event: "gemini_media_transport_error", errorCategory }, "Gemini media transport failed");
     throw new GeminiMediaError("PROVIDER_ERROR", message);
   } finally {
     clearTimeout(timeout);

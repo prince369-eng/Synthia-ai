@@ -40,7 +40,8 @@ async function imageReferenceForTask(taskId: string, attachmentId: string | unde
   try {
     response = await fetch(attachment.sourceType === "library" ? await getTaskArtifactUrl(attachment.storageKey) : await storageGetSignedUrl(attachment.storageKey));
   } catch (error) {
-    logger.warn({ event: "media_reference_download_failed", taskId, attachmentId, error: error instanceof Error ? error.message : "unknown" }, "Task image reference retrieval failed");
+    const errorCategory = error instanceof TypeError ? "network" : "unknown";
+    logger.warn({ event: "media_reference_download_failed", taskId, attachmentId, errorCategory }, "Task image reference retrieval failed");
     throw new Error("The selected task image could not be retrieved securely.");
   }
   if (!response.ok) throw new Error("The selected task image could not be retrieved securely.");
@@ -110,10 +111,11 @@ export async function executeTaskMedia(input: {
     logger.info({ event: "media_generation_completed", provider, taskId: input.taskId, userId: input.userId, kind: generated.kind, model: generated.model, deliverableId }, "Media generation completed");
     return { deliverableId, filename, fileType: generated.mimeType, provider: generated.provider, model: generated.model };
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Media generation failed.";
     const mediaError = error instanceof GeminiMediaError || error instanceof PixazoMediaError || error instanceof AIHubMixMediaError ? error : null;
-    await appendTaskEvent(input.taskId, { type: "error", payload: { code: mediaError?.code ?? "MEDIA_GENERATION_FAILED", message } });
-    logger.error({ event: "media_generation_failed", provider, taskId: input.taskId, userId: input.userId, kind: input.kind, error: message }, "Media generation failed");
+    const code = mediaError?.code ?? "MEDIA_GENERATION_FAILED";
+    const message = mediaError?.message ?? "Media generation failed.";
+    await appendTaskEvent(input.taskId, { type: "error", payload: { code, message } });
+    logger.error({ event: "media_generation_failed", provider, taskId: input.taskId, userId: input.userId, kind: input.kind, errorCode: code }, "Media generation failed");
     throw error;
   }
 }

@@ -116,10 +116,15 @@ async function generate(kind: PixazoDirectMediaKind, input: { prompt: string; mo
     return { kind, provider: "pixazo", model, interactionId: response.headers.get("x-request-id"), mimeType, bytes };
   } catch (error) {
     if (error instanceof PixazoMediaError) throw error;
-    const message = error instanceof Error && error.name === "AbortError"
+    const errorCategory = error instanceof Error && error.name === "AbortError"
+      ? "timeout"
+      : error instanceof TypeError
+        ? "network"
+        : "unknown";
+    const message = errorCategory === "timeout"
       ? "Pixazo media generation timed out. Please retry shortly."
       : "Pixazo media generation could not be reached. Please retry shortly.";
-    logger.warn({ event: "pixazo_media_transport_error", kind, error: error instanceof Error ? error.message : "unknown" }, "Pixazo media transport failed");
+    logger.warn({ event: "pixazo_media_transport_error", kind, errorCategory }, "Pixazo media transport failed");
     throw new PixazoMediaError("PROVIDER_ERROR", message);
   } finally {
     clearTimeout(timeout);
@@ -240,10 +245,15 @@ async function resolveTracksAudio(input: { prompt: string; model?: string }): Pr
     throw new PixazoMediaError("PROVIDER_ERROR", "Pixazo audio generation timed out. Please retry shortly.");
   } catch (error) {
     if (error instanceof PixazoMediaError) throw error;
-    const message = error instanceof Error && error.name === "AbortError"
+    const errorCategory = error instanceof Error && error.name === "AbortError"
+      ? "timeout"
+      : error instanceof TypeError
+        ? "network"
+        : "unknown";
+    const message = errorCategory === "timeout"
       ? "Pixazo audio generation timed out. Please retry shortly."
       : "Pixazo audio generation could not be reached. Please retry shortly.";
-    logger.warn({ event: "pixazo_tracks_transport_error", error: error instanceof Error ? error.message : "unknown" }, "Pixazo Tracks audio transport failed");
+    logger.warn({ event: "pixazo_tracks_transport_error", errorCategory }, "Pixazo Tracks audio transport failed");
     throw new PixazoMediaError("PROVIDER_ERROR", message);
   } finally {
     clearTimeout(timeout);
