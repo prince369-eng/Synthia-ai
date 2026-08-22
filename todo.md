@@ -3447,3 +3447,8 @@
 - [x] Add a bounded display-only task event payload redactor for credential-named fields, credential-bearing URLs, authorization strings, nested/cyclic values, and oversized structures.
 - [x] Render terminal event data through the redactor without modifying the immutable persisted event, task replay source, or task runner behavior.
 - [x] Add deterministic terminal and workspace contracts, then validate strict typing, focused regressions, the full deterministic suite, and a production build without starting a task or provider.
+
+## Workspace-wide task event display redaction
+- [x] Apply the display-only event payload redactor to timeline summaries and Live Computer fallback payloads in addition to terminal output.
+- [x] Extend source-contract coverage so future workspace event surfaces cannot serialize raw payloads without the redaction boundary.
+- [x] Validate strict typing, focused workspace regressions, the full deterministic suite, and a production build without starting a task or provider.

@@ -415,6 +415,8 @@ describe("compact workspace layout contract", () => {
 
     expect(terminal).toContain("JSON.stringify(redactTaskEventPayload(event.payload), null, 2)");
     expect(terminal).not.toContain("JSON.stringify(asRecord(event.payload), null, 2)");
+    expect(workspace).toContain("return JSON.stringify(redactTaskEventPayload(payload));");
+    expect(workspace).toContain("JSON.stringify(redactTaskEventPayload(asRecord(event.payload)), null, 2)");
     expect(display).toContain("Produces a bounded, display-only view of task event data");
     expect(display).toContain("The persisted task");
     expect(display).toContain("SENSITIVE_FIELD_NAME");
