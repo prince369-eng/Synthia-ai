@@ -3296,6 +3296,12 @@
 - [x] Preserve task ownership, realtime configuration gates, local screen-share cleanup, and transcript safeguards in the deferred module.
 - [x] Add deterministic lazy-load safety coverage; document, validate, and checkpoint the client-bundle optimization without starting a realtime workload.
 
+## Production client-delivery hardening
+
+- [x] Audit the primary client-delivery path and identify the development-only classic preview bundle as a production request-graph risk.
+- [x] Remove the classic preview compatibility script from resolved production HTML while preserving the normal module entry and managed development-preview source behavior.
+- [x] Add a deterministic build-boundary regression, validate production output and the full test suite, document, and checkpoint the delivery optimization.
+
 ## Modern workspace UI and UX refinement
 
 - [x] Audit the authenticated shell, dashboard composer, workspace panels, typography, iconography, spacing, hierarchy, and responsive behavior against current productivity-agent interaction patterns.

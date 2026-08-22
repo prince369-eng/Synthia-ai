@@ -150,7 +150,22 @@ function vitePluginManusDebugCollector(): Plugin {
   };
 }
 
-const plugins = [react(), tailwindcss(), jsxLocPlugin(), vitePluginManusRuntime(), vitePluginManusDebugCollector()];
+function vitePluginSynthiaProductionPreviewGuard(): Plugin {
+  let isProductionBuild = false;
+
+  return {
+    name: "synthia-production-preview-guard",
+    configResolved(config) {
+      isProductionBuild = config.command === "build" && config.mode === "production";
+    },
+    transformIndexHtml(html) {
+      if (!isProductionBuild) return html;
+      return html.replace(/\s*<script defer src="\/synthia-preview\.js"><\/script>/, "");
+    },
+  };
+}
+
+const plugins = [react(), tailwindcss(), jsxLocPlugin(), vitePluginManusRuntime(), vitePluginManusDebugCollector(), vitePluginSynthiaProductionPreviewGuard()];
 
 export default defineConfig({
   plugins,
