@@ -13,6 +13,7 @@ describe("structured logging hardening", () => {
       "_core/notification.ts",
       "_core/oauth.ts",
       "_core/sdk.ts",
+      "_core/trpc.ts",
       "_core/vite.ts",
       "integrations/appConnectors.ts",
       "realtime/taskEventStream.ts",
@@ -23,6 +24,7 @@ describe("structured logging hardening", () => {
       expect(contents).toContain("logger");
       expect(contents).not.toMatch(/console\.(log|warn|error|info)/);
       expect(contents).not.toMatch(/logger\.(error|warn)\(\{[^\n]*error\.message/);
+      expect(contents).not.toMatch(/logger\.(error|warn)\([\s\S]*?,\s*error\.message\s*\)/);
     }
   });
 

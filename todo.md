@@ -3326,6 +3326,12 @@
 - [x] Restrict accepted public-web destinations to standard implicit HTTP/HTTPS ports while retaining existing protocol, credential, hostname, literal-IP, and DNS-address checks.
 - [x] Add deterministic non-standard-port coverage; document, validate, and checkpoint the policy change without performing an outbound request.
 
+## tRPC diagnostic redaction
+
+- [x] Audit the tRPC formatter for client-visible internal error disclosure and raw exception text in server diagnostics.
+- [x] Preserve generic internal client errors and procedure-authored public errors while replacing raw formatter exception logging with stable structured metadata and a constant message.
+- [x] Extend logging-boundary coverage; document, validate, and checkpoint the tRPC diagnostic hardening without external workloads.
+
 ## Modern workspace UI and UX refinement
 
 - [x] Audit the authenticated shell, dashboard composer, workspace panels, typography, iconography, spacing, hierarchy, and responsive behavior against current productivity-agent interaction patterns.

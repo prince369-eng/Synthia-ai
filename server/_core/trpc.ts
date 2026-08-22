@@ -15,7 +15,7 @@ const t = initTRPC.context<TrpcContext>().create({
         path,
         userId: ctx?.user?.id,
       },
-      error.message,
+      "tRPC request failed",
     );
     return {
       ...shape,
