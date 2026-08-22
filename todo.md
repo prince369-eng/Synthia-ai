@@ -3268,6 +3268,14 @@
 - [x] Implement prioritized, evidence-backed hardening and fully complete safe, non-external unfinished paths with regression coverage.
 - [x] Run strict validation, full tests, production build, document remediations and configuration-gated residuals, then checkpoint the audit.
 
+## Reversible task policy packs
+
+- [x] Define owner-scoped, declarative policy packs with a task domain, bounded guidance, evidence requirements, approval constraints, and an enabled/archived lifecycle.
+- [x] Add durable policy-pack persistence, event audit records, protected APIs, and task-owner authorization; policy packs must never create work, invoke tools, change credentials, or grant permissions.
+- [x] Expose review-only workspace controls that allow owners to create, edit, inspect, and archive policy packs; replay mode remains read-only.
+- [x] Apply only explicitly enabled policy-pack guidance to a later task’s planning context, visibly and without overriding task-level approvals or action policy.
+- [x] Add deterministic authorization, non-mutation, UI-boundary, and planning-context regressions; document, validate, and checkpoint the capability.
+
 ## Modern workspace UI and UX refinement
 
 - [x] Audit the authenticated shell, dashboard composer, workspace panels, typography, iconography, spacing, hierarchy, and responsive behavior against current productivity-agent interaction patterns.

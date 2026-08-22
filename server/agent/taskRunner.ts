@@ -6,6 +6,7 @@ import {
   createDeliverable,
   createSandboxForTask,
   getApprovedPersonalizationContext,
+  listEnabledPolicyPacksForPlanning,
   getRecoverableSandboxForTask,
   getTaskSkillSelectionsForUser,
   getTaskById,
@@ -31,6 +32,7 @@ import { logger } from "../security/logger";
 import { notifyTask } from "./notifications";
 import { storageGetSignedUrl } from "../storage";
 import { personalizationInstruction } from "./personalizationContext";
+import { policyPackPlanningContext } from "./policyPackContext";
 import { resolveAutomaticTaskModel } from "./automaticRouting";
 import { runtimeConfiguredComposerModels } from "./modelCatalog";
 import { executeTaskMedia } from "../media/taskMedia";
@@ -299,6 +301,7 @@ export async function runTaskCycle(taskId: string) {
     const selectedModel = routing.model;
     const personalization = await getApprovedPersonalizationContext(task.userId);
     const personalizationPrompt = personalizationInstruction(personalization);
+    const policyPacksPrompt = policyPackPlanningContext(await listEnabledPolicyPacksForPlanning(task.userId, task.goal));
     const cachedSkillSelections = await getTaskSkillSelectionsForUser(task.id, task.userId);
     const taskSkills = cachedSkillSelections.length
       ? cachedSkillSelections
@@ -322,6 +325,7 @@ export async function runTaskCycle(taskId: string) {
         content: [
           "You are Synthia AI's task orchestrator. Choose exactly one next action. Never execute external side effects; use external_effect to request approval. Keep all sandbox files under /workspace. Task input attachments are hydrated as read-only files in /workspace/inputs before a sandbox action; inspect them only through sandbox commands. Use publish_file with a workspace path, a plain filename, and a MIME type to deliver a file. Return only JSON: { narration: string, action: { kind: respond|web_search|run_command|write_file|open_url|capture_screen|publish_file|complete|external_effect, ... }, plan?: [{id,title,state}] }.",
           personalizationPrompt,
+          policyPacksPrompt,
           skillsPrompt,
         ].filter(Boolean).join("\n\n"),
       },

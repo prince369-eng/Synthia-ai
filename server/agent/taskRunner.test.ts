@@ -7,6 +7,7 @@ const db = {
   createSandboxForTask: vi.fn(),
   getRecoverableSandboxForTask: vi.fn(),
   getApprovedPersonalizationContext: vi.fn(),
+  listEnabledPolicyPacksForPlanning: vi.fn(),
   getTaskSkillSelectionsForUser: vi.fn(),
   getTaskById: vi.fn(),
   getUserById: vi.fn(),
@@ -57,6 +58,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   db.getTaskById.mockResolvedValue(baseTask);
   db.getApprovedPersonalizationContext.mockResolvedValue({ dimensions: null, sessionMemories: [], longTermMemories: [] });
+  db.listEnabledPolicyPacksForPlanning.mockResolvedValue([]);
   db.getTaskSkillSelectionsForUser.mockResolvedValue([]);
   db.listEnabledSkillCandidatesForUser.mockResolvedValue([]);
   db.cacheTaskSkillSelections.mockResolvedValue([]);

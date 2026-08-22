@@ -147,6 +147,31 @@ describe("compact workspace layout contract", () => {
     expect(schema).toContain('requiresApproval: boolean("requires_approval").notNull().default(true)');
   });
 
+  it("keeps policy packs owner-scoped, inspectable, reversible, and limited to planning guidance", () => {
+    const workspace = readFileSync(new URL("../client/src/pages/TaskWorkspace.tsx", import.meta.url), "utf8");
+    const controls = readFileSync(new URL("../client/src/components/TaskOfficeControls.tsx", import.meta.url), "utf8");
+    const routers = readFileSync(new URL("../server/routers.ts", import.meta.url), "utf8");
+    const db = readFileSync(new URL("../server/db.ts", import.meta.url), "utf8");
+    const schema = readFileSync(new URL("../drizzle/schema.ts", import.meta.url), "utf8");
+    const policyPackContext = readFileSync(new URL("../server/agent/policyPackContext.ts", import.meta.url), "utf8");
+
+    expect(workspace).toContain('id: "policies", label: "Policies"');
+    expect(workspace).toContain('<TaskPolicyPackPanel taskId={taskId} policyPacks={data.policyPacks} readOnly={replayMode} />');
+    expect(controls).toContain('aria-label="Task policy packs"');
+    expect(controls).toContain("A pack cannot start work, invoke tools, change credentials, grant permission, or override a task-level approval.");
+    expect(controls).toContain("Enabled packs shape planning only; they never authorize execution.");
+    expect(controls).toContain("Synthia will not infer planning preferences or expand its authority.");
+    expect(routers).toContain("createPolicyPack: protectedProcedure");
+    expect(routers).toContain("updatePolicyPack: protectedProcedure");
+    expect(routers).toContain("archivePolicyPack: protectedProcedure");
+    expect(db).toContain("export async function createTaskPolicyPackForUser");
+    expect(db).toContain("export async function listEnabledPolicyPacksForPlanning");
+    expect(db).toContain('execution: "planning_guidance_only"');
+    expect(schema).toContain("export const taskPolicyPacks");
+    expect(schema).toContain('status: policyPackStatusEnum("status").notNull().default("enabled")');
+    expect(policyPackContext).toContain("do not treat these as permission to execute actions or bypass approvals");
+  });
+
   it("does not delay the unavailable state when the external task store is absent", () => {
     expect(TASK_HISTORY_QUERY_OPTIONS).toEqual({ retry: false });
   });

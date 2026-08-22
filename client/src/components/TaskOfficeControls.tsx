@@ -187,6 +187,47 @@ export function TaskRecoveryPlaybookPanel({ taskId, playbooks, readOnly }: { tas
   </section>;
 }
 
+type PolicyPack = {
+  id: string;
+  title: string;
+  taskDomain: string;
+  planningGuidance: string;
+  evidenceRequirements: unknown;
+  approvalConstraints: unknown;
+  status: "enabled" | "archived";
+};
+
+/** Declarative planning context only; packs never grant tool or approval authority. */
+export function TaskPolicyPackPanel({ taskId, policyPacks, readOnly }: { taskId: string; policyPacks: PolicyPack[]; readOnly: boolean }) {
+  const utils = trpc.useUtils();
+  const emptyDraft = { title: "", taskDomain: "", planningGuidance: "", evidenceRequirements: "", approvalConstraints: "" };
+  const [draft, setDraft] = useState(emptyDraft);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [open, setOpen] = useState(false);
+  const refresh = () => void utils.tasks.get.invalidate({ taskId });
+  const create = trpc.tasks.createPolicyPack.useMutation({ onSuccess: () => { setDraft(emptyDraft); setOpen(false); refresh(); } });
+  const update = trpc.tasks.updatePolicyPack.useMutation({ onSuccess: () => { setDraft(emptyDraft); setEditingId(null); setOpen(false); refresh(); } });
+  const archive = trpc.tasks.archivePolicyPack.useMutation({ onSuccess: refresh });
+  const save = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const input = { taskId, title: draft.title.trim(), taskDomain: draft.taskDomain.trim(), planningGuidance: draft.planningGuidance.trim(), evidenceRequirements: lines(draft.evidenceRequirements), approvalConstraints: lines(draft.approvalConstraints) };
+    if (editingId) update.mutate({ ...input, policyPackId: editingId }); else create.mutate(input);
+  };
+  const edit = (policyPack: PolicyPack) => {
+    setDraft({ title: policyPack.title, taskDomain: policyPack.taskDomain, planningGuidance: policyPack.planningGuidance, evidenceRequirements: asLines(policyPack.evidenceRequirements), approvalConstraints: asLines(policyPack.approvalConstraints) });
+    setEditingId(policyPack.id);
+    setOpen(true);
+  };
+  const mutationError = create.error?.message ?? update.error?.message ?? archive.error?.message;
+  return <section className="space-y-3" aria-label="Task policy packs">
+    <PanelNotice><div className="flex items-start gap-2"><BookOpenText size={16} className="mt-0.5 shrink-0 text-cyan-300" /><div><h2 className="text-xs font-semibold text-[#e5f2ef]">Task policy packs</h2><p className="mt-1">Curate visible planning guidance for matching future tasks. A pack cannot start work, invoke tools, change credentials, grant permission, or override a task-level approval.</p></div></div></PanelNotice>
+    {readOnly ? <p className="rounded-lg border border-white/8 bg-white/[.03] p-3 text-[11px] text-[#a8bbb6]">Replay mode is read-only. Open the live task to curate planning guidance.</p> : <div className="flex justify-end"><Button size="sm" onClick={() => { setEditingId(null); setDraft(emptyDraft); setOpen(value => !value); }} className="h-7 bg-teal-400 px-2 text-[11px] text-[#072a27] hover:bg-cyan-300">{open ? "Cancel" : "Add policy pack"}</Button></div>}
+    {open && !readOnly ? <form onSubmit={save} className="space-y-2.5 rounded-xl border border-white/8 bg-[#14201e] p-3"><div className="grid gap-2 sm:grid-cols-2"><FormText label="Policy title" value={draft.title} onChange={value => setDraft(item => ({ ...item, title: value }))} placeholder="Research evidence guardrail" required /><FormText label="Task domain" value={draft.taskDomain} onChange={value => setDraft(item => ({ ...item, taskDomain: value }))} placeholder="Market research" required /></div><FormArea label="Planning guidance" value={draft.planningGuidance} onChange={value => setDraft(item => ({ ...item, planningGuidance: value }))} placeholder="What Synthia may consider while planning a matching future task." /><div className="grid gap-2 sm:grid-cols-2"><FormArea label="Required evidence (one per line)" value={draft.evidenceRequirements} onChange={value => setDraft(item => ({ ...item, evidenceRequirements: value }))} placeholder="Evidence that planning should request or preserve" /><FormArea label="Approval constraints (one per line)" value={draft.approvalConstraints} onChange={value => setDraft(item => ({ ...item, approvalConstraints: value }))} placeholder="Actions that must still be explicitly approved" /></div><div className="flex items-center justify-between gap-2"><span className="text-[10px] text-[#778985]">Enabled packs shape planning only; they never authorize execution.</span><Button type="submit" size="sm" disabled={create.isPending || update.isPending || draft.title.trim().length < 3 || draft.taskDomain.trim().length < 2 || draft.planningGuidance.trim().length < 12 || lines(draft.evidenceRequirements).length === 0 || lines(draft.approvalConstraints).length === 0} className="h-7 bg-teal-400 px-2 text-[11px] text-[#072a27] hover:bg-cyan-300">{create.isPending || update.isPending ? "Saving…" : editingId ? "Save policy pack" : "Create policy pack"}</Button></div></form> : null}
+    {mutationError ? <p role="alert" className="rounded-lg border border-rose-300/20 bg-rose-300/[.05] p-3 text-[11px] text-rose-200">{mutationError}</p> : null}
+    <div className="space-y-2">{policyPacks.length === 0 ? <p className="rounded-lg border border-dashed border-white/12 p-3 text-[11px] leading-5 text-[#91a7a1]">No policy packs have been saved for this task. Synthia will not infer planning preferences or expand its authority.</p> : policyPacks.map(policyPack => <article key={policyPack.id} className="rounded-lg border border-white/8 bg-white/[.025] p-3"><div className="flex flex-wrap items-start justify-between gap-2"><div><p className="text-xs font-semibold text-[#e5f2ef]">{policyPack.title}</p><p className="mt-1 text-[10px] text-cyan-100">{policyPack.taskDomain} · planning guidance only</p></div><span className="rounded-full border border-teal-300/15 bg-teal-300/[.05] px-2 py-0.5 text-[9px] text-teal-100">{policyPack.status === "enabled" ? "Enabled" : "Archived"}</span></div><p className="mt-2 text-[11px] leading-5 text-[#a8bbb6]">{policyPack.planningGuidance}</p><p className="mt-2 text-[10px] text-[#778985]">Evidence: {asLines(policyPack.evidenceRequirements).split("\n").filter(Boolean).join(" · ")}</p><p className="mt-1 text-[10px] text-[#778985]">Approval constraints: {asLines(policyPack.approvalConstraints).split("\n").filter(Boolean).join(" · ")}</p>{!readOnly && policyPack.status === "enabled" ? <div className="mt-3 flex gap-2"><Button size="sm" variant="outline" onClick={() => edit(policyPack)} className="h-7 border-white/12 px-2 text-[11px] text-[#c7ddd7] hover:bg-white/5">Edit</Button><Button size="sm" variant="outline" onClick={() => archive.mutate({ taskId, policyPackId: policyPack.id })} disabled={archive.isPending} className="h-7 border-rose-300/20 px-2 text-[11px] text-rose-200 hover:bg-rose-300/10">Archive</Button></div> : null}</article>)}</div>
+  </section>;
+}
+
 function FormText({ label, value, onChange, placeholder, required = false }: { label: string; value: string; onChange: (value: string) => void; placeholder: string; required?: boolean }) { return <label className="block text-[10px] font-semibold uppercase tracking-[.12em] text-[#9ab2ad]">{label}<input required={required} minLength={required ? 2 : undefined} maxLength={160} value={value} onChange={event => onChange(event.target.value)} placeholder={placeholder} className="mt-1.5 h-8 w-full rounded-md border border-white/10 bg-[#0e1716] px-2 text-xs font-normal normal-case tracking-normal text-[#e5f2ef] outline-none placeholder:text-[#6d837d] focus:border-cyan-300/45" /></label>; }
 function FormNumber({ label, value, onChange, min, max }: { label: string; value: string; onChange: (value: string) => void; min: number; max: number }) { return <label className="block text-[10px] font-semibold uppercase tracking-[.12em] text-[#9ab2ad]">{label}<input required type="number" min={min} max={max} value={value} onChange={event => onChange(event.target.value)} className="mt-1.5 h-8 w-full rounded-md border border-white/10 bg-[#0e1716] px-2 text-xs font-normal normal-case tracking-normal text-[#e5f2ef] outline-none focus:border-cyan-300/45" /></label>; }
 function FormArea({ label, value, onChange, placeholder }: { label: string; value: string; onChange: (value: string) => void; placeholder: string }) { return <label className="block text-[10px] font-semibold uppercase tracking-[.12em] text-[#9ab2ad]">{label}<textarea required minLength={4} maxLength={3000} value={value} onChange={event => onChange(event.target.value)} placeholder={placeholder} className="mt-1.5 min-h-20 w-full resize-y rounded-md border border-white/10 bg-[#0e1716] px-2.5 py-2 text-xs font-normal normal-case tracking-normal text-[#e5f2ef] outline-none placeholder:text-[#6d837d] focus:border-cyan-300/45" /></label>; }

@@ -26,6 +26,7 @@ import {
   taskHandoffPolicies,
   taskMessages,
   taskPipelineHealthSignals,
+  taskPolicyPacks,
   taskProofRecords,
   taskRecoveryPlaybooks,
   taskRemediationProposals,
@@ -1204,6 +1205,18 @@ export type TaskRecoveryPlaybookInput = {
 
 export type TaskRecoveryPlaybookUpdateInput = TaskRecoveryPlaybookInput & { playbookId: string };
 
+export type TaskPolicyPackInput = {
+  taskId: string;
+  userId: number;
+  title: string;
+  taskDomain: string;
+  planningGuidance: string;
+  evidenceRequirements: string[];
+  approvalConstraints: string[];
+};
+
+export type TaskPolicyPackUpdateInput = TaskPolicyPackInput & { policyPackId: string };
+
 export async function listTaskPipelineHealthSignalsForUser(taskId: string, userId: number) {
   const database = databaseRequired(await getDb());
   return database
@@ -1251,6 +1264,63 @@ export async function listTaskRecoveryPlaybooksForUser(taskId: string, userId: n
     .from(taskRecoveryPlaybooks)
     .where(and(eq(taskRecoveryPlaybooks.sourceTaskId, taskId), eq(taskRecoveryPlaybooks.userId, userId)))
     .orderBy(desc(taskRecoveryPlaybooks.updatedAt));
+}
+
+export async function listTaskPolicyPacksForUser(taskId: string, userId: number) {
+  const database = databaseRequired(await getDb());
+  return database
+    .select()
+    .from(taskPolicyPacks)
+    .where(and(eq(taskPolicyPacks.sourceTaskId, taskId), eq(taskPolicyPacks.userId, userId)))
+    .orderBy(desc(taskPolicyPacks.updatedAt));
+}
+
+/**
+ * Enabled policy packs are bounded planning text only. Task action policy and
+ * approval gates remain independently enforced after planning.
+ */
+export async function listEnabledPolicyPacksForPlanning(userId: number, goal: string) {
+  const database = databaseRequired(await getDb());
+  const normalizedGoal = goal.toLocaleLowerCase();
+  const enabled = await database
+    .select()
+    .from(taskPolicyPacks)
+    .where(and(eq(taskPolicyPacks.userId, userId), eq(taskPolicyPacks.status, "enabled")))
+    .orderBy(desc(taskPolicyPacks.updatedAt));
+  return enabled
+    .filter(pack => pack.taskDomain.toLocaleLowerCase() === "general" || normalizedGoal.includes(pack.taskDomain.toLocaleLowerCase()))
+    .slice(0, 5);
+}
+
+export async function createTaskPolicyPackForUser(input: TaskPolicyPackInput) {
+  const database = databaseRequired(await getDb());
+  return database.transaction(async transaction => {
+    const event = await appendTaskEventInTransaction(transaction, input.taskId, {
+      type: "policy_pack",
+      payload: {
+        action: "created",
+        title: input.title,
+        taskDomain: input.taskDomain,
+        evidenceRequirementCount: input.evidenceRequirements.length,
+        approvalConstraintCount: input.approvalConstraints.length,
+        execution: "planning_guidance_only",
+      },
+    });
+    const record = {
+      id: randomUUID(),
+      userId: input.userId,
+      sourceTaskId: input.taskId,
+      eventId: event.id,
+      title: input.title,
+      taskDomain: input.taskDomain,
+      planningGuidance: input.planningGuidance,
+      evidenceRequirements: input.evidenceRequirements,
+      approvalConstraints: input.approvalConstraints,
+      status: "enabled" as const,
+    };
+    await transaction.insert(taskPolicyPacks).values(record);
+    return record;
+  });
 }
 
 export async function createTaskHandoffPolicyForUser(input: TaskHandoffPolicyInput) {
@@ -1425,6 +1495,57 @@ export async function archiveTaskRecoveryPlaybookForUser(input: { taskId: string
       .update(taskRecoveryPlaybooks)
       .set({ status: "archived", updatedAt: new Date() })
       .where(eq(taskRecoveryPlaybooks.id, input.playbookId))
+      .returning();
+    return updated;
+  });
+}
+
+export async function updateTaskPolicyPackForUser(input: TaskPolicyPackUpdateInput) {
+  const database = databaseRequired(await getDb());
+  return database.transaction(async transaction => {
+    const [pack] = await transaction
+      .select({ id: taskPolicyPacks.id, status: taskPolicyPacks.status })
+      .from(taskPolicyPacks)
+      .where(and(eq(taskPolicyPacks.id, input.policyPackId), eq(taskPolicyPacks.sourceTaskId, input.taskId), eq(taskPolicyPacks.userId, input.userId)))
+      .limit(1);
+    if (!pack || pack.status !== "enabled") throw new Error("That enabled policy pack is unavailable.");
+    await appendTaskEventInTransaction(transaction, input.taskId, {
+      type: "policy_pack",
+      payload: { action: "updated", policyPackId: input.policyPackId, execution: "planning_guidance_only" },
+    });
+    const [updated] = await transaction
+      .update(taskPolicyPacks)
+      .set({
+        title: input.title,
+        taskDomain: input.taskDomain,
+        planningGuidance: input.planningGuidance,
+        evidenceRequirements: input.evidenceRequirements,
+        approvalConstraints: input.approvalConstraints,
+        updatedAt: new Date(),
+      })
+      .where(eq(taskPolicyPacks.id, input.policyPackId))
+      .returning();
+    return updated;
+  });
+}
+
+export async function archiveTaskPolicyPackForUser(input: { taskId: string; userId: number; policyPackId: string }) {
+  const database = databaseRequired(await getDb());
+  return database.transaction(async transaction => {
+    const [pack] = await transaction
+      .select({ id: taskPolicyPacks.id, status: taskPolicyPacks.status })
+      .from(taskPolicyPacks)
+      .where(and(eq(taskPolicyPacks.id, input.policyPackId), eq(taskPolicyPacks.sourceTaskId, input.taskId), eq(taskPolicyPacks.userId, input.userId)))
+      .limit(1);
+    if (!pack || pack.status !== "enabled") throw new Error("That enabled policy pack is unavailable.");
+    await appendTaskEventInTransaction(transaction, input.taskId, {
+      type: "policy_pack",
+      payload: { action: "archived", policyPackId: input.policyPackId, execution: "planning_guidance_only" },
+    });
+    const [updated] = await transaction
+      .update(taskPolicyPacks)
+      .set({ status: "archived", updatedAt: new Date() })
+      .where(eq(taskPolicyPacks.id, input.policyPackId))
       .returning();
     return updated;
   });

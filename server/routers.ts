@@ -12,6 +12,7 @@ import {
   createTaskEvaluationPackForUser,
   createTaskEvaluationResultForUser,
   createTaskHandoffPolicyForUser,
+  createTaskPolicyPackForUser,
   createTaskPipelineHealthSignalForUser,
   createTaskProofRecordForUser,
   createTaskRecoveryPlaybookForUser,
@@ -47,6 +48,7 @@ import {
   listTaskEvaluationResultsForUser,
   listTaskHandoffPoliciesForUser,
   listTaskPipelineHealthSignalsForUser,
+  listTaskPolicyPacksForUser,
   listTaskProofRecordsForUser,
   listTaskRecoveryPlaybooksForUser,
   listTaskRemediationProposalsForUser,
@@ -57,6 +59,7 @@ import {
   softDeleteTaskForUser,
   updateTaskForUser,
   updateTaskHandoffPolicyForUser,
+  updateTaskPolicyPackForUser,
   updateTaskRecoveryPlaybookForUser,
   updateUserPreferences,
   updatePersonalizationMemory,
@@ -79,6 +82,7 @@ import {
   updateScheduledWorkflowForUser,
   updateVoiceSessionForUser,
   archiveTaskHandoffPolicyForUser,
+  archiveTaskPolicyPackForUser,
   archiveTaskRecoveryPlaybookForUser,
 } from "./db";
 import { getSessionCookieOptions } from "./_core/cookies";
@@ -274,6 +278,15 @@ const recoveryPlaybookSchema = taskIdSchema.extend({
 });
 const updateRecoveryPlaybookSchema = recoveryPlaybookSchema.extend({ playbookId: z.string().uuid() });
 const archiveRecoveryPlaybookSchema = taskIdSchema.extend({ playbookId: z.string().uuid() });
+const policyPackSchema = taskIdSchema.extend({
+  title: z.string().trim().min(3).max(160),
+  taskDomain: z.string().trim().min(2).max(100),
+  planningGuidance: z.string().trim().min(20).max(2_000),
+  evidenceRequirements: boundedEvidenceSchema,
+  approvalConstraints: z.array(z.string().trim().min(4).max(240)).min(1).max(12),
+});
+const updatePolicyPackSchema = policyPackSchema.extend({ policyPackId: z.string().uuid() });
+const archivePolicyPackSchema = taskIdSchema.extend({ policyPackId: z.string().uuid() });
 export const attachmentMimeSchema = z.string().trim().min(3).max(100).regex(
   /^(application\/(pdf|json|zip|x-7z-compressed|x-tar|vnd\.(openxmlformats-officedocument\.(wordprocessingml\.document|spreadsheetml\.sheet)|ms-excel|msword))|text\/(plain|csv|markdown)|image\/(png|jpeg|webp)|video\/(mp4|webm|quicktime))$/,
   "This file type is not supported.",
@@ -715,7 +728,7 @@ export const appRouter = router({
     }),
     get: protectedProcedure.input(taskIdSchema).query(async ({ ctx, input }) => {
       const task = await requireOwnedTask(input.taskId, ctx.user.id);
-      const [events, messages, approvals, deliverables, attachments, sandboxRows, skillSelections, proofRecords, pipelineHealthSignals, remediationProposals, delegations, handoffPolicies, recoveryPlaybooks, pendingTaskLessons, evaluationPacks, evaluationResults] = await Promise.all([
+      const [events, messages, approvals, deliverables, attachments, sandboxRows, skillSelections, proofRecords, pipelineHealthSignals, remediationProposals, delegations, handoffPolicies, recoveryPlaybooks, policyPacks, pendingTaskLessons, evaluationPacks, evaluationResults] = await Promise.all([
         listTaskEvents(task.id),
         listTaskMessages(task.id),
         listTaskApprovals(task.id),
@@ -729,11 +742,12 @@ export const appRouter = router({
         listTaskDelegationsForUser(task.id, ctx.user.id),
         listTaskHandoffPoliciesForUser(task.id, ctx.user.id),
         listTaskRecoveryPlaybooksForUser(task.id, ctx.user.id),
+        listTaskPolicyPacksForUser(task.id, ctx.user.id),
         listPendingTaskLessonsForUser({ taskId: task.id, userId: ctx.user.id }),
         listTaskEvaluationPacksForUser(task.id, ctx.user.id),
         listTaskEvaluationResultsForUser(task.id, ctx.user.id),
       ]);
-      return { task, events, messages, approvals, deliverables, attachments, sandboxes: sandboxRows, skillSelections, proofRecords, pipelineHealthSignals, remediationProposals, delegations, handoffPolicies, recoveryPlaybooks, pendingTaskLessons, evaluationPacks, evaluationResults };
+      return { task, events, messages, approvals, deliverables, attachments, sandboxes: sandboxRows, skillSelections, proofRecords, pipelineHealthSignals, remediationProposals, delegations, handoffPolicies, recoveryPlaybooks, policyPacks, pendingTaskLessons, evaluationPacks, evaluationResults };
     }),
     exportOffice: protectedProcedure
       .input(taskOfficeExportSchema)
@@ -1011,6 +1025,46 @@ export const appRouter = router({
           if (message.includes("unavailable")) throw new TRPCError({ code: "NOT_FOUND", message });
           console.error(JSON.stringify({ event: "task_recovery_playbook_archive_failed", taskId: input.taskId, userId: ctx.user.id, message }));
           throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "The recovery playbook could not be archived. Please retry." });
+        }
+      }),
+    createPolicyPack: protectedProcedure
+      .input(policyPackSchema)
+      .mutation(async ({ ctx, input }) => {
+        await enforceUserMutationLimit(ctx.user.id, "task-policy-pack-create", 30, 3_600);
+        await requireOwnedTask(input.taskId, ctx.user.id);
+        try {
+          return await createTaskPolicyPackForUser({ ...input, userId: ctx.user.id });
+        } catch (error) {
+          console.error(JSON.stringify({ event: "task_policy_pack_create_failed", taskId: input.taskId, userId: ctx.user.id, message: error instanceof Error ? error.message : "unknown" }));
+          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "The policy pack could not be saved. Please retry." });
+        }
+      }),
+    updatePolicyPack: protectedProcedure
+      .input(updatePolicyPackSchema)
+      .mutation(async ({ ctx, input }) => {
+        await enforceUserMutationLimit(ctx.user.id, "task-policy-pack-update", 50, 3_600);
+        await requireOwnedTask(input.taskId, ctx.user.id);
+        try {
+          return await updateTaskPolicyPackForUser({ ...input, userId: ctx.user.id });
+        } catch (error) {
+          const message = error instanceof Error ? error.message : "The policy pack could not be updated.";
+          if (message.includes("unavailable")) throw new TRPCError({ code: "NOT_FOUND", message });
+          console.error(JSON.stringify({ event: "task_policy_pack_update_failed", taskId: input.taskId, userId: ctx.user.id, message }));
+          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "The policy pack could not be updated. Please retry." });
+        }
+      }),
+    archivePolicyPack: protectedProcedure
+      .input(archivePolicyPackSchema)
+      .mutation(async ({ ctx, input }) => {
+        await enforceUserMutationLimit(ctx.user.id, "task-policy-pack-archive", 30, 3_600);
+        await requireOwnedTask(input.taskId, ctx.user.id);
+        try {
+          return await archiveTaskPolicyPackForUser({ ...input, userId: ctx.user.id });
+        } catch (error) {
+          const message = error instanceof Error ? error.message : "The policy pack could not be archived.";
+          if (message.includes("unavailable")) throw new TRPCError({ code: "NOT_FOUND", message });
+          console.error(JSON.stringify({ event: "task_policy_pack_archive_failed", taskId: input.taskId, userId: ctx.user.id, message }));
+          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "The policy pack could not be archived. Please retry." });
         }
       }),
     generateMedia: protectedProcedure.input(mediaGenerationSchema).mutation(async ({ ctx, input }) => {
