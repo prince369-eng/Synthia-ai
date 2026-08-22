@@ -261,6 +261,7 @@ describe("compact workspace layout contract", () => {
     expect(docs).toContain('className="synthia-docs-grid"');
     expect(docs).toContain('className="synthia-compact-card synthia-docs-card"');
     expect(docs).toContain('href="/docs/environment-reference.md"');
+    expect(docs).toContain('target="_blank" rel="noopener noreferrer"');
     expect(docs).toContain('setLocation("/settings/integrations")');
     expect(docs).toContain('setLocation("/")');
     expect(css).toContain(".synthia-docs-grid { @apply grid gap-2 md:grid-cols-2 xl:grid-cols-3; }");

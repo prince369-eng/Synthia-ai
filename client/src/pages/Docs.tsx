@@ -16,7 +16,7 @@ export default function Docs() {
       <article className="synthia-compact-card synthia-docs-card">
         <FileText size={17} />
         <div><b>Provider configuration</b><p>Review the environment contract before adding secure project secrets.</p></div>
-        <a href="/docs/environment-reference.md" target="_blank" rel="noreferrer" aria-label="Open environment reference"><ExternalLink size={15} /></a>
+        <a href="/docs/environment-reference.md" target="_blank" rel="noopener noreferrer" aria-label="Open environment reference"><ExternalLink size={15} /></a>
       </article>
       <article className="synthia-compact-card synthia-docs-card">
         <ShieldCheck size={17} />

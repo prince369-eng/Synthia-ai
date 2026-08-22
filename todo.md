@@ -3467,3 +3467,8 @@
 - [x] Restrict optional unauthenticated redirect paths to canonical same-origin application routes before client navigation.
 - [x] Add deterministic hostile-path and source-contract coverage without opening a browser destination.
 - [x] Validate strict typing, focused tests, the full deterministic suite, production build, and diff hygiene without starting external work.
+
+## Documentation new-tab isolation
+- [x] Add explicit opener isolation to the deliberate local documentation new-tab link.
+- [x] Add deterministic source-contract coverage without opening the documentation destination.
+- [x] Validate strict typing, focused tests, the full deterministic suite, production build, and diff hygiene without starting external work.
