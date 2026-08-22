@@ -3427,3 +3427,8 @@
 - [x] Normalize configured credential-bearing provider base URLs to canonical HTTPS endpoints before sandbox, browser, model, media, or connector clients receive them.
 - [x] Reject embedded credentials, non-standard ports, query strings, fragments, malformed URLs, and non-HTTPS schemes by falling back to a documented provider endpoint.
 - [x] Add deterministic environment-boundary coverage and validate provider-client compatibility with strict typing, focused regressions, the full deterministic suite, and a production build without invoking an external provider.
+
+## Provider endpoint public-host validation
+- [x] Require credential-bearing provider endpoints to use a normalized public domain name rather than localhost, local/internal names, metadata aliases, or literal IPv4/IPv6 addresses.
+- [x] Reuse the bounded public-domain predicate across capability allowlists and provider endpoint configuration to avoid policy drift.
+- [x] Extend deterministic endpoint boundary coverage and validate strict typing, focused provider-client regressions, the full deterministic suite, and a production build without invoking an external provider.

@@ -65,6 +65,10 @@ describe("configuredProviderDefaults", () => {
       "https://provider.example:8443/v1",
       "https://provider.example/v1?target=other",
       "https://provider.example/v1#fragment",
+      "https://localhost/v1",
+      "https://provider.local/v1",
+      "https://127.0.0.1/v1",
+      "https://[::1]/v1",
       "not a url",
     ]) expect(safeProviderBaseUrl(value, fallback)).toBe(fallback);
   });
