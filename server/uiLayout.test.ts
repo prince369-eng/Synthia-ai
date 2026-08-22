@@ -748,6 +748,15 @@ describe("compact workspace layout contract", () => {
     expect(schema).toContain('"proof_record"');
   });
 
+  it("keeps Settings data controls focused on user safeguards rather than storage implementation", () => {
+    const settings = readFileSync(new URL("../client/src/pages/Settings.tsx", import.meta.url), "utf8");
+
+    expect(settings).toContain("Synthia protects task records and user-owned attachments with secure workspace data handling.");
+    expect(settings).toContain("Internal access credentials and raw file locations are never displayed in Settings.");
+    expect(settings).not.toContain("persisted in PostgreSQL");
+    expect(settings).not.toContain("configured external database and object storage");
+  });
+
   it("keeps pipeline repair proposals and specialist delegation explicit, task-owned, and non-executing", () => {
     const workspace = readFileSync(new URL("../client/src/pages/TaskWorkspace.tsx", import.meta.url), "utf8");
     const router = readFileSync(new URL("../server/routers.ts", import.meta.url), "utf8");

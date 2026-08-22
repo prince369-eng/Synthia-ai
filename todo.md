@@ -3537,3 +3537,8 @@
 - [x] Replace user-facing task-computer provider reasons with generic task-scoped availability guidance while preserving capture capability controls.
 - [x] Add deterministic source-contract coverage that prevents backend provider availability reasons from rendering in the workspace.
 - [x] Validate strict typing, focused tests, the full deterministic suite, production build, and diff hygiene without starting external work.
+
+## Settings data-controls presentation hardening
+- [x] Replace database and object-storage implementation labels with user-focused data-handling guidance.
+- [x] Add deterministic source-contract coverage that prevents data-controls infrastructure disclosures.
+- [x] Validate strict typing, focused tests, the full deterministic suite, production build, and diff hygiene without starting external work.
