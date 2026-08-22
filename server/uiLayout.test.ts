@@ -92,6 +92,14 @@ describe("compact workspace layout contract", () => {
     expect(projects).not.toContain("store is configured");
   });
 
+  it("keeps Library availability guidance user-focused without exposing storage implementation details", () => {
+    const library = readFileSync(new URL("../client/src/pages/Library.tsx", import.meta.url), "utf8");
+
+    expect(library).toContain("Library is temporarily unavailable. Refresh the workspace or try again shortly.");
+    expect(library).not.toContain("external Synthia data store");
+    expect(library).not.toContain("data store is configured");
+  });
+
   it("offers a compact, viewport-safe app-only composer picker that includes only connected apps as task context and routes setup to Plugins", () => {
     const dashboard = readFileSync(new URL("../client/src/pages/TaskDashboard.tsx", import.meta.url), "utf8");
     const routers = readFileSync(new URL("../server/routers.ts", import.meta.url), "utf8");
