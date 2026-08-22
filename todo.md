@@ -3487,3 +3487,8 @@
 - [x] Restrict the document CSP connection policy to the same-origin API and required secure socket transport after verifying client network calls are local API and event-stream paths.
 - [x] Add deterministic response-header contract coverage without making a browser or network request.
 - [x] Validate strict typing, focused tests, the full deterministic suite, production build, and diff hygiene without starting external work.
+
+## Configured public-origin normalization
+- [x] Normalize the configured production application origin to a canonical credential-free public HTTPS origin before CORS uses it.
+- [x] Add deterministic malformed, local, literal-IP, path, query, fragment, and credential configuration coverage without sending a request.
+- [x] Validate strict typing, focused tests, the full deterministic suite, production build, and diff hygiene without starting external work.

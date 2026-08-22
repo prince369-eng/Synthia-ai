@@ -67,6 +67,32 @@ export function safeProviderBaseUrl(value: string | undefined, fallback: string)
   }
 }
 
+/**
+ * The browser Origin header never contains a path, query, fragment, or credentials.
+ * Normalize the configured production origin to that same narrow shape before it can
+ * expand credentialed CORS access.
+ */
+export function publicApplicationOrigin(value?: string): string | null {
+  const candidate = value?.trim();
+  if (!candidate) return null;
+  try {
+    const url = new URL(candidate);
+    if (
+      url.protocol !== "https:" ||
+      url.username ||
+      url.password ||
+      url.port ||
+      url.pathname !== "/" ||
+      url.search ||
+      url.hash ||
+      !isPublicHostname(url.hostname.toLowerCase().replace(/^\[|\]$/g, ""))
+    ) return null;
+    return url.origin;
+  } catch {
+    return null;
+  }
+}
+
 const APPROVED_FREE_MODELS = [
   "aihubmix:glm-5.2-free",
   "aihubmix:gemini-3.7-flash-free",

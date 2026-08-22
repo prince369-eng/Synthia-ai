@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { boundedPositiveInteger, configuredProviderDefaults, isExplicitlyEnabled, publicHostnameAllowlist, safeProviderBaseUrl } from "./env";
+import { boundedPositiveInteger, configuredProviderDefaults, isExplicitlyEnabled, publicApplicationOrigin, publicHostnameAllowlist, safeProviderBaseUrl } from "./env";
 
 describe("configuredProviderDefaults", () => {
   it("uses the user-approved free-tier, vision, Pixazo, and public-facing task defaults when no non-secret override exists", () => {
@@ -71,5 +71,22 @@ describe("configuredProviderDefaults", () => {
       "https://[::1]/v1",
       "not a url",
     ]) expect(safeProviderBaseUrl(value, fallback)).toBe(fallback);
+  });
+
+  it("normalizes only public HTTPS origins before credentialed CORS matching", () => {
+    expect(publicApplicationOrigin("https://APP.Example.Test/")).toBe("https://app.example.test");
+    for (const value of [
+      "http://app.example.test",
+      "https://token@app.example.test",
+      "https://app.example.test:8443",
+      "https://app.example.test/workspace",
+      "https://app.example.test?mode=test",
+      "https://app.example.test#section",
+      "https://localhost",
+      "https://app.local",
+      "https://127.0.0.1",
+      "https://[::1]",
+      "not a url",
+    ]) expect(publicApplicationOrigin(value)).toBeNull();
   });
 });

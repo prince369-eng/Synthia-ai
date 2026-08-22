@@ -10,5 +10,6 @@ describe("document response security header contract", () => {
     expect(source).not.toContain("connect-src 'self' https: wss:");
     expect(source).toContain("frame-ancestors 'none'");
     expect(source).toContain("form-action 'self'");
+    expect(source).toContain("publicApplicationOrigin(ENV.publicAppUrl)");
   });
 });
