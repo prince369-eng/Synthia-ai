@@ -3635,11 +3635,11 @@
 - [x] Define Linux runner rejection rules for bridged adapters, NAT/NAT Network, port forwarding, cloud adapters, physical-device targets, arbitrary CLI content, expired/replayed manifests, and exceeded resource limits.
 
 ## Linux local virtual-lab runner implementation
-- [ ] Implement a separate local-only Linux runner CLI that requires explicit operator confirmation and validates a signed Synthia manifest before any VM command is eligible to run.
-- [ ] Implement manifest signature, expiry, platform, network-policy, resource-limit, vendor-image alias, and restricted-operation validation before command planning.
+- [x] Implement a separate local-only Linux runner CLI that requires explicit operator confirmation and validates a signed Synthia manifest before any VM command is eligible to run.
+- [x] Implement manifest signature, expiry, platform, network-policy, resource-limit, vendor-image alias, and restricted-operation validation before command planning.
 - [ ] Implement safe VirtualBox command planning that permits only internal-network adapter operations and rejects bridge, NAT, port forwarding, cloud adapters, physical targets, and shell interpolation.
-- [ ] Implement bounded local validation evidence, redaction, integrity digests, cleanup planning, and a human-reviewed submission package without automatically transmitting it.
-- [ ] Add runner unit tests and dry-run integration tests that prove no subprocess, VirtualBox, vendor-image, device, or external request is invoked during validation.
+- [x] Implement bounded local validation evidence, redaction, integrity digests, cleanup planning, and a human-reviewed submission package without automatically transmitting it.
+- [x] Add runner unit tests and dry-run integration tests that prove no subprocess, VirtualBox, vendor-image, device, or external request is invoked during validation.
 - [x] Replace the control-plane shared-secret manifest signing design with Ed25519 private-key signing and local-runner public-key verification so the runner never receives a server signing secret.
 
 ## Product, developer, and operational documentation

@@ -16,7 +16,8 @@
     "worker": "NODE_ENV=production node dist/worker.js",
     "worker:dev": "NODE_ENV=development tsx server/agent/worker.ts",
     "voice-worker": "NODE_ENV=production node dist/voice-agent.js",
-    "voice-worker:dev": "NODE_ENV=development tsx server/realtime/voiceAgent.ts"
+    "voice-worker:dev": "NODE_ENV=development tsx server/realtime/voiceAgent.ts",
+    "network-lab:dry-run": "tsx runner/synthia-network-lab-runner.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1116.0",
