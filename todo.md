@@ -3591,3 +3591,8 @@
 - [x] Keep unknown worker exceptions out of persisted task failure reasons and user-visible task-event messages while preserving retry behavior and structured logs.
 - [x] Add deterministic coverage for safe worker failure recording without executing a task cycle.
 - [x] Validate strict typing, focused tests, the full deterministic suite, production build, and diff hygiene without starting external work.
+
+## Voice Mode session diagnostic hardening
+- [x] Keep unknown realtime dispatch exceptions out of persisted Voice Mode session failure reasons while preserving safe client recovery guidance.
+- [x] Add deterministic coverage for bounded Voice Mode dispatch-failure recording without creating a realtime session.
+- [x] Validate strict typing, focused tests, the full deterministic suite, production build, and diff hygiene without starting external work.
