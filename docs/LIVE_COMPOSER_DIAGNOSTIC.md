@@ -15,3 +15,9 @@ The duplicate-root prevention change was validated deterministically and deploye
 The connected-browser bridge subsequently timed out while waiting for the client to advance beyond its loading state. This browser-bridge timeout is recorded as diagnostic evidence only; it does not establish a server failure because authenticated `auth.me` and `tasks.list` requests returned successfully when invoked directly.
 
 The static-preview response was then changed from an embedded multi-megabyte compatibility bundle to one versioned same-origin classic script. Focused delivery tests and a production build passed. After restart, the connected browser still showed `Loading Synthia workspace…`; therefore response payload size and duplicate bundle delivery are not sufficient explanations for the observed loading state.
+
+## Fresh-preview reproduction
+
+The earlier public proxy was confirmed to serve a stale inline compatibility bundle. A fresh same-origin proxy served the current versioned classic bundle and bounded RPC lifecycle script. The user reproduced the composer failure there with the approved text-only prompt. No bounded lifecycle, composer-boundary, or tRPC-error log record reached the server from that submission.
+
+A separate authenticated browser observation on the fresh proxy initially rendered the authenticated shell and then resolved to the current composer with an empty, owner-scoped task list. This proves that the current classic client can complete authentication and read-only task listing. The remaining discrepancy is localized to the composer mutation transport or its client-visible error object, not provider dispatch or worker execution. No further task was submitted during this observation.

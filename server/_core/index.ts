@@ -88,6 +88,20 @@ async function startServer() {
     }
     res.status(204).end();
   });
+  app.post("/__synthia__/composer-client-diagnostic", (req, res) => {
+    if (process.env.SYNTHIA_STATIC_PREVIEW !== "true") {
+      res.status(404).end();
+      return;
+    }
+    const kind = req.body?.kind;
+    const trpcCode = req.body?.trpcCode;
+    const validKind = kind === "trpc" || kind === "network" || kind === "unknown";
+    const validCode = trpcCode === null || ["BAD_REQUEST", "UNAUTHORIZED", "FORBIDDEN", "NOT_FOUND", "TOO_MANY_REQUESTS", "PRECONDITION_FAILED", "INTERNAL_SERVER_ERROR", "TIMEOUT", "CLIENT_CLOSED_REQUEST"].includes(trpcCode);
+    if (validKind && validCode) {
+      logger.info({ event: "composer_client_failure", kind, trpcCode }, "Composer client failure diagnostic");
+    }
+    res.status(204).end();
+  });
   app.post("/api/scheduled/workflow", runScheduledWorkflow);
   // tRPC API
   app.use(

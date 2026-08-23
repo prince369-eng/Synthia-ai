@@ -13,6 +13,7 @@ import { resolveAutomaticTaskRoute } from "@shared/automaticTaskRouting";
 import { normalizeExternalResourceUrl } from "@shared/externalReference";
 import { applyPromptGuidance, promptGuidanceForGoal } from "@/lib/promptGuidance";
 import { clientErrorMessage } from "@/lib/clientErrorDisplay";
+import { reportComposerFailure } from "@/lib/composerFailureTelemetry";
 
 export function buildTaskAttachmentRefs(attachments: ComposerAttachment[]) {
   return attachments.map(attachment => attachment.sourceType === "library"
@@ -90,6 +91,7 @@ export default function TaskDashboard() {
       openVoiceAfterTaskCreateRef.current = false;
       setLocation(`/tasks/${task.id}${openVoice ? "?voice=1" : ""}`);
     },
+    onError: error => reportComposerFailure(error),
   });
   const estimate = trpc.catalog.estimateTask.useQuery(
     { goal, planSteps: 3, involvesCode },
