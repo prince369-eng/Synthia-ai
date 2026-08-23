@@ -6,11 +6,12 @@ import type { TrpcContext } from "./_core/context";
 
 const taskId = "11111111-1111-4111-8111-111111111111";
 const deliverableId = "22222222-2222-4222-8222-222222222222";
+const applicationUserId = 10;
 
 function createContext(): TrpcContext {
   return {
     user: {
-      id: 7,
+      id: applicationUserId,
       openId: "artifact-owner",
       name: "Artifact Owner",
       email: "owner@example.test",
@@ -31,7 +32,7 @@ describe("tasks.artifactUrl", () => {
   });
 
   it("refreshes a deliverable URL only after verifying task ownership", async () => {
-    vi.spyOn(db, "getTaskForUser").mockResolvedValue({ id: taskId, userId: 7 } as never);
+    vi.spyOn(db, "getTaskForUser").mockResolvedValue({ id: taskId, userId: applicationUserId } as never);
     vi.spyOn(db, "listTaskDeliverables").mockResolvedValue([
       {
         id: deliverableId,
@@ -45,7 +46,7 @@ describe("tasks.artifactUrl", () => {
 
     const result = await appRouter.createCaller(createContext()).tasks.artifactUrl({ taskId, deliverableId });
 
-    expect(db.getTaskForUser).toHaveBeenCalledWith(taskId, 7);
+    expect(db.getTaskForUser).toHaveBeenCalledWith(taskId, applicationUserId);
     expect(artifactStorage.getTaskArtifactUrl).toHaveBeenCalledWith(`tasks/${taskId}/report.md`);
     expect(result).toEqual({
       filename: "report.md",

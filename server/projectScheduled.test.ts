@@ -6,11 +6,12 @@ import { appRouter } from "./routers";
 import type { TrpcContext } from "./_core/context";
 
 const projectId = "11111111-1111-4111-8111-111111111111";
+const applicationUserId = 3;
 
 function createContext(cookie = "app_session_id=user-session-token"): TrpcContext {
   return {
     user: {
-      id: 7,
+      id: applicationUserId,
       openId: "project-owner",
       name: "Project Owner",
       email: "owner@example.test",
@@ -32,7 +33,7 @@ describe("projects and scheduled router procedures", () => {
   });
 
   it("creates projects only for the authenticated owner", async () => {
-    const created = { id: projectId, userId: 7, name: "Website launch", description: "Prepare launch work." };
+    const created = { id: projectId, userId: applicationUserId, name: "Website launch", description: "Prepare launch work." };
     vi.spyOn(db, "createProjectForUser").mockResolvedValue(created as never);
 
     const result = await appRouter.createCaller(createContext()).projects.create({
@@ -41,7 +42,7 @@ describe("projects and scheduled router procedures", () => {
     });
 
     expect(db.createProjectForUser).toHaveBeenCalledWith({
-      userId: 7,
+      userId: applicationUserId,
       name: "Website launch",
       description: "Prepare launch work.",
     });
@@ -69,7 +70,7 @@ describe("projects and scheduled router procedures", () => {
 
   it("creates an authenticated task with owned uploaded inputs and queues its first execution cycle", async () => {
     const taskId = "33333333-3333-4333-8333-333333333333";
-    const createdTask = { id: taskId, userId: 7, status: "queued", title: "Prepare a secured implementation brief" };
+    const createdTask = { id: taskId, userId: applicationUserId, status: "queued", title: "Prepare a secured implementation brief" };
     vi.spyOn(db, "createTaskForUser").mockResolvedValue(createdTask as never);
     vi.spyOn(db, "appendTaskEvent").mockResolvedValue({ id: "event-automatic-route", sequenceNumber: 1 } as never);
     vi.spyOn(queue, "enqueueTaskCycle").mockResolvedValue(true);
@@ -88,20 +89,20 @@ describe("projects and scheduled router procedures", () => {
         sourceType: "upload",
         filename: "operating-notes.txt",
         fileType: "text/plain",
-        storageKey: "task-inputs/7/operating-notes.txt",
-        storageUrl: "/manus-storage/task-inputs/7/operating-notes.txt",
+        storageKey: "task-inputs/3/operating-notes.txt",
+        storageUrl: "/manus-storage/task-inputs/3/operating-notes.txt",
       }],
     });
 
     expect(db.createTaskForUser).toHaveBeenCalledWith(expect.objectContaining({
-      userId: 7,
+      userId: applicationUserId,
       title: "Prepare a secured implementation brief",
       attachments: [{
         sourceType: "upload",
         filename: "operating-notes.txt",
         fileType: "text/plain",
-        storageKey: "task-inputs/7/operating-notes.txt",
-        storageUrl: "/manus-storage/task-inputs/7/operating-notes.txt",
+        storageKey: "task-inputs/3/operating-notes.txt",
+        storageUrl: "/manus-storage/task-inputs/3/operating-notes.txt",
       }],
     }));
     expect(db.appendTaskEvent).toHaveBeenCalledWith(taskId, expect.objectContaining({
@@ -134,17 +135,17 @@ describe("projects and scheduled router procedures", () => {
   });
 
   it("lists only the caller's user-owned scheduled workflows without querying raw Heartbeat jobs", async () => {
-    const workflows = [{ id: projectId, userId: 7, name: "Morning review", status: "paused" }];
+    const workflows = [{ id: projectId, userId: applicationUserId, name: "Morning review", status: "paused" }];
     vi.spyOn(db, "listScheduledWorkflowsForUser").mockResolvedValue(workflows as never);
 
     const result = await appRouter.createCaller(createContext("app_session_id=decoded-session; other=value")).scheduled.list();
 
-    expect(db.listScheduledWorkflowsForUser).toHaveBeenCalledWith(7);
+    expect(db.listScheduledWorkflowsForUser).toHaveBeenCalledWith(applicationUserId);
     expect(result).toEqual({ available: false, workflows });
   });
 
   it("returns the durable event replay already ordered by the owned task data contract", async () => {
-    const task = { id: projectId, userId: 7, status: "running" };
+    const task = { id: projectId, userId: applicationUserId, status: "running" };
     const events = [{ id: "event-1", sequenceNumber: 1 }, { id: "event-2", sequenceNumber: 2 }];
     vi.spyOn(db, "getTaskForUser").mockResolvedValue(task as never);
     vi.spyOn(db, "listTaskEvents").mockResolvedValue(events as never);

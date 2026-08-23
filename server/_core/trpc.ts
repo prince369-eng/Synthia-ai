@@ -3,6 +3,7 @@ import { initTRPC, TRPCError } from "@trpc/server";
 import superjson from "superjson";
 import type { TrpcContext } from "./context";
 import { logger } from "../security/logger";
+import { getUserByOpenId, upsertUser } from "../db";
 
 const t = initTRPC.context<TrpcContext>().create({
   transformer: superjson,
@@ -38,10 +39,32 @@ const requireUser = t.middleware(async opts => {
     throw new TRPCError({ code: "UNAUTHORIZED", message: UNAUTHED_ERR_MSG });
   }
 
+  let applicationUserId: number;
+  try {
+    await upsertUser({
+      openId: ctx.user.openId,
+      name: ctx.user.name ?? null,
+      email: ctx.user.email ?? null,
+      loginMethod: ctx.user.loginMethod ?? null,
+    });
+    const applicationUser = await getUserByOpenId(ctx.user.openId);
+    if (!applicationUser) throw new Error("Application user provisioning did not return a record");
+    applicationUserId = applicationUser.id;
+  } catch (error) {
+    logger.error(
+      { event: "protected_user_provisioning_failed", errorKind: error instanceof Error ? error.name : "unknown" },
+      "Authenticated user provisioning failed",
+    );
+    throw new TRPCError({
+      code: "PRECONDITION_FAILED",
+      message: "Your workspace is temporarily unavailable. Please try again shortly.",
+    });
+  }
+
   return next({
     ctx: {
       ...ctx,
-      user: ctx.user,
+      user: { ...ctx.user, id: applicationUserId },
     },
   });
 });

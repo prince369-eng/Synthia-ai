@@ -3650,3 +3650,7 @@
 - [x] Add concise file-level responsibility headers to core Synthia modules and a developer map showing safe change points and protected boundaries.
 - [x] Validate documentation links, strict typing, deterministic tests, production build, and secret exclusion before committing.
 - [x] Commit and push the verified project state and documentation to the selected `prince369-eng/Synthia-ai` GitHub repository.
+
+## Bounded network-change planning demonstration
+- [ ] Run one user-approved text-only two-router network-change planning task with no browsing, apps, files, media, virtual-lab, or device operations, then inspect its actual outcome without automatic retry.
+- [x] Diagnose and correct the reported composer task-creation failure, then add a deterministic no-provider, no-queue regression check before retrying the approved demo.
