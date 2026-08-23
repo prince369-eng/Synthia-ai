@@ -1,0 +1,165 @@
+client/src/pages/TaskWorkspace.tsx-25-  if (typeof locator !== "string" || !locator) return null;
+client/src/pages/TaskWorkspace.tsx-26-  const safeLocator = normalizeExternalReferenceUrl(locator);
+client/src/pages/TaskWorkspace.tsx:27:  return <> · {safeLocator ? <a href={safeLocator} target="_blank" rel="noopener noreferrer" className="text-cyan-300 hover:text-cyan-200">Open reference</a> : <span className="text-[#91a7a1]">{locator}</span>}</>;
+client/src/pages/TaskWorkspace.tsx-28-}
+client/src/pages/TaskWorkspace.tsx-29-function timelinePayload(event: { type: string; payload: unknown }) {
+--
+client/src/pages/TaskWorkspace.tsx-60-
+client/src/pages/TaskWorkspace.tsx-61-  useEffect(() => {
+client/src/pages/TaskWorkspace.tsx:62:    if (!replayMode && new URLSearchParams(window.location.search).get("voice") === "1") setVoiceModeOpen(true);
+client/src/pages/TaskWorkspace.tsx-63-  }, [replayMode]);
+client/src/pages/TaskWorkspace.tsx-64-
+client/src/pages/TaskWorkspace.tsx-65-  function sendMessage(event: FormEvent) { event.preventDefault(); if (taskId && message.trim()) addMessage.mutate({ taskId, content: message.trim() }); }
+client/src/pages/TaskWorkspace.tsx-66-  if (snapshot.isLoading) return <div className="grid min-h-screen place-items-center text-sm text-[#91a7a1]"><Loader2 className="mr-2 animate-spin" size={16} />Loading task workspace…</div>;
+client/src/pages/TaskWorkspace.tsx:67:  if (snapshot.isError || !task || !taskId) return <main className="p-8"><Link href={WORKSPACE_RETURN_ROUTES.dashboard} className="text-sm text-cyan-300">← Back to tasks</Link><p role="alert" className="mt-5 text-rose-300">{clientErrorMessage(snapshot.error, "The requested task is unavailable.")}</p></main>;
+client/src/pages/TaskWorkspace.tsx-68-
+client/src/pages/TaskWorkspace.tsx-69-  const tabs: Array<{ id: WorkspaceTab; label: string; icon: typeof Code2 }> = [{ id: "screen", label: "Screen", icon: MonitorDot }, { id: "website", label: "Website", icon: Globe2 }, { id: "code", label: "Code", icon: Code2 }, { id: "terminal", label: "Terminal", icon: TerminalSquare }, { id: "files", label: "Files", icon: FolderTree }, { id: "timeline", label: "Timeline", icon: ListTree }, { id: "plan", label: "Plan", icon: FileText }, { id: "proof", label: "Proof", icon: ShieldCheck }, { id: "learning", label: "Review", icon: BookOpenText }, { id: "evaluation", label: "Evaluate", icon: ClipboardCheck }, { id: "compare", label: "Compare", icon: BarChart3 }, { id: "provenance", label: "Lineage", icon: FileText }, { id: "handoffs", label: "Handoffs", icon: GitFork }, { id: "playbooks", label: "Playbooks", icon: RotateCcw }, { id: "policies", label: "Policies", icon: BookOpenText }, { id: "quality", label: "Quality", icon: ClipboardCheck }, { id: "changes", label: "Changes", icon: FileText }, { id: "operations", label: "Operations", icon: AlertTriangle }];
+--
+client/src/pages/TaskWorkspace.tsx-215-  const liveFrame = trpc.tasks.liveComputerScreen.useQuery({ taskId }, { enabled: requested, retry: false });
+client/src/pages/TaskWorkspace.tsx-216-  const frame = deliverables.find(isScreenCapture);
+client/src/pages/TaskWorkspace.tsx:217:  return <div className="grid min-h-[480px] place-items-center rounded-xl border border-white/8 bg-[#11100e] p-6 text-center">{liveFrame.data?.dataUrl ? <div><img src={liveFrame.data.dataUrl} alt="Current task sandbox screen" className="max-h-[520px] rounded-lg" /><p className="mt-3 text-[10px] text-[#778985]">Captured {localTime(liveFrame.data.capturedAt)}</p><Button size="sm" variant="outline" onClick={() => void liveFrame.refetch()} className="mt-3 h-7 border-white/12 bg-transparent px-2 text-[11px] text-cyan-100">Refresh screen</Button></div> : frame ? <ArtifactPreview taskId={taskId} deliverable={frame} /> : <div><MonitorDot className="mx-auto text-[#736559]" size={32} /><p className="mt-3 text-sm text-[#a59686]">Task screen is available when the active sandbox supports capture.</p><p className="mt-1 max-w-sm text-xs leading-5 text-[#78695d]">{"This task does not currently provide a live screen. You can still review its task-scoped files, timeline, and outputs when available."}</p>{computer.data?.canCaptureScreen ? <Button size="sm" onClick={() => setRequested(true)} disabled={liveFrame.isFetching} className="mt-4 h-8 bg-teal-400 px-3 text-xs text-[#072a27] hover:bg-cyan-300">{liveFrame.isFetching ? <><Loader2 className="animate-spin" size={13} />Capturing</> : <><MonitorDot size={13} />View live screen</>}</Button> : null}{liveFrame.isError ? <p role="alert" className="mt-3 text-[11px] text-rose-300">{clientErrorMessage(liveFrame.error, "The live screen could not be loaded. Please try again.")}</p> : null}</div>}</div>;
+client/src/pages/TaskWorkspace.tsx-218-}
+client/src/pages/TaskWorkspace.tsx-219-function WebsitePanel({ taskId, deliverables }: { taskId: string; deliverables: Array<any> }) {
+--
+client/src/pages/TaskWorkspace.tsx-223-  if (artifact.isLoading) return <div className="grid min-h-[480px] place-items-center rounded-xl border border-white/8 bg-[#11100e] text-xs text-[#91a7a1]"><Loader2 className="mr-2 animate-spin" size={15} />Preparing the task website…</div>;
+client/src/pages/TaskWorkspace.tsx-224-  if (artifact.isError || !artifact.data?.url) return <div className="grid min-h-[480px] place-items-center rounded-xl border border-white/8 bg-[#11100e] p-6 text-center"><p role="alert" className="text-xs text-rose-300">This task website preview is unavailable.</p></div>;
+client/src/pages/TaskWorkspace.tsx:225:  return <div className="overflow-hidden rounded-xl border border-white/8 bg-[#11100e]"><div className="flex items-center justify-between gap-3 border-b border-white/8 px-3 py-2"><span className="min-w-0 truncate text-[11px] text-[#c7ddd7]">{website.filename}</span><a href={artifact.data.url} target="_blank" rel="noopener noreferrer" className="inline-flex shrink-0 items-center gap-1 rounded-md border border-teal-300/20 px-2 py-1 text-[10px] font-medium text-cyan-200 hover:bg-teal-300/10"><ExternalLink size={12} />Open website</a></div><iframe title={`Task website preview: ${website.filename}`} src={artifact.data.url} sandbox="allow-scripts" referrerPolicy="no-referrer" className="h-[440px] w-full bg-white" /></div>;
+client/src/pages/TaskWorkspace.tsx-226-}
+client/src/pages/TaskWorkspace.tsx-227-function TerminalPanel({ events }: { events: Array<any> }) { const output = events.filter(event => ["tool_call", "tool_result", "error"].includes(event.type)); return <div className="min-h-[480px] rounded-xl border border-white/8 bg-[#101b19] p-4 font-mono text-xs leading-6">{output.length === 0 ? <span className="text-[#778985]">No terminal or tool output has been produced for this task.</span> : output.map(event => <div key={event.id} className="mb-3"><span className="text-cyan-300">[{event.type}]</span><pre className="whitespace-pre-wrap text-[#c7ddd7]">{JSON.stringify(redactTaskEventPayload(event.payload), null, 2)}</pre></div>)}</div>; }
+--
+client/src/pages/TaskWorkspace.tsx-230-  if (artifact.isLoading) return <div className="text-xs text-[#a59686]"><Loader2 className="mx-auto mb-2 animate-spin" size={16} />Loading secure screen capture…</div>;
+client/src/pages/TaskWorkspace.tsx-231-  if (artifact.isError || !artifact.data?.url) return <div className="text-xs text-[#a59686]">The latest secure screen capture is unavailable.</div>;
+client/src/pages/TaskWorkspace.tsx:232:  return <img src={artifact.data.url} alt={`Sandbox capture ${deliverable.filename}`} className="max-h-[520px] rounded-lg" />;
+client/src/pages/TaskWorkspace.tsx-233-}
+client/src/pages/TaskWorkspace.tsx-234-
+--
+client/src/pages/TaskDashboard.tsx-337-              <div className="relative">
+client/src/pages/TaskDashboard.tsx-338-                <button type="button" className={cn("synthia-composer-toggle", connectorPickerOpen && "active")} aria-label="Choose connected apps for this task" aria-expanded={connectorPickerOpen} aria-controls="composer-connector-picker" onClick={() => setConnectorPickerOpen(value => !value)} onKeyDown={event => { if (event.key === "Escape") setConnectorPickerOpen(false); }}><Cable size={13} /><span>Apps</span>{selectedConnectedApps.length ? <b className="synthia-composer-connector-count">{selectedConnectedApps.length}</b> : null}</button>
+client/src/pages/TaskDashboard.tsx:339:                {connectorPickerOpen ? <div id="composer-connector-picker" className="synthia-composer-connector-picker" role="dialog" aria-label="Choose apps for this task"><div className="synthia-composer-connector-picker-head"><span><Cable size={14} /><b>Apps for this task</b></span><button type="button" onClick={() => { setConnectorPickerOpen(false); setLocation("/plugins"); }}>Manage apps</button></div><p>Select connected apps as task context. Synthia will still propose every external action for your approval.</p><div className="synthia-composer-connector-list">{composerApps.map(app => { const connected = connectedAppLabels.has(app.slug.toLowerCase()); const selected = selectedConnectedApps.includes(app.slug); const iconUrl = normalizeExternalResourceUrl(app.iconUrl); return <button type="button" key={app.slug} className={cn("synthia-composer-connector-option", selected && "selected", !connected && "available")} onClick={() => { if (!connected) { setConnectorPickerOpen(false); setLocation(`/plugins?app=${encodeURIComponent(app.slug)}`); return; } setSelectedConnectedApps(current => selected ? current.filter(slug => slug !== app.slug) : [...current, app.slug].slice(0, 6)); }}><span className="synthia-composer-app-icon">{iconUrl ? <img src={iconUrl} alt="" referrerPolicy="no-referrer" onError={event => { event.currentTarget.style.display = "none"; }} /> : null}{app.name.slice(0, 1)}</span><span><b>{app.name}</b><small>{connected ? selected ? "Included as task context" : "Connected · select to include" : "Connect to use"}</small></span>{connected && selected ? <CheckCircle2 size={14} /> : <span className="synthia-composer-connect-label">{connected ? "Select" : "Connect"}</span>}</button>; })}{appCatalog.isLoading ? <p className="synthia-composer-connector-loading"><Loader2 className="animate-spin" size={13} />Loading apps…</p> : null}</div><button type="button" className="synthia-composer-connector-browse" onClick={() => { setConnectorPickerOpen(false); setLocation("/plugins"); }}><Search size={13} />Browse all available apps</button></div> : null}
+client/src/pages/TaskDashboard.tsx-340-              </div>
+client/src/pages/TaskDashboard.tsx-341-              <div className="relative">
+--
+client/src/pages/Settings.tsx-236-}
+client/src/pages/Settings.tsx-237-
+client/src/pages/Settings.tsx:238:function SettingsIntegrations({ integrations, loading, error, removeIntegration }: { integrations: Array<any>; loading: boolean; error: boolean; removeIntegration: any }) { const userApps = integrations.filter(item => ["zapier_mcp", "pipedream_connect", "composio", "github"].includes(item.provider)); return <div><SectionHeading icon={PlugZap} title="Integrations" description="Only your connected apps are listed here. Credentials and internal Synthia services are never displayed." />{loading ? <LoadingRow label="Loading app connections…" /> : null}{error ? <SettingsUnavailable message="App connections are temporarily unavailable." /> : null}{!loading && !error ? <div className="mt-6"><SettingsCard title="Authorized apps" detail="Disconnecting removes Synthia’s owner-scoped connection reference; provider-side revocation remains available in the app provider.">{userApps.length ? <div className="mt-3 space-y-2">{userApps.map(item => <div key={item.id} className="flex items-center justify-between gap-3 rounded-lg border border-white/8 px-3 py-2.5"><div><p className="text-sm text-[#eee2d3]">{item.label}</p><p className="mt-0.5 text-xs text-[#8f7f70]">Available only when you approve a task action</p></div><Button variant="ghost" size="sm" onClick={() => removeIntegration.mutate({ integrationId: item.id })} disabled={removeIntegration.isPending} className="text-rose-300">Disconnect</Button></div>)}</div> : <p className="mt-3 text-sm text-[#968677]">No authorized app connections are linked to this workspace.</p>}<a href="/plugins" className="mt-4 inline-flex text-xs text-cyan-200 hover:text-cyan-100">Browse available apps</a></SettingsCard></div> : null}</div>; }
+client/src/pages/Settings.tsx-239-const connectorDescriptions: Record<string, string> = {
+client/src/pages/Settings.tsx-240-  github: "Manage repositories, review code, and collaborate on software tasks.",
+--
+client/src/pages/Settings.tsx-252-function CapabilityCard({ title, description, available }: { title: string; description: string; available: boolean }) { return <article className="rounded-xl border border-white/8 bg-white/[.025] p-3"><div className="flex items-start justify-between gap-3"><div><p className="text-sm font-medium text-[#e5f2ef]">{title}</p><p className="mt-1 text-xs leading-5 text-[#91a7a1]">{description}</p></div><span className={cn("shrink-0 text-xs", available ? "text-cyan-200" : "text-[#8fa39d]")}>{available ? "Available" : "Set up needed"}</span></div></article>; }
+client/src/pages/Settings.tsx-253-
+client/src/pages/Settings.tsx:254:function SettingsServices({ integrations, loading, error }: { integrations: Array<any>; loading: boolean; error: boolean }) { const userApps = integrations.filter(item => ["zapier_mcp", "pipedream_connect", "composio", "github"].includes(item.provider)); return <div><SectionHeading icon={ServerCog} title="Connectors" description="Choose apps you want to authorize for approved task work. Synthia does not expose its internal service configuration here." />{loading ? <LoadingRow label="Loading app connectors…" /> : null}{error ? <SettingsUnavailable message="App connector options are temporarily unavailable." /> : null}{!loading && !error ? <><div className="mt-6 flex items-center justify-between gap-3"><div><h3 className="text-sm font-medium text-[#e5f2ef]">Your authorized apps</h3><p className="mt-1 text-xs text-[#839792]">Connected app access remains subject to task-level approval.</p></div><span className="text-xs text-[#91a7a1]">{userApps.length} connected</span></div><a href="/plugins" className="mt-4 inline-flex rounded-lg border border-cyan-300/20 px-3 py-2 text-xs text-cyan-200 transition-colors hover:bg-cyan-300/10">Browse available apps</a><p className="mt-5 text-xs leading-5 text-[#839792]">A provider connection never grants automatic action authority. You will review proposed changes before Synthia uses an app.</p></> : null}</div>; }
+client/src/pages/Settings.tsx-255-export function ServiceConnectionCard({ item }: { item: any }) { const status = item.status ?? (item.active ? "active" : item.configured ? "configured" : "credentials_required"); const statusCopy = status === "connected" ? "Connected" : status === "ready_to_connect" ? "Ready to connect" : status === "missing_credentials" ? "Missing credentials" : status === "active" ? "Active for Synthia" : status === "configured" ? "Configuration ready" : "Credentials required"; const color = ["active", "connected"].includes(status) ? "text-cyan-200" : ["configured", "ready_to_connect"].includes(status) ? "text-emerald-300" : "text-[#8fa39d]"; const needsCredentials = ["credentials_required", "missing_credentials"].includes(status); const detail = item.detail ?? (needsCredentials ? null : "Credentials are stored server-side and are not exposed to the workspace."); return <div className="rounded-xl border border-white/8 bg-white/[.025] p-3"><div className="flex items-center justify-between gap-3"><p className="text-sm font-medium text-[#e5f2ef]">{item.label}</p><span className={cn("text-xs", color)}>{statusCopy}</span></div>{needsCredentials ? <p className="mt-2 font-mono text-[11px] leading-5 text-[#839792]">{item.requiredEnvironment?.join(" · ") ?? "Add the required server-side key"}</p> : <p className="mt-2 text-xs leading-5 text-[#91a7a1]">{detail}</p>}</div>; }
+client/src/pages/Settings.tsx-256-export function modelCapabilityLabel(model: { capabilities?: string[] }) { return model.capabilities?.includes("vision") ? "Text + vision" : "Text"; }
+--
+server/clientErrorHardening.test.ts-28-    expect(auth).toContain("const safeRedirectPath = normalizeInternalNavigationPath(redirectPath);");
+server/clientErrorHardening.test.ts-29-    expect(auth).toContain("if (safeRedirectPath) {");
+server/clientErrorHardening.test.ts:30:    expect(auth).toContain("window.location.href = safeRedirectPath;");
+server/clientErrorHardening.test.ts:31:    expect(auth).not.toContain("window.location.href = redirectPath;");
+server/clientErrorHardening.test.ts-32-  });
+server/clientErrorHardening.test.ts-33-
+--
+client/src/pages/Plugins.tsx-34-
+client/src/pages/Plugins.tsx-35-function trustedAuthorizationNavigation(value: string) {
+client/src/pages/Plugins.tsx:36:  const url = new URL(value, window.location.origin);
+client/src/pages/Plugins.tsx-37-  if (
+client/src/pages/Plugins.tsx-38-    url.protocol !== "https:" ||
+--
+client/src/pages/Plugins.tsx-84-    return merged.slice(0, visibleCount);
+client/src/pages/Plugins.tsx-85-  }, [extendedApps, matchedLocalApps, visibleCount]);
+client/src/pages/Plugins.tsx:86:  const returnApp = new URLSearchParams(window.location.search).get("app");
+client/src/pages/Plugins.tsx:87:  const returnCancelled = new URLSearchParams(window.location.search).get("authorization") === "cancelled";
+client/src/pages/Plugins.tsx-88-  const connectorError = startAuthorization.error ?? verifyApp.error;
+client/src/pages/Plugins.tsx-89-  const pending = startAuthorization.isPending || verifyApp.isPending;
+client/src/pages/Plugins.tsx-90-  const begin = async (appSlug: string) => {
+client/src/pages/Plugins.tsx-91-    const result = await startAuthorization.mutateAsync({ appSlug });
+client/src/pages/Plugins.tsx:92:    if (result.mode === "redirect") window.location.assign(trustedAuthorizationNavigation(result.authorizationUrl));
+client/src/pages/Plugins.tsx-93-  };
+client/src/pages/Plugins.tsx-94-  const browseMoreApps = () => {
+--
+client/src/const.ts-18-// It has SIDE EFFECTS — it mints a one-time nonce, writes the __Host- state
+client/src/const.ts-19-// cookie, and navigates immediately — so the cookie nonce always matches the
+client/src/const.ts:20:// `state` it sends. Do NOT call it during render (no `href={startLogin()}` /
+client/src/const.ts-21-// `loginUrl={...}`): each call overwrites the cookie, so a stray render-phase
+client/src/const.ts-22-// call would desync it from an in-flight login and the callback would reject it
+--
+client/src/const.ts-93-  const nonce = crypto.randomUUID();
+client/src/const.ts-94-  document.cookie = `${OAUTH_STATE_COOKIE}=${nonce}; Path=/; Max-Age=600; SameSite=None; Secure`;
+client/src/const.ts:95:  window.location.href = buildAccountPortalUrl({ appId, oauthPortalUrl, origin: window.location.origin, nonce, intent }).toString();
+client/src/const.ts-96-};
+client/src/const.ts-97-
+--
+client/src/pages/Home.tsx-141-  return (
+client/src/pages/Home.tsx-142-    <>
+client/src/pages/Home.tsx:143:      <a className="synthia-skip-link" href="#synthia-main-content">Skip to main content</a>
+client/src/pages/Home.tsx-144-      <main id="synthia-main-content" className="synthia-marketing">
+client/src/pages/Home.tsx-145-        <div className="synthia-marketing-grid" aria-hidden="true" />
+--
+client/src/pages/Home.tsx-157-          </button>
+client/src/pages/Home.tsx-158-          <nav className="synthia-marketing-links" aria-label="Public navigation">
+client/src/pages/Home.tsx:159:            <a href="#platform">Platform</a>
+client/src/pages/Home.tsx:160:            <a href="#workflow">Workflow</a>
+client/src/pages/Home.tsx:161:            <a href="#availability">Availability</a>
+client/src/pages/Home.tsx:162:            <a href="#roadmap">Roadmap</a>
+client/src/pages/Home.tsx-163-          </nav>
+client/src/pages/Home.tsx-164-          <div className="synthia-marketing-actions">
+--
+client/src/pages/Home.tsx-180-        {menuOpen ? (
+client/src/pages/Home.tsx-181-          <nav id="synthia-public-navigation" className="synthia-marketing-mobile-menu" aria-label="Mobile public navigation">
+client/src/pages/Home.tsx:182:            <a href="#platform" onClick={closeMenu}>Platform</a>
+client/src/pages/Home.tsx:183:            <a href="#workflow" onClick={closeMenu}>Workflow</a>
+client/src/pages/Home.tsx:184:            <a href="#availability" onClick={closeMenu}>Availability</a>
+client/src/pages/Home.tsx:185:            <a href="#roadmap" onClick={closeMenu}>Roadmap</a>
+client/src/pages/Home.tsx-186-            <button type="button" onClick={() => { closeMenu(); startLogin("signIn"); }}>Sign in</button>
+client/src/pages/Home.tsx-187-            <button type="button" onClick={() => { closeMenu(); startSignup(); }}>Get started <ArrowRight size={15} /></button>
+--
+client/src/components/AppConnectorCard.tsx-17-  const initials = app.name.split(/\s+/).filter(Boolean).slice(0, 2).map(word => word[0]).join("").toUpperCase() || "A";
+client/src/components/AppConnectorCard.tsx-18-  const iconUrl = normalizeExternalResourceUrl(app.iconUrl);
+client/src/components/AppConnectorCard.tsx:19:  return <span className="synthia-app-connector-glyph relative overflow-hidden" aria-hidden="true"><span className="relative z-0">{initials}</span>{iconUrl ? <img className="absolute inset-0 z-10 size-full object-cover bg-[#17201f] p-1" src={iconUrl} alt="" referrerPolicy="no-referrer" onError={event => { event.currentTarget.style.display = "none"; }} /> : null}</span>;
+client/src/components/AppConnectorCard.tsx-20-}
+client/src/components/AppConnectorCard.tsx-21-
+--
+client/src/components/ErrorBoundary.tsx-37-
+client/src/components/ErrorBoundary.tsx-38-            <button
+client/src/components/ErrorBoundary.tsx:39:              onClick={() => window.location.reload()}
+client/src/components/ErrorBoundary.tsx-40-              className={cn(
+client/src/components/ErrorBoundary.tsx-41-                "flex items-center gap-2 px-4 py-2 rounded-lg",
+--
+server/uiLayout.test.ts-36-    expect(dashboard).toContain('startTask(true)');
+server/uiLayout.test.ts-37-    expect(dashboard).toContain('setLocation(`/tasks/${task.id}${openVoice ? "?voice=1" : ""}`)');
+server/uiLayout.test.ts:38:    expect(workspace).toContain('new URLSearchParams(window.location.search).get("voice") === "1"');
+server/uiLayout.test.ts-39-    expect(workspace).toContain('setVoiceModeOpen(true)');
+server/uiLayout.test.ts-40-    expect(css).toContain('.synthia-live-voice-toggle');
+--
+server/uiLayout.test.ts-75-    expect(connectorCard).not.toContain("Pipedream");
+server/uiLayout.test.ts-76-    expect(connectorCard).not.toContain("Composio");
+server/uiLayout.test.ts:77:    expect(plugins).toContain('window.location.assign(trustedAuthorizationNavigation(result.authorizationUrl))');
+server/uiLayout.test.ts-78-    expect(plugins).toContain('url.hostname !== "connect.pipedream.com"');
+server/uiLayout.test.ts-79-    expect(plugins).not.toContain("trpc.workspace.serviceReadiness.useQuery()");
+--
+server/uiLayout.test.ts-464-    expect(workspace).toContain("trpc.tasks.artifactUrl.useQuery");
+server/uiLayout.test.ts-465-    expect(workspace).toContain("<ArtifactOpenButton taskId={taskId} deliverable={item} />");
+server/uiLayout.test.ts:466:    expect(workspace).not.toContain("href={item.url}");
+server/uiLayout.test.ts-467-    expect(workspace).toContain("item.fileType");
+server/uiLayout.test.ts-468-  });
+--
+client/src/components/ManusDialog.tsx-57-            <div className="w-16 h-16 bg-white rounded-xl border border-[rgba(0,0,0,0.08)] flex items-center justify-center">
+client/src/components/ManusDialog.tsx-58-              <img
+client/src/components/ManusDialog.tsx:59:                src={logo}
+client/src/components/ManusDialog.tsx-60-                alt="Dialog graphic"
+client/src/components/ManusDialog.tsx-61-                className="w-10 h-10 rounded-md"
+--
+server/_core/map.ts-311- * Endpoint: /maps/api/staticmap
+server/_core/map.ts-312- * Input: URL params - center: string, zoom: number, size: string, markers?: string, maptype?: MapType
+server/_core/map.ts:313: * Output: Image URL (not JSON) - use directly in <img src={url} />
+server/_core/map.ts-314- * Note: Construct URL manually with getMapsConfig() for auth
+server/_core/map.ts-315- */
+--
+client/src/_core/hooks/useAuth.ts-100-    if (typeof window === "undefined") return;
+client/src/_core/hooks/useAuth.ts-101-    const safeRedirectPath = normalizeInternalNavigationPath(redirectPath);
+client/src/_core/hooks/useAuth.ts:102:    if (safeRedirectPath && window.location.pathname === safeRedirectPath) return;
+client/src/_core/hooks/useAuth.ts-103-
+client/src/_core/hooks/useAuth.ts-104-    // Navigate at this moment only. startLogin() mints the nonce + cookie itself.
+client/src/_core/hooks/useAuth.ts-105-    if (safeRedirectPath) {
+client/src/_core/hooks/useAuth.ts:106:      window.location.href = safeRedirectPath;
+client/src/_core/hooks/useAuth.ts-107-    } else {
+client/src/_core/hooks/useAuth.ts-108-      startLogin();

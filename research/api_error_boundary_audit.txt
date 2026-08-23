@@ -1,0 +1,852 @@
+server/_core/heartbeat.ts-44-
+server/_core/heartbeat.ts-45-const buildEndpoint = (rpc: string): string => {
+server/_core/heartbeat.ts-46-  if (!ENV.forgeApiUrl) {
+server/_core/heartbeat.ts:47:    throw new TRPCError({
+server/_core/heartbeat.ts-48-      code: "INTERNAL_SERVER_ERROR",
+server/_core/heartbeat.ts-49-      message: "Heartbeat service URL is not configured (BUILT_IN_FORGE_API_URL).",
+server/_core/heartbeat.ts-50-    });
+server/_core/heartbeat.ts-51-  }
+server/_core/heartbeat.ts-52-  if (!ENV.forgeApiKey) {
+server/_core/heartbeat.ts:53:    throw new TRPCError({
+server/_core/heartbeat.ts-54-      code: "INTERNAL_SERVER_ERROR",
+server/_core/heartbeat.ts-55-      message: "Heartbeat service API key is not configured (BUILT_IN_FORGE_API_KEY).",
+server/_core/heartbeat.ts-56-    });
+--
+server/_core/heartbeat.ts-86-      body: JSON.stringify(body),
+server/_core/heartbeat.ts-87-    });
+server/_core/heartbeat.ts-88-  } catch (error) {
+server/_core/heartbeat.ts:89:    throw new TRPCError({
+server/_core/heartbeat.ts-90-      code: "INTERNAL_SERVER_ERROR",
+server/_core/heartbeat.ts:91:      message: `Heartbeat ${rpc} network error: ${String(error)}`,
+server/_core/heartbeat.ts-92-    });
+server/_core/heartbeat.ts-93-  }
+server/_core/heartbeat.ts-94-
+--
+server/_core/heartbeat.ts-112-  else if (status === 400 || status === 422) code = "BAD_REQUEST";
+server/_core/heartbeat.ts-113-  else if (status === 409) code = "CONFLICT";
+server/_core/heartbeat.ts-114-  else if (status === 429) code = "TOO_MANY_REQUESTS";
+server/_core/heartbeat.ts:115:  return new TRPCError({
+server/_core/heartbeat.ts-116-    code,
+server/_core/heartbeat.ts-117-    message: `Heartbeat ${rpc} failed (${status})${detail ? `: ${detail}` : ""}`,
+server/_core/heartbeat.ts-118-  });
+--
+server/_core/heartbeat.ts-126-
+server/_core/heartbeat.ts-127-const validateCallbackPath = (path: string): void => {
+server/_core/heartbeat.ts-128-  if (!path || !path.startsWith("/api/scheduled/")) {
+server/_core/heartbeat.ts:129:    throw new TRPCError({
+server/_core/heartbeat.ts-130-      code: "BAD_REQUEST",
+server/_core/heartbeat.ts-131-      message: "callback path must start with /api/scheduled/",
+server/_core/heartbeat.ts-132-    });
+--
+server/_core/voiceTranscription.ts-119-      return {
+server/_core/voiceTranscription.ts-120-        error: "Failed to fetch audio file",
+server/_core/voiceTranscription.ts-121-        code: "SERVICE_ERROR",
+server/_core/voiceTranscription.ts:122:        details: error instanceof Error ? error.message : "Unknown error"
+server/_core/voiceTranscription.ts-123-      };
+server/_core/voiceTranscription.ts-124-    }
+server/_core/voiceTranscription.ts-125-
+--
+server/_core/voiceTranscription.ts-189-    return {
+server/_core/voiceTranscription.ts-190-      error: "Voice transcription failed",
+server/_core/voiceTranscription.ts-191-      code: "SERVICE_ERROR",
+server/_core/voiceTranscription.ts:192:      details: error instanceof Error ? error.message : "An unexpected error occurred"
+server/_core/voiceTranscription.ts-193-    };
+server/_core/voiceTranscription.ts-194-  }
+server/_core/voiceTranscription.ts-195-}
+--
+server/_core/voiceTranscription.ts-260- *       
+server/_core/voiceTranscription.ts-261- *       // Check if it's an error
+server/_core/voiceTranscription.ts-262- *       if ('error' in result) {
+server/_core/voiceTranscription.ts:263: *         throw new TRPCError({
+server/_core/voiceTranscription.ts-264- *           code: 'BAD_REQUEST',
+server/_core/voiceTranscription.ts:265: *           message: result.error,
+server/_core/voiceTranscription.ts-266- *           cause: result,
+server/_core/voiceTranscription.ts-267- *         });
+server/_core/voiceTranscription.ts-268- *       }
+--
+server/_core/notification.ts-26-
+server/_core/notification.ts-27-const validatePayload = (input: NotificationPayload): NotificationPayload => {
+server/_core/notification.ts-28-  if (!isNonEmptyString(input.title)) {
+server/_core/notification.ts:29:    throw new TRPCError({
+server/_core/notification.ts-30-      code: "BAD_REQUEST",
+server/_core/notification.ts-31-      message: "Notification title is required.",
+server/_core/notification.ts-32-    });
+server/_core/notification.ts-33-  }
+server/_core/notification.ts-34-  if (!isNonEmptyString(input.content)) {
+server/_core/notification.ts:35:    throw new TRPCError({
+server/_core/notification.ts-36-      code: "BAD_REQUEST",
+server/_core/notification.ts-37-      message: "Notification content is required.",
+server/_core/notification.ts-38-    });
+--
+server/_core/notification.ts-42-  const content = trimValue(input.content);
+server/_core/notification.ts-43-
+server/_core/notification.ts-44-  if (title.length > TITLE_MAX_LENGTH) {
+server/_core/notification.ts:45:    throw new TRPCError({
+server/_core/notification.ts-46-      code: "BAD_REQUEST",
+server/_core/notification.ts-47-      message: `Notification title must be at most ${TITLE_MAX_LENGTH} characters.`,
+server/_core/notification.ts-48-    });
+server/_core/notification.ts-49-  }
+server/_core/notification.ts-50-
+server/_core/notification.ts-51-  if (content.length > CONTENT_MAX_LENGTH) {
+server/_core/notification.ts:52:    throw new TRPCError({
+server/_core/notification.ts-53-      code: "BAD_REQUEST",
+server/_core/notification.ts-54-      message: `Notification content must be at most ${CONTENT_MAX_LENGTH} characters.`,
+server/_core/notification.ts-55-    });
+--
+server/_core/notification.ts-70-  const { title, content } = validatePayload(payload);
+server/_core/notification.ts-71-
+server/_core/notification.ts-72-  if (!ENV.forgeApiUrl) {
+server/_core/notification.ts:73:    throw new TRPCError({
+server/_core/notification.ts-74-      code: "INTERNAL_SERVER_ERROR",
+server/_core/notification.ts-75-      message: "Notification service URL is not configured.",
+server/_core/notification.ts-76-    });
+server/_core/notification.ts-77-  }
+server/_core/notification.ts-78-
+server/_core/notification.ts-79-  if (!ENV.forgeApiKey) {
+server/_core/notification.ts:80:    throw new TRPCError({
+server/_core/notification.ts-81-      code: "INTERNAL_SERVER_ERROR",
+server/_core/notification.ts-82-      message: "Notification service API key is not configured.",
+server/_core/notification.ts-83-    });
+--
+server/routers.ts-353-
+server/routers.ts-354-function safeAttachmentFilename(value: string) {
+server/routers.ts-355-  const cleaned = value.replace(/[\\/\u0000-\u001f:*?"<>|]/g, "_").replace(/^\.+/, "").trim().slice(0, 240);
+server/routers.ts:356:  if (!cleaned) throw new TRPCError({ code: "BAD_REQUEST", message: "A valid attachment filename is required." });
+server/routers.ts-357-  return cleaned;
+server/routers.ts-358-}
+server/routers.ts-359-
+server/routers.ts-360-function decodeAttachmentBase64(value: string) {
+server/routers.ts-361-  if (value.length === 0 || value.length > MAX_ATTACHMENT_BASE64_LENGTH || value.length % 4 !== 0 || !/^[A-Za-z0-9+/]*={0,2}$/.test(value)) {
+server/routers.ts:362:    throw new TRPCError({ code: "BAD_REQUEST", message: "The attachment payload is invalid or exceeds 10 MB." });
+server/routers.ts-363-  }
+server/routers.ts-364-  const bytes = Buffer.from(value, "base64");
+server/routers.ts-365-  if (bytes.length === 0 || bytes.length > MAX_ATTACHMENT_BYTES) {
+server/routers.ts:366:    throw new TRPCError({ code: "BAD_REQUEST", message: "The attachment payload is invalid or exceeds 10 MB." });
+server/routers.ts-367-  }
+server/routers.ts-368-  return bytes;
+server/routers.ts-369-}
+server/routers.ts-370-
+server/routers.ts-371-function decodeSkillResourceBase64(value: string) {
+server/routers.ts-372-  if (value.length === 0 || value.length > MAX_SKILL_RESOURCE_BASE64_LENGTH || value.length % 4 !== 0 || !/^[A-Za-z0-9+/]*={0,2}$/.test(value)) {
+server/routers.ts:373:    throw new TRPCError({ code: "BAD_REQUEST", message: "A Skill resource must be a valid file of 3 MB or less." });
+server/routers.ts-374-  }
+server/routers.ts-375-  const bytes = Buffer.from(value, "base64");
+server/routers.ts-376-  if (bytes.length === 0 || bytes.length > MAX_SKILL_RESOURCE_BYTES) {
+server/routers.ts:377:    throw new TRPCError({ code: "BAD_REQUEST", message: "A Skill resource must be a valid file of 3 MB or less." });
+server/routers.ts-378-  }
+server/routers.ts-379-  return bytes;
+server/routers.ts-380-}
+--
+server/routers.ts-382-function safeSkillResourceFilename(value: string) {
+server/routers.ts-383-  const filename = safeAttachmentFilename(value);
+server/routers.ts-384-  if (/^(\.env|.*\.(pem|key|p12|pfx)|id_rsa|credentials?)(\.|$)/i.test(filename)) {
+server/routers.ts:385:    throw new TRPCError({ code: "BAD_REQUEST", message: "Credentials and key files cannot be attached to a Skill." });
+server/routers.ts-386-  }
+server/routers.ts-387-  return filename;
+server/routers.ts-388-}
+server/routers.ts-389-
+server/routers.ts-390-function requireOwnedSkillResources(resources: Array<{ key: string }>, userId: number) {
+server/routers.ts-391-  if (resources.some(resource => !resource.key.startsWith(`skill-resources/${userId}/`))) {
+server/routers.ts:392:    throw new TRPCError({ code: "FORBIDDEN", message: "A Skill may reference only resources uploaded by this account." });
+server/routers.ts-393-  }
+server/routers.ts-394-}
+server/routers.ts-395-
+--
+server/routers.ts-417-
+server/routers.ts-418-function decodeVoiceBase64(value: string) {
+server/routers.ts-419-  if (value.length === 0 || value.length > MAX_VOICE_BASE64_LENGTH || value.length % 4 !== 0 || !/^[A-Za-z0-9+/]*={0,2}$/.test(value)) {
+server/routers.ts:420:    throw new TRPCError({ code: "BAD_REQUEST", message: "The voice recording is invalid or exceeds 16 MB." });
+server/routers.ts-421-  }
+server/routers.ts-422-  const bytes = Buffer.from(value, "base64");
+server/routers.ts-423-  if (bytes.length === 0 || bytes.length > MAX_VOICE_BYTES) {
+server/routers.ts:424:    throw new TRPCError({ code: "BAD_REQUEST", message: "The voice recording is invalid or exceeds 16 MB." });
+server/routers.ts-425-  }
+server/routers.ts-426-  return bytes;
+server/routers.ts-427-}
+--
+server/routers.ts-430-  const forwardedProtocol = request.headers["x-forwarded-proto"];
+server/routers.ts-431-  const protocol = (Array.isArray(forwardedProtocol) ? forwardedProtocol[0] : forwardedProtocol)?.split(",")[0]?.trim() || request.protocol;
+server/routers.ts-432-  const host = request.get("host");
+server/routers.ts:433:  if (!host) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "The transcription service could not determine the storage origin." });
+server/routers.ts-434-  return `${protocol}://${host}`;
+server/routers.ts-435-}
+server/routers.ts-436-
+server/routers.ts-437-function toNotFound(taskId: string): never {
+server/routers.ts:438:  throw new TRPCError({ code: "NOT_FOUND", message: `Task ${taskId} was not found.` });
+server/routers.ts-439-}
+server/routers.ts-440-
+server/routers.ts-441-async function requireOwnedTask(taskId: string, userId: number) {
+--
+server/routers.ts-447-async function requireOwnedProject(projectId: string, userId: number) {
+server/routers.ts-448-  const project = await getProjectForUser(projectId, userId);
+server/routers.ts-449-  if (!project) {
+server/routers.ts:450:    throw new TRPCError({ code: "NOT_FOUND", message: `Project ${projectId} was not found.` });
+server/routers.ts-451-  }
+server/routers.ts-452-  return project;
+server/routers.ts-453-}
+--
+server/routers.ts-475-
+server/routers.ts-476-function requireScheduleDeployment(): void {
+server/routers.ts-477-  if (!isScheduleDeploymentReady()) {
+server/routers.ts:478:    throw new TRPCError({
+server/routers.ts-479-      code: "PRECONDITION_FAILED",
+server/routers.ts-480-      message: "Schedules activate after Synthia is published. You can review this workflow in the Scheduled area, but no job is created from preview or development.",
+server/routers.ts-481-    });
+--
+server/routers.ts-487-    await enforceRateLimit({ subject: String(userId), scope, limit, windowSeconds });
+server/routers.ts-488-  } catch (error) {
+server/routers.ts-489-    if (error instanceof RateLimitError) {
+server/routers.ts:490:      throw new TRPCError({ code: "TOO_MANY_REQUESTS", message: error.message });
+server/routers.ts-491-    }
+server/routers.ts-492-    throw error;
+server/routers.ts-493-  }
+--
+server/routers.ts-589-        requireScheduleDeployment();
+server/routers.ts-590-        await enforceUserMutationLimit(ctx.user.id, "scheduled-toggle", 30, 3_600);
+server/routers.ts-591-        const workflow = await getScheduledWorkflowForUser(input.workflowId, ctx.user.id);
+server/routers.ts:592:        if (!workflow) throw new TRPCError({ code: "NOT_FOUND", message: "Scheduled workflow not found." });
+server/routers.ts:593:        if (!workflow.scheduleCronTaskUid) throw new TRPCError({ code: "PRECONDITION_FAILED", message: "This scheduled workflow has no Heartbeat job." });
+server/routers.ts-594-        const update = await updateHeartbeatJob(
+server/routers.ts-595-          workflow.scheduleCronTaskUid,
+server/routers.ts-596-          { enable: input.enabled },
+--
+server/routers.ts-607-        requireScheduleDeployment();
+server/routers.ts-608-        await enforceUserMutationLimit(ctx.user.id, "scheduled-delete", 30, 3_600);
+server/routers.ts-609-        const workflow = await getScheduledWorkflowForUser(input.workflowId, ctx.user.id);
+server/routers.ts:610:        if (!workflow) throw new TRPCError({ code: "NOT_FOUND", message: "Scheduled workflow not found." });
+server/routers.ts:611:        if (!workflow.scheduleCronTaskUid) throw new TRPCError({ code: "PRECONDITION_FAILED", message: "This scheduled workflow has no Heartbeat job." });
+server/routers.ts-612-        await deleteHeartbeatJob(workflow.scheduleCronTaskUid, userSessionFromRequest(ctx.req.headers.cookie));
+server/routers.ts-613-        await softDeleteScheduledWorkflowForUser(workflow.id, ctx.user.id);
+server/routers.ts-614-        return { success: true } as const;
+--
+server/routers.ts-634-          return { key: stored.key, filename, mimeType: input.contentType, bytes: bytes.length };
+server/routers.ts-635-        } catch (error) {
+server/routers.ts-636-          logger.error({ event: "skill_resource_upload_failed", userId: ctx.user.id, filename, errorKind: error instanceof Error ? error.name : "unknown" }, "Skill resource upload failed");
+server/routers.ts:637:          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "The Skill resource could not be stored." });
+server/routers.ts-638-        }
+server/routers.ts-639-      }),
+server/routers.ts-640-    createDraft: protectedProcedure
+--
+server/routers.ts-647-        try {
+server/routers.ts-648-          return await generateReviewedSkillDraft({ source: "idea", detail: { idea: input.idea }, category: input.category });
+server/routers.ts-649-        } catch (error) {
+server/routers.ts:650:          const message = error instanceof Error ? error.message : "Skill draft generation failed.";
+server/routers.ts:651:          throw new TRPCError({ code: "PRECONDITION_FAILED", message: message.slice(0, 600) });
+server/routers.ts-652-        }
+server/routers.ts-653-      }),
+server/routers.ts-654-    createDraftFromExample: protectedProcedure
+--
+server/routers.ts-673-            },
+server/routers.ts-674-          });
+server/routers.ts-675-        } catch (error) {
+server/routers.ts:676:          const message = error instanceof Error ? error.message : "Example-based Skill draft generation failed.";
+server/routers.ts:677:          throw new TRPCError({ code: "PRECONDITION_FAILED", message: message.slice(0, 600) });
+server/routers.ts-678-        }
+server/routers.ts-679-      }),
+server/routers.ts-680-    createDraftFromTask: protectedProcedure
+--
+server/routers.ts-682-      .mutation(async ({ ctx, input }) => {
+server/routers.ts-683-        await enforceUserMutationLimit(ctx.user.id, "skill-task-draft", 4, 3_600);
+server/routers.ts-684-        const task = await requireOwnedTask(input.taskId, ctx.user.id);
+server/routers.ts:685:        if (task.status !== "completed") throw new TRPCError({ code: "PRECONDITION_FAILED", message: "A reusable Skill can be drafted only from a completed task." });
+server/routers.ts-686-        const [deliverables, attachments] = await Promise.all([listTaskDeliverables(task.id), listTaskAttachments(task.id)]);
+server/routers.ts-687-        try {
+server/routers.ts-688-          return await generateReviewedSkillDraft({
+--
+server/routers.ts-696-            },
+server/routers.ts-697-          });
+server/routers.ts-698-        } catch (error) {
+server/routers.ts:699:          const message = error instanceof Error ? error.message : "Task-derived Skill draft generation failed.";
+server/routers.ts:700:          throw new TRPCError({ code: "PRECONDITION_FAILED", message: message.slice(0, 600) });
+server/routers.ts-701-        }
+server/routers.ts-702-      }),
+server/routers.ts-703-    create: protectedProcedure
+--
+server/routers.ts-716-          const skillId = await createSkillForUser({ ...input, bundledFiles: input.resources, userId: ctx.user.id, visibility: "private" });
+server/routers.ts-717-          return { skillId, enabled: false };
+server/routers.ts-718-        } catch (error) {
+server/routers.ts:719:          const message = error instanceof Error ? error.message : "The Skill could not be saved.";
+server/routers.ts:720:          if (message.includes("unique")) throw new TRPCError({ code: "CONFLICT", message: "You already have a Skill with that name." });
+server/routers.ts:721:          throw new TRPCError({ code: "BAD_REQUEST", message: "The Skill could not be saved." });
+server/routers.ts-722-        }
+server/routers.ts-723-      }),
+server/routers.ts-724-    update: protectedProcedure
+--
+server/routers.ts-735-          await updateSkillForUser({ ...input, userId: ctx.user.id, visibility: "private" });
+server/routers.ts-736-          return { ok: true };
+server/routers.ts-737-        } catch {
+server/routers.ts:738:          throw new TRPCError({ code: "NOT_FOUND", message: "That Skill is unavailable or not editable." });
+server/routers.ts-739-        }
+server/routers.ts-740-      }),
+server/routers.ts-741-    setEnabled: protectedProcedure
+--
+server/routers.ts-746-          await setSkillInstallEnabledForUser({ skillId: input.id, userId: ctx.user.id, enabled: input.enabled });
+server/routers.ts-747-          return { ok: true, enabled: input.enabled };
+server/routers.ts-748-        } catch {
+server/routers.ts:749:          throw new TRPCError({ code: "NOT_FOUND", message: "That Skill installation is unavailable." });
+server/routers.ts-750-        }
+server/routers.ts-751-      }),
+server/routers.ts-752-    delete: protectedProcedure
+--
+server/routers.ts-757-          await softDeleteSkillForUser({ skillId: input.id, userId: ctx.user.id });
+server/routers.ts-758-          return { ok: true };
+server/routers.ts-759-        } catch {
+server/routers.ts:760:          throw new TRPCError({ code: "NOT_FOUND", message: "That Skill is unavailable or not removable." });
+server/routers.ts-761-        }
+server/routers.ts-762-      }),
+server/routers.ts-763-  }),
+--
+server/routers.ts-810-          const deliverableId = await createDeliverable({ taskId: task.id, eventId: event.id, filename: document.filename, fileType: document.contentType, storageKey: artifact.key, storageUrl: artifact.url, isFinal: true });
+server/routers.ts-811-          return { deliverableId, filename: document.filename, fileType: document.contentType };
+server/routers.ts-812-        } catch (error) {
+server/routers.ts:813:          const message = error instanceof Error ? error.message : "Office export storage failed.";
+server/routers.ts:814:          throw new TRPCError({ code: "PRECONDITION_FAILED", message: `The Office export could not be stored. ${message}` });
+server/routers.ts-815-        }
+server/routers.ts-816-      }),
+server/routers.ts-817-    proposeTaskLesson: protectedProcedure
+--
+server/routers.ts-829-        await enforceUserMutationLimit(ctx.user.id, "task-lesson-review", 30, 3_600);
+server/routers.ts-830-        const task = await requireOwnedTask(input.taskId, ctx.user.id);
+server/routers.ts-831-        const reviewed = await reviewPendingTaskLessonForUser({ taskId: task.id, userId: ctx.user.id, memoryId: input.memoryId, status: input.decision });
+server/routers.ts:832:        if (!reviewed) throw new TRPCError({ code: "NOT_FOUND", message: "That pending task lesson is unavailable for review." });
+server/routers.ts-833-        await appendTaskEvent(task.id, { type: "task_metadata", payload: { kind: "task_lesson_reviewed", memoryId: input.memoryId, decision: input.decision, source: "user_review" } });
+server/routers.ts-834-        return { ok: true };
+server/routers.ts-835-      }),
+--
+server/routers.ts-853-        const task = await requireOwnedTask(input.taskId, ctx.user.id);
+server/routers.ts-854-        const deliverable = (await listTaskDeliverables(task.id)).find(item => item.id === input.deliverableId);
+server/routers.ts-855-        if (!deliverable) {
+server/routers.ts:856:          throw new TRPCError({ code: "NOT_FOUND", message: "The requested task deliverable was not found." });
+server/routers.ts-857-        }
+server/routers.ts-858-        return {
+server/routers.ts-859-          filename: deliverable.filename,
+--
+server/routers.ts-873-        await requireOwnedTask(input.taskId, ctx.user.id);
+server/routers.ts-874-        const sandbox = (await listTaskSandboxes(input.taskId))[0];
+server/routers.ts-875-        const availability = liveComputerAvailability(sandbox);
+server/routers.ts:876:        if (!sandbox || !availability.available) throw new TRPCError({ code: "PRECONDITION_FAILED", message: availability.reason });
+server/routers.ts-877-        try {
+server/routers.ts-878-          return { files: await listLiveComputerFiles({ sandbox }), availability };
+server/routers.ts-879-        } catch (error) {
+server/routers.ts-880-          logger.error({ event: "live_computer_files_failed", taskId: input.taskId, userId: ctx.user.id, provider: sandbox.provider, errorKind: error instanceof Error ? error.name : "unknown" }, "Live Computer file listing failed");
+server/routers.ts:881:          throw new TRPCError({ code: "PRECONDITION_FAILED", message: "The task workspace files are not available for inspection." });
+server/routers.ts-882-        }
+server/routers.ts-883-      }),
+server/routers.ts-884-    liveComputerSource: protectedProcedure
+--
+server/routers.ts-887-        await requireOwnedTask(input.taskId, ctx.user.id);
+server/routers.ts-888-        const sandbox = (await listTaskSandboxes(input.taskId))[0];
+server/routers.ts-889-        const availability = liveComputerAvailability(sandbox);
+server/routers.ts:890:        if (!sandbox || !availability.available) throw new TRPCError({ code: "PRECONDITION_FAILED", message: availability.reason });
+server/routers.ts-891-        try {
+server/routers.ts-892-          return await readLiveComputerSource({ sandbox, path: input.path });
+server/routers.ts-893-        } catch (error) {
+server/routers.ts-894-          logger.error({ event: "live_computer_source_failed", taskId: input.taskId, userId: ctx.user.id, provider: sandbox.provider, errorKind: error instanceof Error ? error.name : "unknown" }, "Live Computer source retrieval failed");
+server/routers.ts:895:          throw new TRPCError({ code: "BAD_REQUEST", message: "That task file cannot be opened in Live Computer." });
+server/routers.ts-896-        }
+server/routers.ts-897-      }),
+server/routers.ts-898-    liveComputerScreen: protectedProcedure
+--
+server/routers.ts-901-        await requireOwnedTask(input.taskId, ctx.user.id);
+server/routers.ts-902-        const sandbox = (await listTaskSandboxes(input.taskId))[0];
+server/routers.ts-903-        const availability = liveComputerAvailability(sandbox);
+server/routers.ts:904:        if (!sandbox || !availability.available || !availability.canCaptureScreen) throw new TRPCError({ code: "PRECONDITION_FAILED", message: availability.reason });
+server/routers.ts-905-        try {
+server/routers.ts-906-          return await captureLiveComputerScreen({ sandbox });
+server/routers.ts-907-        } catch (error) {
+server/routers.ts-908-          logger.error({ event: "live_computer_screen_failed", taskId: input.taskId, userId: ctx.user.id, provider: sandbox.provider, errorKind: error instanceof Error ? error.name : "unknown" }, "Live Computer screen retrieval failed");
+server/routers.ts:909:          throw new TRPCError({ code: "PRECONDITION_FAILED", message: "The task screen is not available for capture." });
+server/routers.ts-910-        }
+server/routers.ts-911-      }),
+server/routers.ts-912-    voiceModeAvailability: protectedProcedure.query(() => getVoiceModeAvailability()),
+--
+server/routers.ts-918-        try {
+server/routers.ts-919-          return await createVoiceModeJoinCredentials({ taskId: task.id, userId: ctx.user.id, settings: input.settings });
+server/routers.ts-920-        } catch (error) {
+server/routers.ts:921:          const message = error instanceof Error ? error.message : "Voice Mode could not be started.";
+server/routers.ts-922-          const code = message.includes("disabled") || message.includes("needs") ? "PRECONDITION_FAILED" : "INTERNAL_SERVER_ERROR";
+server/routers.ts:923:          throw new TRPCError({ code, message: code === "PRECONDITION_FAILED" ? message : "Voice Mode could not be started. Please retry shortly." });
+server/routers.ts-924-        }
+server/routers.ts-925-      }),
+server/routers.ts-926-    updateVoiceModeSession: protectedProcedure
+--
+server/routers.ts-928-      .mutation(async ({ ctx, input }) => {
+server/routers.ts-929-        await requireOwnedTask(input.taskId, ctx.user.id);
+server/routers.ts-930-        const session = await updateVoiceSessionForUser({ ...input, userId: ctx.user.id });
+server/routers.ts:931:        if (!session) throw new TRPCError({ code: "NOT_FOUND", message: "That Voice Mode session is unavailable." });
+server/routers.ts-932-        return { ok: true };
+server/routers.ts-933-      }),
+server/routers.ts-934-    recordVoiceTranscript: protectedProcedure
+--
+server/routers.ts-940-          await recordVoiceTranscriptForTask({ ...input, userId: ctx.user.id });
+server/routers.ts-941-          return { ok: true };
+server/routers.ts-942-        } catch {
+server/routers.ts:943:          throw new TRPCError({ code: "NOT_FOUND", message: "That Voice Mode session is unavailable." });
+server/routers.ts-944-        }
+server/routers.ts-945-      }),
+server/routers.ts-946-    recordProof: protectedProcedure
+--
+server/routers.ts-952-          const evidence = input.evidence.map(reference => {
+server/routers.ts-953-            if (reference.source !== "external_url" || !reference.locator) return reference;
+server/routers.ts-954-            const locator = normalizeExternalReferenceUrl(reference.locator);
+server/routers.ts:955:            if (!locator) throw new TRPCError({ code: "BAD_REQUEST", message: "The external proof reference is invalid." });
+server/routers.ts-956-            return { ...reference, locator };
+server/routers.ts-957-          });
+server/routers.ts-958-          return await createTaskProofRecordForUser({ ...input, evidence, userId: ctx.user.id });
+server/routers.ts-959-        } catch (error) {
+server/routers.ts-960-          if (error instanceof TRPCError) throw error;
+server/routers.ts-961-          logger.error({ event: "task_proof_record_failed", taskId: input.taskId, userId: ctx.user.id, errorKind: error instanceof Error ? error.name : "unknown" }, "Task proof record creation failed");
+server/routers.ts:962:          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "The proof record could not be saved. Please retry." });
+server/routers.ts-963-        }
+server/routers.ts-964-      }),
+server/routers.ts-965-    recordPipelineHealth: protectedProcedure
+--
+server/routers.ts-971-          return await createTaskPipelineHealthSignalForUser({ ...input, userId: ctx.user.id });
+server/routers.ts-972-        } catch (error) {
+server/routers.ts-973-          logger.error({ event: "pipeline_health_record_failed", taskId: input.taskId, userId: ctx.user.id, errorKind: error instanceof Error ? error.name : "unknown" }, "Pipeline health record creation failed");
+server/routers.ts:974:          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "The pipeline health signal could not be recorded. Please retry." });
+server/routers.ts-975-        }
+server/routers.ts-976-      }),
+server/routers.ts-977-    proposeRemediation: protectedProcedure
+--
+server/routers.ts-982-        try {
+server/routers.ts-983-          return await createTaskRemediationProposalForUser({ ...input, userId: ctx.user.id });
+server/routers.ts-984-        } catch (error) {
+server/routers.ts:985:          const message = error instanceof Error ? error.message : "The remediation proposal could not be saved.";
+server/routers.ts:986:          if (message.includes("signal")) throw new TRPCError({ code: "NOT_FOUND", message });
+server/routers.ts-987-          logger.error({ event: "remediation_proposal_failed", taskId: input.taskId, userId: ctx.user.id, errorKind: error instanceof Error ? error.name : "unknown" }, "Remediation proposal creation failed");
+server/routers.ts:988:          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "The remediation proposal could not be saved. Please retry." });
+server/routers.ts-989-        }
+server/routers.ts-990-      }),
+server/routers.ts-991-    proposeDelegation: protectedProcedure
+--
+server/routers.ts-996-        try {
+server/routers.ts-997-          return await createTaskDelegationForUser({ ...input, userId: ctx.user.id });
+server/routers.ts-998-        } catch (error) {
+server/routers.ts:999:          const message = error instanceof Error ? error.message : "The specialist delegation could not be saved.";
+server/routers.ts:1000:          if (message.includes("delegation")) throw new TRPCError({ code: "NOT_FOUND", message });
+server/routers.ts-1001-          logger.error({ event: "task_delegation_proposal_failed", taskId: input.taskId, userId: ctx.user.id, errorKind: error instanceof Error ? error.name : "unknown" }, "Task delegation proposal creation failed");
+server/routers.ts:1002:          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "The specialist delegation could not be saved. Please retry." });
+server/routers.ts-1003-        }
+server/routers.ts-1004-      }),
+server/routers.ts-1005-    createHandoffPolicy: protectedProcedure
+--
+server/routers.ts-1011-          return await createTaskHandoffPolicyForUser({ ...input, userId: ctx.user.id });
+server/routers.ts-1012-        } catch (error) {
+server/routers.ts-1013-          logger.error({ event: "task_handoff_policy_create_failed", taskId: input.taskId, userId: ctx.user.id, errorKind: error instanceof Error ? error.name : "unknown" }, "Task handoff policy creation failed");
+server/routers.ts:1014:          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "The handoff policy could not be saved. Please retry." });
+server/routers.ts-1015-        }
+server/routers.ts-1016-      }),
+server/routers.ts-1017-    updateHandoffPolicy: protectedProcedure
+--
+server/routers.ts-1022-        try {
+server/routers.ts-1023-          return await updateTaskHandoffPolicyForUser({ ...input, userId: ctx.user.id });
+server/routers.ts-1024-        } catch (error) {
+server/routers.ts:1025:          const message = error instanceof Error ? error.message : "The handoff policy could not be updated.";
+server/routers.ts:1026:          if (message.includes("unavailable")) throw new TRPCError({ code: "NOT_FOUND", message });
+server/routers.ts-1027-          logger.error({ event: "task_handoff_policy_update_failed", taskId: input.taskId, userId: ctx.user.id, errorKind: error instanceof Error ? error.name : "unknown" }, "Task handoff policy update failed");
+server/routers.ts:1028:          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "The handoff policy could not be updated. Please retry." });
+server/routers.ts-1029-        }
+server/routers.ts-1030-      }),
+server/routers.ts-1031-    archiveHandoffPolicy: protectedProcedure
+--
+server/routers.ts-1036-        try {
+server/routers.ts-1037-          return await archiveTaskHandoffPolicyForUser({ ...input, userId: ctx.user.id });
+server/routers.ts-1038-        } catch (error) {
+server/routers.ts:1039:          const message = error instanceof Error ? error.message : "The handoff policy could not be archived.";
+server/routers.ts:1040:          if (message.includes("unavailable")) throw new TRPCError({ code: "NOT_FOUND", message });
+server/routers.ts-1041-          logger.error({ event: "task_handoff_policy_archive_failed", taskId: input.taskId, userId: ctx.user.id, errorKind: error instanceof Error ? error.name : "unknown" }, "Task handoff policy archive failed");
+server/routers.ts:1042:          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "The handoff policy could not be archived. Please retry." });
+server/routers.ts-1043-        }
+server/routers.ts-1044-      }),
+server/routers.ts-1045-    createRecoveryPlaybook: protectedProcedure
+--
+server/routers.ts-1051-          return await createTaskRecoveryPlaybookForUser({ ...input, userId: ctx.user.id });
+server/routers.ts-1052-        } catch (error) {
+server/routers.ts-1053-          logger.error({ event: "task_recovery_playbook_create_failed", taskId: input.taskId, userId: ctx.user.id, errorKind: error instanceof Error ? error.name : "unknown" }, "Task recovery playbook creation failed");
+server/routers.ts:1054:          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "The recovery playbook could not be saved. Please retry." });
+server/routers.ts-1055-        }
+server/routers.ts-1056-      }),
+server/routers.ts-1057-    updateRecoveryPlaybook: protectedProcedure
+--
+server/routers.ts-1062-        try {
+server/routers.ts-1063-          return await updateTaskRecoveryPlaybookForUser({ ...input, userId: ctx.user.id });
+server/routers.ts-1064-        } catch (error) {
+server/routers.ts:1065:          const message = error instanceof Error ? error.message : "The recovery playbook could not be updated.";
+server/routers.ts:1066:          if (message.includes("unavailable")) throw new TRPCError({ code: "NOT_FOUND", message });
+server/routers.ts-1067-          logger.error({ event: "task_recovery_playbook_update_failed", taskId: input.taskId, userId: ctx.user.id, errorKind: error instanceof Error ? error.name : "unknown" }, "Task recovery playbook update failed");
+server/routers.ts:1068:          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "The recovery playbook could not be updated. Please retry." });
+server/routers.ts-1069-        }
+server/routers.ts-1070-      }),
+server/routers.ts-1071-    archiveRecoveryPlaybook: protectedProcedure
+--
+server/routers.ts-1076-        try {
+server/routers.ts-1077-          return await archiveTaskRecoveryPlaybookForUser({ ...input, userId: ctx.user.id });
+server/routers.ts-1078-        } catch (error) {
+server/routers.ts:1079:          const message = error instanceof Error ? error.message : "The recovery playbook could not be archived.";
+server/routers.ts:1080:          if (message.includes("unavailable")) throw new TRPCError({ code: "NOT_FOUND", message });
+server/routers.ts-1081-          logger.error({ event: "task_recovery_playbook_archive_failed", taskId: input.taskId, userId: ctx.user.id, errorKind: error instanceof Error ? error.name : "unknown" }, "Task recovery playbook archive failed");
+server/routers.ts:1082:          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "The recovery playbook could not be archived. Please retry." });
+server/routers.ts-1083-        }
+server/routers.ts-1084-      }),
+server/routers.ts-1085-    createPolicyPack: protectedProcedure
+--
+server/routers.ts-1091-          return await createTaskPolicyPackForUser({ ...input, userId: ctx.user.id });
+server/routers.ts-1092-        } catch (error) {
+server/routers.ts-1093-          logger.error({ event: "task_policy_pack_create_failed", taskId: input.taskId, userId: ctx.user.id, errorKind: error instanceof Error ? error.name : "unknown" }, "Task policy pack creation failed");
+server/routers.ts:1094:          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "The policy pack could not be saved. Please retry." });
+server/routers.ts-1095-        }
+server/routers.ts-1096-      }),
+server/routers.ts-1097-    updatePolicyPack: protectedProcedure
+--
+server/routers.ts-1102-        try {
+server/routers.ts-1103-          return await updateTaskPolicyPackForUser({ ...input, userId: ctx.user.id });
+server/routers.ts-1104-        } catch (error) {
+server/routers.ts:1105:          const message = error instanceof Error ? error.message : "The policy pack could not be updated.";
+server/routers.ts:1106:          if (message.includes("unavailable")) throw new TRPCError({ code: "NOT_FOUND", message });
+server/routers.ts-1107-          logger.error({ event: "task_policy_pack_update_failed", taskId: input.taskId, userId: ctx.user.id, errorKind: error instanceof Error ? error.name : "unknown" }, "Task policy pack update failed");
+server/routers.ts:1108:          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "The policy pack could not be updated. Please retry." });
+server/routers.ts-1109-        }
+server/routers.ts-1110-      }),
+server/routers.ts-1111-    archivePolicyPack: protectedProcedure
+--
+server/routers.ts-1116-        try {
+server/routers.ts-1117-          return await archiveTaskPolicyPackForUser({ ...input, userId: ctx.user.id });
+server/routers.ts-1118-        } catch (error) {
+server/routers.ts:1119:          const message = error instanceof Error ? error.message : "The policy pack could not be archived.";
+server/routers.ts:1120:          if (message.includes("unavailable")) throw new TRPCError({ code: "NOT_FOUND", message });
+server/routers.ts-1121-          logger.error({ event: "task_policy_pack_archive_failed", taskId: input.taskId, userId: ctx.user.id, errorKind: error instanceof Error ? error.name : "unknown" }, "Task policy pack archive failed");
+server/routers.ts:1122:          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "The policy pack could not be archived. Please retry." });
+server/routers.ts-1123-        }
+server/routers.ts-1124-      }),
+server/routers.ts-1125-    createQualityBudget: protectedProcedure
+--
+server/routers.ts-1131-          return await createTaskQualityBudgetForUser({ ...input, userId: ctx.user.id });
+server/routers.ts-1132-        } catch (error) {
+server/routers.ts-1133-          logger.error({ event: "task_quality_budget_create_failed", taskId: input.taskId, userId: ctx.user.id, errorKind: error instanceof Error ? error.name : "unknown" }, "Task quality-budget creation failed");
+server/routers.ts:1134:          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "The quality budget could not be saved. Please retry." });
+server/routers.ts-1135-        }
+server/routers.ts-1136-      }),
+server/routers.ts-1137-    updateQualityBudget: protectedProcedure
+--
+server/routers.ts-1142-        try {
+server/routers.ts-1143-          return await updateTaskQualityBudgetForUser({ ...input, userId: ctx.user.id });
+server/routers.ts-1144-        } catch (error) {
+server/routers.ts:1145:          const message = error instanceof Error ? error.message : "The quality budget could not be updated.";
+server/routers.ts:1146:          if (message.includes("unavailable")) throw new TRPCError({ code: "NOT_FOUND", message });
+server/routers.ts-1147-          logger.error({ event: "task_quality_budget_update_failed", taskId: input.taskId, userId: ctx.user.id, errorKind: error instanceof Error ? error.name : "unknown" }, "Task quality-budget update failed");
+server/routers.ts:1148:          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "The quality budget could not be updated. Please retry." });
+server/routers.ts-1149-        }
+server/routers.ts-1150-      }),
+server/routers.ts-1151-    archiveQualityBudget: protectedProcedure
+--
+server/routers.ts-1156-        try {
+server/routers.ts-1157-          return await archiveTaskQualityBudgetForUser({ ...input, userId: ctx.user.id });
+server/routers.ts-1158-        } catch (error) {
+server/routers.ts:1159:          const message = error instanceof Error ? error.message : "The quality budget could not be archived.";
+server/routers.ts:1160:          if (message.includes("unavailable")) throw new TRPCError({ code: "NOT_FOUND", message });
+server/routers.ts-1161-          logger.error({ event: "task_quality_budget_archive_failed", taskId: input.taskId, userId: ctx.user.id, errorKind: error instanceof Error ? error.name : "unknown" }, "Task quality-budget archive failed");
+server/routers.ts:1162:          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "The quality budget could not be archived. Please retry." });
+server/routers.ts-1163-        }
+server/routers.ts-1164-      }),
+server/routers.ts-1165-    createBrowserChangeSet: protectedProcedure
+--
+server/routers.ts-1171-          return await createTaskBrowserChangeSetForUser({ ...input, userId: ctx.user.id });
+server/routers.ts-1172-        } catch (error) {
+server/routers.ts-1173-          logger.error({ event: "task_browser_change_set_create_failed", taskId: input.taskId, userId: ctx.user.id, errorKind: error instanceof Error ? error.name : "unknown" }, "Task browser change-set creation failed");
+server/routers.ts:1174:          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "The browser change set could not be saved. Please retry." });
+server/routers.ts-1175-        }
+server/routers.ts-1176-      }),
+server/routers.ts-1177-    updateBrowserChangeSet: protectedProcedure
+--
+server/routers.ts-1182-        try {
+server/routers.ts-1183-          return await updateTaskBrowserChangeSetForUser({ ...input, userId: ctx.user.id });
+server/routers.ts-1184-        } catch (error) {
+server/routers.ts:1185:          const message = error instanceof Error ? error.message : "The browser change set could not be updated.";
+server/routers.ts:1186:          if (message.includes("unavailable")) throw new TRPCError({ code: "NOT_FOUND", message });
+server/routers.ts-1187-          logger.error({ event: "task_browser_change_set_update_failed", taskId: input.taskId, userId: ctx.user.id, errorKind: error instanceof Error ? error.name : "unknown" }, "Task browser change-set update failed");
+server/routers.ts:1188:          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "The browser change set could not be updated. Please retry." });
+server/routers.ts-1189-        }
+server/routers.ts-1190-      }),
+server/routers.ts-1191-    archiveBrowserChangeSet: protectedProcedure
+--
+server/routers.ts-1196-        try {
+server/routers.ts-1197-          return await archiveTaskBrowserChangeSetForUser({ ...input, userId: ctx.user.id });
+server/routers.ts-1198-        } catch (error) {
+server/routers.ts:1199:          const message = error instanceof Error ? error.message : "The browser change set could not be archived.";
+server/routers.ts:1200:          if (message.includes("unavailable")) throw new TRPCError({ code: "NOT_FOUND", message });
+server/routers.ts-1201-          logger.error({ event: "task_browser_change_set_archive_failed", taskId: input.taskId, userId: ctx.user.id, errorKind: error instanceof Error ? error.name : "unknown" }, "Task browser change-set archive failed");
+server/routers.ts:1202:          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "The browser change set could not be archived. Please retry." });
+server/routers.ts-1203-        }
+server/routers.ts-1204-      }),
+server/routers.ts-1205-    generateMedia: protectedProcedure.input(mediaGenerationSchema).mutation(async ({ ctx, input }) => {
+--
+server/routers.ts-1208-        return await executeTaskMedia({ ...input, taskId: task.id, userId: ctx.user.id });
+server/routers.ts-1209-      } catch (error) {
+server/routers.ts-1210-        if (error instanceof TaskMediaRequestError) {
+server/routers.ts:1211:          throw new TRPCError({
+server/routers.ts-1212-            code: error.code === "RATE_LIMITED" ? "TOO_MANY_REQUESTS" : error.code === "REFERENCE_NOT_FOUND" ? "NOT_FOUND" : "BAD_REQUEST",
+server/routers.ts:1213:            message: error.message,
+server/routers.ts-1214-          });
+server/routers.ts-1215-        }
+server/routers.ts:1216:        const message = error instanceof Error ? error.message : "Media generation failed.";
+server/routers.ts-1217-        if (message.includes("Configure") || message.includes("configuration")) {
+server/routers.ts:1218:          throw new TRPCError({ code: "PRECONDITION_FAILED", message: MEDIA_CONFIGURATION_UNAVAILABLE_MESSAGE });
+server/routers.ts-1219-        }
+server/routers.ts:1220:        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Media generation could not be completed. Please retry shortly." });
+server/routers.ts-1221-      }
+server/routers.ts-1222-    }),
+server/routers.ts-1223-    rename: protectedProcedure.input(taskIdSchema.extend({ title: taskTitleSchema })).mutation(async ({ ctx, input }) => {
+--
+server/routers.ts-1268-          return { storageKey: stored.key, storageUrl: stored.url, filename, fileType: input.contentType };
+server/routers.ts-1269-        } catch (error) {
+server/routers.ts-1270-          logger.error({ event: "task_attachment_upload_failed", userId: ctx.user.id, filename, errorKind: error instanceof Error ? error.name : "unknown" }, "Task attachment upload failed");
+server/routers.ts:1271:          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "The attachment could not be stored." });
+server/routers.ts-1272-        }
+server/routers.ts-1273-      }),
+server/routers.ts-1274-    transcribeVoice: protectedProcedure
+--
+server/routers.ts-1288-            audioUrl: stored.url.startsWith("http") ? stored.url : `${origin}${stored.url}`,
+server/routers.ts-1289-            prompt: "Transcribe this task instruction accurately.",
+server/routers.ts-1290-          });
+server/routers.ts:1291:          if ("error" in result) throw new TRPCError({ code: "BAD_REQUEST", message: result.error });
+server/routers.ts-1292-          return { text: result.text, language: result.language, duration: result.duration };
+server/routers.ts-1293-        } catch (error) {
+server/routers.ts-1294-          if (error instanceof TRPCError) throw error;
+server/routers.ts-1295-          logger.error({ event: "task_voice_transcription_failed", userId: ctx.user.id, errorKind: error instanceof Error ? error.name : "unknown" }, "Task voice transcription failed");
+server/routers.ts:1296:          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "The voice recording could not be transcribed." });
+server/routers.ts-1297-        }
+server/routers.ts-1298-      }),
+server/routers.ts-1299-    create: protectedProcedure
+--
+server/routers.ts-1318-      .mutation(async ({ ctx, input }) => {
+server/routers.ts-1319-        await enforceUserMutationLimit(ctx.user.id, "task-create", 12, 3_600);
+server/routers.ts-1320-        if (input.autonomySettings.selectedModel && !runtimeConfiguredComposerModels().some(model => model.id === `${input.autonomySettings.selectedModel!.provider}:${input.autonomySettings.selectedModel!.model}`)) {
+server/routers.ts:1321:          throw new TRPCError({ code: "BAD_REQUEST", message: "The selected model is not configured for this workspace." });
+server/routers.ts-1322-        }
+server/routers.ts-1323-        const selectedConnectedApps = Array.from(new Set(input.autonomySettings.selectedConnectedApps ?? []));
+server/routers.ts-1324-        if (selectedConnectedApps.length) {
+server/routers.ts-1325-          const catalogSlugs = new Set(listUserFacingApps().map(app => app.slug));
+server/routers.ts-1326-          if (selectedConnectedApps.some(appSlug => !catalogSlugs.has(appSlug))) {
+server/routers.ts:1327:            throw new TRPCError({ code: "BAD_REQUEST", message: "A selected app is not available in this workspace." });
+server/routers.ts-1328-          }
+server/routers.ts-1329-          const connectedLabels = new Set((await listIntegrationsForUser(ctx.user.id)).map(integration => integration.label.toLowerCase()));
+server/routers.ts-1330-          if (selectedConnectedApps.some(appSlug => !connectedLabels.has(appSlug.toLowerCase()))) {
+server/routers.ts:1331:            throw new TRPCError({ code: "FORBIDDEN", message: "Connect each selected app before adding it to this task." });
+server/routers.ts-1332-          }
+server/routers.ts-1333-        }
+server/routers.ts-1334-        if (input.projectId) await requireOwnedProject(input.projectId, ctx.user.id);
+server/routers.ts-1335-        const attachments = await Promise.all((input.attachments ?? []).map(async attachment => {
+server/routers.ts-1336-          if (attachment.sourceType === "upload") {
+server/routers.ts-1337-            if (!attachment.storageKey.startsWith(`task-inputs/${ctx.user.id}/`) || !attachment.storageUrl.startsWith("/manus-storage/")) {
+server/routers.ts:1338:              throw new TRPCError({ code: "FORBIDDEN", message: "The uploaded attachment is not available to this account." });
+server/routers.ts-1339-            }
+server/routers.ts-1340-            return attachment;
+server/routers.ts-1341-          }
+server/routers.ts-1342-          const deliverable = await getLibraryDeliverableForUser(attachment.sourceDeliverableId, ctx.user.id);
+server/routers.ts:1343:          if (!deliverable) throw new TRPCError({ code: "NOT_FOUND", message: "The selected Library file was not found." });
+server/routers.ts-1344-          return {
+server/routers.ts-1345-            filename: deliverable.filename,
+server/routers.ts-1346-            fileType: deliverable.fileType,
+--
+server/routers.ts-1371-          ...estimate,
+server/routers.ts-1372-        });
+server/routers.ts-1373-        if (!task) {
+server/routers.ts:1374:          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "The task could not be created." });
+server/routers.ts-1375-        }
+server/routers.ts-1376-        await appendTaskEvent(task.id, {
+server/routers.ts-1377-          type: "task_metadata",
+--
+server/routers.ts-1391-        await enforceUserMutationLimit(ctx.user.id, "task-message", 60, 3_600);
+server/routers.ts-1392-        const task = await requireOwnedTask(input.taskId, ctx.user.id);
+server/routers.ts-1393-        if (["completed", "failed", "cancelled"].includes(task.status)) {
+server/routers.ts:1394:          throw new TRPCError({ code: "BAD_REQUEST", message: "A message cannot be added to a closed task." });
+server/routers.ts-1395-        }
+server/routers.ts-1396-        return recordUserMessage(task.id, input.content);
+server/routers.ts-1397-      }),
+server/routers.ts-1398-    pause: protectedProcedure.input(taskIdSchema).mutation(async ({ ctx, input }) => {
+server/routers.ts-1399-      const task = await requireOwnedTask(input.taskId, ctx.user.id);
+server/routers.ts-1400-      if (!["queued", "booting", "planning", "running"].includes(task.status)) {
+server/routers.ts:1401:        throw new TRPCError({ code: "BAD_REQUEST", message: "Only an active task may be paused." });
+server/routers.ts-1402-      }
+server/routers.ts-1403-      await updateTaskForUser(task.id, ctx.user.id, { status: "paused", currentStepSummary: "Paused by user." });
+server/routers.ts-1404-      await appendTaskEvent(task.id, { type: "status_change", payload: { status: "paused", summary: "Paused by user." } });
+--
+server/routers.ts-1407-    resume: protectedProcedure.input(taskIdSchema).mutation(async ({ ctx, input }) => {
+server/routers.ts-1408-      const task = await requireOwnedTask(input.taskId, ctx.user.id);
+server/routers.ts-1409-      if (!["paused", "needs_input"].includes(task.status)) {
+server/routers.ts:1410:        throw new TRPCError({ code: "BAD_REQUEST", message: "Only a paused or input-blocked task may be resumed." });
+server/routers.ts-1411-      }
+server/routers.ts-1412-      await updateTaskForUser(task.id, ctx.user.id, { status: "queued", currentStepSummary: "Queued for continuation." });
+server/routers.ts-1413-      await appendTaskEvent(task.id, { type: "status_change", payload: { status: "queued", summary: "Queued for continuation." } });
+--
+server/routers.ts-1416-    cancel: protectedProcedure.input(taskIdSchema).mutation(async ({ ctx, input }) => {
+server/routers.ts-1417-      const task = await requireOwnedTask(input.taskId, ctx.user.id);
+server/routers.ts-1418-      if (["completed", "failed", "cancelled"].includes(task.status)) {
+server/routers.ts:1419:        throw new TRPCError({ code: "BAD_REQUEST", message: "The task is already closed." });
+server/routers.ts-1420-      }
+server/routers.ts-1421-      await updateTaskForUser(task.id, ctx.user.id, { status: "cancelled", currentStepSummary: "Cancelled by user." });
+server/routers.ts-1422-      await appendTaskEvent(task.id, { type: "status_change", payload: { status: "cancelled", summary: "Cancelled by user." } });
+--
+server/routers.ts-1434-      .mutation(async ({ ctx, input }) => {
+server/routers.ts-1435-        const task = await requireOwnedTask(input.taskId, ctx.user.id);
+server/routers.ts-1436-        if (["completed", "failed", "cancelled"].includes(task.status)) {
+server/routers.ts:1437:          throw new TRPCError({ code: "BAD_REQUEST", message: "The plan cannot be changed after a task closes." });
+server/routers.ts-1438-        }
+server/routers.ts-1439-        await updateTaskForUser(task.id, ctx.user.id, { plan: input.plan });
+server/routers.ts-1440-        return appendTaskEvent(task.id, { type: "plan_update", payload: { plan: input.plan, source: "user" } });
+--
+server/_core/trpc.ts-19-    );
+server/_core/trpc.ts-20-    return {
+server/_core/trpc.ts-21-      ...shape,
+server/_core/trpc.ts:22:      message: isInternal ? "An unexpected server error occurred." : shape.message,
+server/_core/trpc.ts-23-      data: {
+server/_core/trpc.ts-24-        ...shape.data,
+server/_core/trpc.ts-25-        requestId: ctx?.req.headers["x-request-id"] ?? undefined,
+--
+server/_core/trpc.ts-35-  const { ctx, next } = opts;
+server/_core/trpc.ts-36-
+server/_core/trpc.ts-37-  if (!ctx.user) {
+server/_core/trpc.ts:38:    throw new TRPCError({ code: "UNAUTHORIZED", message: UNAUTHED_ERR_MSG });
+server/_core/trpc.ts-39-  }
+server/_core/trpc.ts-40-
+server/_core/trpc.ts-41-  return next({
+--
+server/_core/trpc.ts-53-    const { ctx, next } = opts;
+server/_core/trpc.ts-54-
+server/_core/trpc.ts-55-    if (!ctx.user || ctx.user.role !== 'admin') {
+server/_core/trpc.ts:56:      throw new TRPCError({ code: "FORBIDDEN", message: NOT_ADMIN_ERR_MSG });
+server/_core/trpc.ts-57-    }
+server/_core/trpc.ts-58-
+server/_core/trpc.ts-59-    return next({
+--
+server/integrations/supadata.ts-57-  try {
+server/integrations/supadata.ts-58-    await enforceRateLimit({ subject: String(input.userId), scope: "supadata-public-video", limit: 3, windowSeconds: 3_600 });
+server/integrations/supadata.ts-59-  } catch (error) {
+server/integrations/supadata.ts:60:    if (error instanceof RateLimitError) throw new SupadataRequestError("RATE_LIMITED", error.message);
+server/integrations/supadata.ts-61-    throw error;
+server/integrations/supadata.ts-62-  }
+server/integrations/supadata.ts-63-
+--
+server/agent/llm.ts-234-        maxTokens: input.maxTokens,
+server/agent/llm.ts-235-      });
+server/agent/llm.ts-236-    } catch (error) {
+server/agent/llm.ts:237:      const message = error instanceof Error ? error.message : "Unknown provider error.";
+server/agent/llm.ts-238-      errors.push(message);
+server/agent/llm.ts-239-      if (!(error instanceof LlmProviderError) || !error.retryable) continue;
+server/agent/llm.ts-240-    }
+--
+server/integrations/appConnectors.ts-134-    if (url.protocol !== "https:" && !(url.protocol === "http:" && ["localhost", "127.0.0.1"].includes(url.hostname))) throw new Error("protocol");
+server/integrations/appConnectors.ts-135-    return url.origin;
+server/integrations/appConnectors.ts-136-  } catch {
+server/integrations/appConnectors.ts:137:    throw new TRPCError({ code: "PRECONDITION_FAILED", message: "A trusted public application URL is required before an app authorization session can start." });
+server/integrations/appConnectors.ts-138-  }
+server/integrations/appConnectors.ts-139-}
+server/integrations/appConnectors.ts-140-
+server/integrations/appConnectors.ts-141-function requireConfigured(provider: AppConnectorProvider) {
+server/integrations/appConnectors.ts-142-  if (!configured(provider)) {
+server/integrations/appConnectors.ts:143:    throw new TRPCError({ code: "PRECONDITION_FAILED", message: `${appConnectorReadiness().find(item => item.provider === provider)?.label ?? provider} is not configured for this workspace yet.` });
+server/integrations/appConnectors.ts-144-  }
+server/integrations/appConnectors.ts-145-}
+server/integrations/appConnectors.ts-146-
+--
+server/integrations/appConnectors.ts-161-
+server/integrations/appConnectors.ts-162-function requireAppSlug(appSlug: string) {
+server/integrations/appConnectors.ts-163-  if (!/^[a-z0-9][a-z0-9_-]{1,127}$/i.test(appSlug)) {
+server/integrations/appConnectors.ts:164:    throw new TRPCError({ code: "BAD_REQUEST", message: "That app selection is invalid." });
+server/integrations/appConnectors.ts-165-  }
+server/integrations/appConnectors.ts-166-}
+server/integrations/appConnectors.ts-167-
+--
+server/integrations/appConnectors.ts-170-  try {
+server/integrations/appConnectors.ts-171-    url = new URL(value);
+server/integrations/appConnectors.ts-172-  } catch {
+server/integrations/appConnectors.ts:173:    throw new TRPCError({ code: "BAD_GATEWAY", message: "The authorization service returned an invalid destination." });
+server/integrations/appConnectors.ts-174-  }
+server/integrations/appConnectors.ts-175-
+server/integrations/appConnectors.ts-176-  if (
+--
+server/integrations/appConnectors.ts-180-    url.username ||
+server/integrations/appConnectors.ts-181-    url.password
+server/integrations/appConnectors.ts-182-  ) {
+server/integrations/appConnectors.ts:183:    throw new TRPCError({ code: "BAD_GATEWAY", message: "The authorization service returned an untrusted destination." });
+server/integrations/appConnectors.ts-184-  }
+server/integrations/appConnectors.ts-185-
+server/integrations/appConnectors.ts-186-  return url;
+--
+server/integrations/appConnectors.ts-221-    return { apps, nextCursor: page.response.pageInfo.endCursor ?? null, totalCount: page.response.pageInfo.totalCount ?? null };
+server/integrations/appConnectors.ts-222-  } catch (error) {
+server/integrations/appConnectors.ts-223-    logger.error({ event: "app_directory_browse_failed", hasQuery: Boolean(query), errorKind: error instanceof Error ? error.name : "unknown" }, "Connected-app directory browsing failed");
+server/integrations/appConnectors.ts:224:    throw new TRPCError({ code: "BAD_GATEWAY", message: "More apps could not be loaded right now. Try again shortly." });
+server/integrations/appConnectors.ts-225-  }
+server/integrations/appConnectors.ts-226-}
+server/integrations/appConnectors.ts-227-
+--
+server/integrations/appConnectors.ts-243-    return { mode: "redirect" as const, authorizationUrl: authorizationUrl.toString(), expiresAt: session.expiresAt.getTime() };
+server/integrations/appConnectors.ts-244-  } catch (error) {
+server/integrations/appConnectors.ts-245-    logger.error({ event: "app_connector_start_failed", appSlug: input.appSlug, userId: input.userId, errorKind: error instanceof Error ? error.name : "unknown" }, "Connected-app authorization initialization failed");
+server/integrations/appConnectors.ts:246:    throw new TRPCError({ code: "BAD_GATEWAY", message: "This app could not start the authorization session. Please try again later." });
+server/integrations/appConnectors.ts-247-  }
+server/integrations/appConnectors.ts-248-}
+server/integrations/appConnectors.ts-249-
+--
+server/integrations/appConnectors.ts-253-  try {
+server/integrations/appConnectors.ts-254-    url = new URL(input.mcpServerUrl);
+server/integrations/appConnectors.ts-255-  } catch {
+server/integrations/appConnectors.ts:256:    throw new TRPCError({ code: "BAD_REQUEST", message: "Zapier returned an invalid MCP server URL." });
+server/integrations/appConnectors.ts-257-  }
+server/integrations/appConnectors.ts-258-  if (url.protocol !== "https:" || url.hostname !== "mcp.zapier.com") {
+server/integrations/appConnectors.ts:259:    throw new TRPCError({ code: "BAD_REQUEST", message: "Zapier returned an untrusted MCP server URL." });
+server/integrations/appConnectors.ts-260-  }
+server/integrations/appConnectors.ts-261-  const id = await createIntegrationForUser({
+server/integrations/appConnectors.ts-262-    userId: input.userId,
+--
+server/integrations/appConnectors.ts-275-  try {
+server/integrations/appConnectors.ts-276-    const accounts = await pipedreamClient().accounts.listByExternalUser(`synthia:${input.userId}`, { app: input.appSlug });
+server/integrations/appConnectors.ts-277-    const account = accounts.find(candidate => candidate.app?.nameSlug === input.appSlug) ?? accounts[0];
+server/integrations/appConnectors.ts:278:    if (!account) throw new TRPCError({ code: "NOT_FOUND", message: "No account was authorized for this app yet." });
+server/integrations/appConnectors.ts-279-    const label = account.app?.name?.trim() || input.appSlug.replace(/[-_]+/g, " ").replace(/\b\w/g, character => character.toUpperCase());
+server/integrations/appConnectors.ts-280-    const id = await createIntegrationForUser({
+server/integrations/appConnectors.ts-281-      userId: input.userId,
+--
+server/integrations/appConnectors.ts-289-  } catch (error) {
+server/integrations/appConnectors.ts-290-    if (error instanceof TRPCError) throw error;
+server/integrations/appConnectors.ts-291-    logger.error({ event: "app_connector_verify_failed", appSlug: input.appSlug, userId: input.userId, errorKind: error instanceof Error ? error.name : "unknown" }, "Connected-app authorization verification failed");
+server/integrations/appConnectors.ts:292:    throw new TRPCError({ code: "BAD_GATEWAY", message: "This app connection could not be verified right now." });
+server/integrations/appConnectors.ts-293-  }
+server/integrations/appConnectors.ts-294-}
+server/integrations/appConnectors.ts-295-
+--
+server/integrations/appConnectors.ts-304-    const payload = await response.json() as { items?: Array<{ id?: unknown; status?: unknown }> };
+server/integrations/appConnectors.ts-305-    const account = Array.isArray(payload.items) ? payload.items.find(item => typeof item.id === "string" && item.status === "ACTIVE") : undefined;
+server/integrations/appConnectors.ts-306-    if (!response.ok) throw new Error(`Composio connected-account lookup failed with ${response.status}`);
+server/integrations/appConnectors.ts:307:    if (!account || typeof account.id !== "string") throw new TRPCError({ code: "NOT_FOUND", message: "No active Composio account is authorized for this workspace yet." });
+server/integrations/appConnectors.ts-308-    const id = await createIntegrationForUser({
+server/integrations/appConnectors.ts-309-      userId: input.userId,
+server/integrations/appConnectors.ts-310-      provider: "composio",
+--
+server/integrations/appConnectors.ts-317-  } catch (error) {
+server/integrations/appConnectors.ts-318-    if (error instanceof TRPCError) throw error;
+server/integrations/appConnectors.ts-319-    logger.error({ event: "app_connector_verify_failed", provider: "composio", userId: input.userId, errorKind: error instanceof Error ? error.name : "unknown" }, "Connected-app authorization verification failed");
+server/integrations/appConnectors.ts:320:    throw new TRPCError({ code: "BAD_GATEWAY", message: "Composio connection verification is temporarily unavailable." });
+server/integrations/appConnectors.ts-321-  }
+server/integrations/appConnectors.ts-322-}
+--
+server/agent/search.ts-48-  const errors: string[] = [];
+server/agent/search.ts-49-  for (const provider of order) {
+server/agent/search.ts-50-    if (provider === "tavily" && ENV.tavilyApiKey) {
+server/agent/search.ts:51:      try { return { provider, results: await tavilySearch(query) }; } catch (error) { errors.push(error instanceof Error ? error.message : "Tavily failed."); }
+server/agent/search.ts-52-    }
+server/agent/search.ts-53-    if (provider === "serper" && ENV.serperApiKey) {
+server/agent/search.ts:54:      try { return { provider, results: await serperSearch(query) }; } catch (error) { errors.push(error instanceof Error ? error.message : "Serper failed."); }
+server/agent/search.ts-55-    }
+server/agent/search.ts-56-  }
+server/agent/search.ts-57-  throw new Error(`No configured search provider completed the request. ${errors.join(" | ")}`);
+--
+server/media/taskMedia.ts-74-  try {
+server/media/taskMedia.ts-75-    await enforceRateLimit({ subject: String(input.userId), scope: `media-generation-${input.kind}`, limit: input.kind === "image" ? 8 : 3, windowSeconds: 600 });
+server/media/taskMedia.ts-76-  } catch (error) {
+server/media/taskMedia.ts:77:    if (error instanceof RateLimitError) throw new TaskMediaRequestError("RATE_LIMITED", error.message);
+server/media/taskMedia.ts-78-    throw error;
+server/media/taskMedia.ts-79-  }
+server/media/taskMedia.ts-80-  const provider = providerFor(input.kind, input.provider);

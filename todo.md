@@ -3611,3 +3611,9 @@
 - [x] Research NetPilot’s publicly documented network-engineering capabilities, workflows, and integration model.
 - [x] Compare relevant capabilities against Synthia’s approval-first, owner-scoped architecture and identify safe product boundaries.
 - [x] Produce a phased implementation plan with prerequisites, security controls, provider decisions, and explicit approval gates before any build work.
+
+## Customer-operated multi-vendor virtual-lab design
+- [x] Define the VirtualBox-compatible, customer-operated runner model for isolated topology design and multi-vendor validation without Synthia hosting vendor images or contacting devices.
+- [x] Specify image intake, licensing attestation, digest verification, lab isolation, egress policy, resource quotas, and evidence-redaction requirements for engineer-supplied vendor images.
+- [x] Design the owner-scoped Network Lab Workspace, signed runner manifest, topology specification, validation-plan contract, and bounded evidence return path.
+- [x] Prepare the staged delivery plan for the first three supported vendor families, including explicit no-production-write and no-arbitrary-CLI boundaries.
