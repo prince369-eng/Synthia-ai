@@ -92,9 +92,11 @@ export async function executeSupadataPublicVideoUnderstanding(input: { taskId: s
     }
     throw new SupadataRequestError("PROVIDER_FAILED", "Public video understanding timed out. Try a shorter public video.");
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Public video understanding failed.";
-    await appendTaskEvent(input.taskId, { type: "error", payload: { code: error instanceof SupadataRequestError ? error.code : "PUBLIC_VIDEO_FAILED", message } });
-    logger.error({ event: "supadata_public_video_failed", taskId: input.taskId, userId: input.userId, error: message }, "Public video understanding failed");
-    throw error;
+    const safeError = error instanceof SupadataRequestError
+      ? error
+      : new SupadataRequestError("PROVIDER_FAILED", "Public video understanding could not be completed. Try again shortly.");
+    await appendTaskEvent(input.taskId, { type: "error", payload: { code: safeError.code, message: safeError.message } });
+    logger.error({ event: "supadata_public_video_failed", taskId: input.taskId, userId: input.userId, errorKind: error instanceof Error ? error.name : "unknown" }, "Public video understanding failed");
+    throw safeError;
   }
 }

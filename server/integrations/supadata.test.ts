@@ -7,6 +7,9 @@ vi.mock("../security/rateLimit", () => ({ enforceRateLimit: vi.fn(), RateLimitEr
 vi.mock("../security/logger", () => ({ logger: { info: vi.fn(), error: vi.fn() } }));
 
 import { ENV } from "../_core/env";
+import { appendTaskEvent } from "../db";
+import { assertPublicWebDestination } from "../agent/publicWebPolicy";
+import { enforceRateLimit } from "../security/rateLimit";
 import { executeSupadataPublicVideoUnderstanding, SupadataRequestError } from "./supadata";
 
 const originalKey = ENV.supadataApiKey;
@@ -31,5 +34,30 @@ describe("executeSupadataPublicVideoUnderstanding", () => {
       prompt: "Summarize this public video.",
     })).rejects.toMatchObject({ code: "CONFIGURATION_REQUIRED" } satisfies Partial<SupadataRequestError>);
     expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("records a bounded task-event message when an unknown provider exception occurs", async () => {
+    ENV.supadataApiKey = "test-key";
+    vi.mocked(assertPublicWebDestination).mockResolvedValue(new URL("https://www.youtube.com/watch?v=abc123"));
+    vi.mocked(enforceRateLimit).mockResolvedValue(undefined);
+    globalThis.fetch = vi.fn().mockRejectedValue(new Error("connect ECONNREFUSED 10.0.0.1:443 secret=should-not-render"));
+
+    await expect(executeSupadataPublicVideoUnderstanding({
+      taskId: "task-1",
+      userId: 1,
+      sourceUrl: "https://www.youtube.com/watch?v=abc123",
+      prompt: "Summarize this public video.",
+    })).rejects.toMatchObject({
+      code: "PROVIDER_FAILED",
+      message: "Public video understanding could not be completed. Try again shortly.",
+    } satisfies Partial<SupadataRequestError>);
+
+    expect(appendTaskEvent).toHaveBeenLastCalledWith("task-1", {
+      type: "error",
+      payload: {
+        code: "PROVIDER_FAILED",
+        message: "Public video understanding could not be completed. Try again shortly.",
+      },
+    });
   });
 });

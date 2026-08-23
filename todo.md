@@ -3581,3 +3581,8 @@
 ## Page-level client diagnostic regression coverage
 - [x] Expand the source contract to cover every routed user-facing page against direct error-message rendering.
 - [x] Validate strict typing, focused tests, the full deterministic suite, production build, and diff hygiene without starting external work.
+
+## Public-video task-event diagnostic hardening
+- [x] Keep unknown public-video integration exceptions out of persisted user-visible task-event messages while retaining classified task status and structured logs.
+- [x] Add deterministic coverage for safe public-video task-event failure recording without invoking the provider.
+- [x] Validate strict typing, focused tests, the full deterministic suite, production build, and diff hygiene without starting external work.
