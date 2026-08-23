@@ -3654,3 +3654,14 @@
 ## Bounded network-change planning demonstration
 - [ ] Run one user-approved text-only two-router network-change planning task with no browsing, apps, files, media, virtual-lab, or device operations, then inspect its actual outcome without automatic retry.
 - [x] Diagnose and correct the reported composer task-creation failure, then add a deterministic no-provider, no-queue regression check before retrying the approved demo.
+- [x] Capture and correct the remaining live composer submission failure after protected owner provisioning, without submitting another provider task during diagnosis.
+
+## Core-flow reliability audit and corrected GitHub update
+- [ ] Audit authentication, task creation, task readback, primary workspace navigation, protected persistence, and bounded client error handling for deterministic reliability blockers.
+- [ ] Correct confirmed core-flow defects with focused regression coverage and without adding provider, queue, browser, lab, or device activity to tests.
+- [ ] Run strict typing, focused tests, the full deterministic suite, production build, diff hygiene, and safe primary-flow inspection before publication.
+- [ ] Checkpoint and push the verified corrected version to `prince369-eng/Synthia-ai` without force-overwriting repository history.
+
+## Task-event persistence schema repair
+- [x] Verify and apply an additive MySQL-compatible migration for the missing task-event sequence table required by protected task creation.
+- [ ] Add a deterministic task-persistence availability regression that reports bounded recovery guidance when required task-event tables are unavailable.

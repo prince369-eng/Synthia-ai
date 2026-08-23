@@ -22,8 +22,14 @@ try {
   const userStats = userTable.rows[0]?.user_table
     ? await client.query("SELECT COUNT(*)::int AS total FROM users")
     : { rows: [{ total: 0 }] };
+  const requiredTaskCreationTables = ["tasks", "task_event_sequences", "task_events", "task_messages"];
+  const taskCreationTables = await client.query(
+    "SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' AND table_name = ANY($1::text[])",
+    [requiredTaskCreationTables],
+  );
   const requiredColumns = ["id", "user_id", "title", "goal", "plan", "autonomy_settings", "deleted_at"];
   const presentColumns = new Set(taskColumns.rows.map(row => row.column_name));
+  const presentTaskCreationTables = new Set(taskCreationTables.rows.map(row => row.table_name));
   console.log(JSON.stringify({
     configured: true,
     reachable: true,
@@ -32,6 +38,8 @@ try {
     recentTaskCount: taskStats.rows[0]?.recent ?? 0,
     userTable: Boolean(userTable.rows[0]?.user_table),
     userCount: userStats.rows[0]?.total ?? 0,
+    requiredTaskCreationTablesPresent: [...presentTaskCreationTables].sort(),
+    missingTaskCreationTables: requiredTaskCreationTables.filter(table => !presentTaskCreationTables.has(table)),
     requiredTaskColumnsPresent: requiredColumns.every(column => presentColumns.has(column)),
     missingRequiredTaskColumns: requiredColumns.filter(column => !presentColumns.has(column)),
   }));
