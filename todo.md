@@ -3691,3 +3691,8 @@
 - [x] Verify that the previously used public preview address served a stale inline bundle while a fresh project proxy served the current versioned classic bundle and bounded telemetry.
 - [ ] Extract and trace the bounded RPC lifecycle evidence from the fresh-preview composer reproduction captured in the user screenshot.
 - [x] Add a bounded client-side composer failure report that records only transport category and tRPC code, never task text, payloads, messages, or credentials.
+- [ ] Verify why the bounded composer diagnostic callback does not reach the fresh-preview server before requesting any further user retry.
+- [ ] Reproduce the remaining composer client failure through a no-op diagnostic contract rather than another task creation request.
+- [x] Correct cross-bundle tRPC error recognition so the composer displays and reports safe structured error codes instead of falling back to a generic message.
+- [x] Apply structural cross-bundle tRPC recognition to global mutation and query error handling so client diagnostics and session recovery are consistent.
+- [x] Add stage-specific safe error conversion around composer preparation steps that run before persistence.

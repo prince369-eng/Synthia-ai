@@ -1,22 +1,14 @@
+import { isTrpcLikeError, safeTrpcErrorCode } from "./trpcErrorShape";
+
 export type ComposerFailureReport = {
   kind: "trpc" | "network" | "unknown";
   trpcCode: string | null;
 };
 
-const allowedTrpcCodes = new Set([
-  "BAD_REQUEST", "UNAUTHORIZED", "FORBIDDEN", "NOT_FOUND", "TOO_MANY_REQUESTS",
-  "PRECONDITION_FAILED", "INTERNAL_SERVER_ERROR", "TIMEOUT", "CLIENT_CLOSED_REQUEST",
-]);
-
 /** Converts a client mutation error to a bounded telemetry payload without using its message or cause. */
 export function classifyComposerFailure(error: unknown): ComposerFailureReport {
   if (error instanceof TypeError) return { kind: "network", trpcCode: null };
-  if (error && typeof error === "object" && "name" in error && (error as { name?: unknown }).name === "TRPCClientError") {
-    const code = "data" in error && error.data && typeof error.data === "object" && "code" in error.data
-      ? error.data.code
-      : null;
-    return { kind: "trpc", trpcCode: typeof code === "string" && allowedTrpcCodes.has(code) ? code : null };
-  }
+  if (isTrpcLikeError(error)) return { kind: "trpc", trpcCode: safeTrpcErrorCode(error) };
   return { kind: "unknown", trpcCode: null };
 }
 

@@ -1,5 +1,6 @@
 import { TRPCClientError } from "@trpc/client";
 import { UNAUTHED_ERR_MSG } from "@shared/const";
+import { isTrpcLikeError, safeTrpcErrorCode } from "./trpcErrorShape";
 
 const genericGuidance = "We could not complete that request. Please try again.";
 
@@ -8,12 +9,12 @@ const genericGuidance = "We could not complete that request. Please try again.";
  * transport, provider, or server exception text.
  */
 export function clientErrorMessage(error: unknown, fallback = genericGuidance): string {
-  if (error instanceof TRPCClientError) {
+  if (error instanceof TRPCClientError || isTrpcLikeError(error)) {
     if (error.message === UNAUTHED_ERR_MSG) {
       return "Your session has expired. Sign in again to continue.";
     }
 
-    switch (error.data?.code) {
+    switch (safeTrpcErrorCode(error)) {
       case "BAD_REQUEST":
         return "Review the information provided and try again.";
       case "FORBIDDEN":

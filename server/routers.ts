@@ -1507,49 +1507,71 @@ export const appRouter = router({
         }),
       )
       .mutation(async ({ ctx, input }) => {
-        await enforceUserMutationLimit(ctx.user.id, "task-create", 12, 3_600);
-        if (input.autonomySettings.selectedModel && !runtimeConfiguredComposerModels().some(model => model.id === `${input.autonomySettings.selectedModel!.provider}:${input.autonomySettings.selectedModel!.model}`)) {
-          throw new TRPCError({ code: "BAD_REQUEST", message: "The selected model is not configured for this workspace." });
-        }
-        const selectedConnectedApps = Array.from(new Set(input.autonomySettings.selectedConnectedApps ?? []));
-        if (selectedConnectedApps.length) {
-          const catalogSlugs = new Set(listUserFacingApps().map(app => app.slug));
-          if (selectedConnectedApps.some(appSlug => !catalogSlugs.has(appSlug))) {
-            throw new TRPCError({ code: "BAD_REQUEST", message: "A selected app is not available in this workspace." });
-          }
-          const connectedLabels = new Set((await listIntegrationsForUser(ctx.user.id)).map(integration => integration.label.toLowerCase()));
-          if (selectedConnectedApps.some(appSlug => !connectedLabels.has(appSlug.toLowerCase()))) {
-            throw new TRPCError({ code: "FORBIDDEN", message: "Connect each selected app before adding it to this task." });
-          }
-        }
-        if (input.projectId) await requireOwnedProject(input.projectId, ctx.user.id);
-        const attachments = await Promise.all((input.attachments ?? []).map(async attachment => {
-          if (attachment.sourceType === "upload") {
-            if (!attachment.storageKey.startsWith(`task-inputs/${ctx.user.id}/`) || !attachment.storageUrl.startsWith("/manus-storage/")) {
-              throw new TRPCError({ code: "FORBIDDEN", message: "The uploaded attachment is not available to this account." });
+        const preparation = await (async () => {
+          let taskCreationStage = "rate_limit";
+          try {
+            await enforceUserMutationLimit(ctx.user.id, "task-create", 12, 3_600);
+            taskCreationStage = "selected_model";
+            if (input.autonomySettings.selectedModel && !runtimeConfiguredComposerModels().some(model => model.id === `${input.autonomySettings.selectedModel!.provider}:${input.autonomySettings.selectedModel!.model}`)) {
+              throw new TRPCError({ code: "BAD_REQUEST", message: "The selected model is not configured for this workspace." });
             }
-            return attachment;
+            const selectedConnectedApps = Array.from(new Set(input.autonomySettings.selectedConnectedApps ?? []));
+            taskCreationStage = "connected_apps";
+            if (selectedConnectedApps.length) {
+              const catalogSlugs = new Set(listUserFacingApps().map(app => app.slug));
+              if (selectedConnectedApps.some(appSlug => !catalogSlugs.has(appSlug))) {
+                throw new TRPCError({ code: "BAD_REQUEST", message: "A selected app is not available in this workspace." });
+              }
+              const connectedLabels = new Set((await listIntegrationsForUser(ctx.user.id)).map(integration => integration.label.toLowerCase()));
+              if (selectedConnectedApps.some(appSlug => !connectedLabels.has(appSlug.toLowerCase()))) {
+                throw new TRPCError({ code: "FORBIDDEN", message: "Connect each selected app before adding it to this task." });
+              }
+            }
+            taskCreationStage = "project";
+            if (input.projectId) await requireOwnedProject(input.projectId, ctx.user.id);
+            taskCreationStage = "attachments";
+            const attachments = await Promise.all((input.attachments ?? []).map(async attachment => {
+              if (attachment.sourceType === "upload") {
+                if (!attachment.storageKey.startsWith(`task-inputs/${ctx.user.id}/`) || !attachment.storageUrl.startsWith("/manus-storage/")) {
+                  throw new TRPCError({ code: "FORBIDDEN", message: "The uploaded attachment is not available to this account." });
+                }
+                return attachment;
+              }
+              const deliverable = await getLibraryDeliverableForUser(attachment.sourceDeliverableId, ctx.user.id);
+              if (!deliverable) throw new TRPCError({ code: "NOT_FOUND", message: "The selected Library file was not found." });
+              return {
+                filename: deliverable.filename,
+                fileType: deliverable.fileType,
+                storageKey: deliverable.storageKey,
+                storageUrl: deliverable.storageUrl,
+                sourceType: "library" as const,
+                sourceDeliverableId: deliverable.id,
+              };
+            }));
+            taskCreationStage = "routing";
+            const plan = input.plan ?? initialPlanFromGoal(input.goal);
+            const automaticRoute = resolveAutomaticTaskRoute({
+              goal: input.goal,
+              attachments,
+              media: mediaReadiness(ENV),
+              publicMedia: { configured: Boolean(ENV.supadataApiKey) },
+            });
+            taskCreationStage = "estimate";
+            const autonomySettings = { ...input.autonomySettings, selectedConnectedApps, automaticRoute };
+            const estimate = estimateTaskCredits({ goal: input.goal, planSteps: plan.length, involvesCode: input.involvesCode });
+            return { attachments, plan, automaticRoute, autonomySettings, estimate };
+          } catch (error) {
+            if (error instanceof TRPCError) throw error;
+            logger.error({
+              event: "task_create_preparation_failed",
+              userId: ctx.user.id,
+              taskCreationStage,
+              errorKind: error instanceof Error ? error.name : "unknown",
+            }, "Task creation preparation failed");
+            throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Task preparation is temporarily unavailable. Please try again shortly." });
           }
-          const deliverable = await getLibraryDeliverableForUser(attachment.sourceDeliverableId, ctx.user.id);
-          if (!deliverable) throw new TRPCError({ code: "NOT_FOUND", message: "The selected Library file was not found." });
-          return {
-            filename: deliverable.filename,
-            fileType: deliverable.fileType,
-            storageKey: deliverable.storageKey,
-            storageUrl: deliverable.storageUrl,
-            sourceType: "library" as const,
-            sourceDeliverableId: deliverable.id,
-          };
-        }));
-        const plan = input.plan ?? initialPlanFromGoal(input.goal);
-        const automaticRoute = resolveAutomaticTaskRoute({
-          goal: input.goal,
-          attachments,
-          media: mediaReadiness(ENV),
-          publicMedia: { configured: Boolean(ENV.supadataApiKey) },
-        });
-        const autonomySettings = { ...input.autonomySettings, selectedConnectedApps, automaticRoute };
-        const estimate = estimateTaskCredits({ goal: input.goal, planSteps: plan.length, involvesCode: input.involvesCode });
+        })();
+        const { attachments, plan, automaticRoute, autonomySettings, estimate } = preparation;
         let task;
         try {
           task = await createTaskForUser({

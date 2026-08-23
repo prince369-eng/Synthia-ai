@@ -8,16 +8,17 @@ import superjson from "superjson";
 import App from "./App";
 import { EXPLICIT_SIGNED_OUT_STORAGE_KEY, startLogin } from "./const";
 import { shouldMountSynthiaWorkspace } from "./lib/bootstrap";
+import { isTrpcLikeError } from "./lib/trpcErrorShape";
 import "./index.css";
 
 const queryClient = new QueryClient();
 
 function classifyClientError(error: unknown): "network" | "unauthorized" | "request" | "unknown" {
-  if (error instanceof TRPCClientError) {
+  if (error instanceof TRPCClientError || isTrpcLikeError(error)) {
     return error.message === UNAUTHED_ERR_MSG ? "unauthorized" : "request";
   }
 
-  if (error instanceof TypeError) return "network";
+  if (error instanceof TypeError || (error && typeof error === "object" && "name" in error && (error as { name?: unknown }).name === "TypeError")) return "network";
   return "unknown";
 }
 
@@ -26,13 +27,13 @@ function reportClientError(scope: "bootstrap" | "mutation" | "query", error: unk
 }
 
 function sanitizeDisplayedClientError(error: unknown) {
-  if (error instanceof TRPCClientError) {
+  if (error instanceof TRPCClientError || isTrpcLikeError(error)) {
     error.message = clientErrorMessage(error);
   }
 }
 
 const redirectToLoginIfUnauthorized = (error: unknown) => {
-  if (!(error instanceof TRPCClientError)) return;
+  if (!(error instanceof TRPCClientError) && !isTrpcLikeError(error)) return;
   if (typeof window === "undefined") return;
 
   const isUnauthorized = error.message === UNAUTHED_ERR_MSG;
