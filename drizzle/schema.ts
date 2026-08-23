@@ -44,6 +44,9 @@ const skillCategoryEnum = pgEnum("skill_category", ["document_style", "coding_pr
 const skillVisibilityEnum = pgEnum("skill_visibility", ["private", "workspace", "public_platform"]);
 const skillInstallScopeEnum = pgEnum("skill_install_scope", ["personal", "workspace"]);
 const scheduledWorkflowStatusEnum = pgEnum("scheduled_workflow_status", ["active", "paused", "deleted"]);
+const networkLabStatusEnum = pgEnum("network_lab_status", ["draft", "ready_for_review", "approved", "evidence_received", "validation_passed", "validation_failed", "incomplete", "archived"]);
+const networkLabApprovalDecisionEnum = pgEnum("network_lab_approval_decision", ["pending", "approved", "rejected"]);
+const networkLabEvidenceVerdictEnum = pgEnum("network_lab_evidence_verdict", ["pass", "fail", "inconclusive", "not_comparable"]);
 
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
@@ -639,9 +642,70 @@ export const usageEvents = pgTable("usage_events", {
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 }, table => [index("usage_events_user_task_created_idx").on(table.userId, table.taskId, table.createdAt)]);
 
+/**
+ * A user-owned virtual-network lab proposal. This is a control-plane record only:
+ * it never stores vendor images, device credentials, console output, or a route to
+ * any lab or production network.
+ */
+export const networkLabs = pgTable("network_labs", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  title: varchar("title", { length: 160 }).notNull(),
+  objective: text("objective").notNull(),
+  vendorFamilies: jsonb("vendor_families").notNull().default([]),
+  topology: jsonb("topology").notNull().default({ nodes: [], links: [] }),
+  configurationCandidates: jsonb("configuration_candidates").notNull().default([]),
+  validationPlan: jsonb("validation_plan").notNull().default([]),
+  rollbackPlan: text("rollback_plan").notNull(),
+  runnerPlatform: varchar("runner_platform", { length: 40 }).notNull().default("linux_virtualbox"),
+  status: networkLabStatusEnum("status").notNull().default("draft"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+}, table => [
+  index("network_labs_user_status_updated_idx").on(table.userId, table.status, table.updatedAt),
+]);
+
+/**
+ * One explicit owner decision per lab revision. The approval is deliberately
+ * separate from any runner mechanism and does not dispatch or execute a lab.
+ */
+export const networkLabApprovals = pgTable("network_lab_approvals", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  labId: varchar("lab_id", { length: 36 }).notNull().references(() => networkLabs.id, { onDelete: "cascade" }),
+  userId: integer("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  decision: networkLabApprovalDecisionEnum("decision").notNull().default("pending"),
+  revision: integer("revision").notNull().default(1),
+  reviewNote: varchar("review_note", { length: 1_000 }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  decidedAt: timestamp("decided_at", { withTimezone: true }),
+}, table => [
+  uniqueIndex("network_lab_approvals_lab_revision_unique").on(table.labId, table.revision),
+  index("network_lab_approvals_user_lab_created_idx").on(table.userId, table.labId, table.createdAt),
+]);
+
+/**
+ * Bounded, redacted validation evidence returned by a future local runner.
+ * No raw device output, image artifacts, credentials, or live-network metadata
+ * are accepted by this record.
+ */
+export const networkLabEvidence = pgTable("network_lab_evidence", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  labId: varchar("lab_id", { length: 36 }).notNull().references(() => networkLabs.id, { onDelete: "cascade" }),
+  userId: integer("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  verdict: networkLabEvidenceVerdictEnum("verdict").notNull(),
+  summary: varchar("summary", { length: 1_000 }).notNull(),
+  assertionResults: jsonb("assertion_results").notNull().default([]),
+  artifactDigests: jsonb("artifact_digests").notNull().default([]),
+  runnerAttestation: varchar("runner_attestation", { length: 512 }).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, table => [
+  index("network_lab_evidence_user_lab_created_idx").on(table.userId, table.labId, table.createdAt),
+]);
+
 export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
 export type Task = typeof tasks.$inferSelect;
 export type Project = typeof projects.$inferSelect;
 export type TaskEvent = typeof taskEvents.$inferSelect;
 export type Skill = typeof skills.$inferSelect;
+export type NetworkLab = typeof networkLabs.$inferSelect;

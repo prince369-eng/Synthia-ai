@@ -3,7 +3,7 @@ import { startGoogleLogin, startLogin, startSignup } from "@/const";
 import { isSidebarCollapsed, PROFILE_MENU_DESTINATIONS, SIDEBAR_COLLAPSE_STORAGE_KEY } from "@/lib/workspaceLayout";
 import { trpc } from "@/lib/trpc";
 import { cn } from "@/lib/utils";
-import { BookOpenText, Bot, Cable, CalendarClock, ChevronRight, Command, CreditCard, FolderKanban, Home, Loader2, LogOut, Orbit, PanelLeftClose, PanelLeftOpen, Plus, Settings2, SlidersHorizontal, Sparkles, UserRound } from "lucide-react";
+import { BookOpenText, Bot, Cable, CalendarClock, ChevronRight, Command, CreditCard, FolderKanban, Home, Loader2, LogOut, Network, Orbit, PanelLeftClose, PanelLeftOpen, Plus, Settings2, SlidersHorizontal, Sparkles, UserRound } from "lucide-react";
 import React, { type ReactNode, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { Button } from "./ui/button";
@@ -15,6 +15,7 @@ const navItems = [
   { label: "Scheduled", path: "/scheduled", icon: CalendarClock },
   { label: "Agent", path: "/agent", icon: Bot },
   { label: "Plugins", path: "/plugins", icon: Cable },
+  { label: "Network Labs", path: "/network-labs", icon: Network },
   { label: "Library", path: "/library", icon: BookOpenText },
   { label: "Settings", path: "/settings", icon: Settings2 },
 ];

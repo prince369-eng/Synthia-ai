@@ -117,6 +117,8 @@ import { generateWithFallback, parseStructuredModelOutput } from "./agent/llm";
 import { createVoiceModeJoinCredentials, getVoiceModeAvailability } from "./realtime/voiceMode";
 import { buildTaskOfficeExport, OFFICE_EXPORT_FORMATS } from "./office/taskOfficeExport";
 import { appConnectorReadiness, browseAdditionalUserFacingApps, completeZapierMcpAuthorization, listUserFacingApps, startAppConnectorAuthorization, verifyComposioAuthorization, verifyPipedreamAuthorization } from "./integrations/appConnectors";
+import { createNetworkLabForUser, decideNetworkLabApproval, getNetworkLabForUser, listNetworkLabsForUser, submitNetworkLabForReview } from "./networkLabs";
+import { issueNetworkLabManifest } from "./networkLabManifest";
 
 const taskIdSchema = z.object({ taskId: z.string().uuid() });
 const taskTitleSchema = z.string().trim().min(1).max(180);
@@ -198,6 +200,58 @@ const voiceModeSettingsSchema = z.object({
 const voiceModeStartSchema = taskIdSchema.extend({ settings: voiceModeSettingsSchema });
 const voiceModeSessionSchema = taskIdSchema.extend({ sessionId: z.string().uuid() });
 const taskOfficeExportSchema = taskIdSchema.extend({ format: z.enum(OFFICE_EXPORT_FORMATS) });
+const networkLabNodeSchema = z.object({
+  id: z.string().trim().regex(/^[a-z][a-z0-9-]{0,39}$/),
+  label: z.string().trim().min(2).max(80),
+  vendorFamily: z.enum(["cisco", "juniper", "arista"]),
+  imageAlias: z.string().trim().regex(/^[A-Za-z0-9][A-Za-z0-9._-]{0,79}$/),
+  role: z.enum(["router", "switch", "firewall", "host"]),
+});
+const networkLabLinkSchema = z.object({
+  id: z.string().trim().regex(/^[a-z][a-z0-9-]{0,39}$/),
+  sourceNodeId: z.string().trim().regex(/^[a-z][a-z0-9-]{0,39}$/),
+  targetNodeId: z.string().trim().regex(/^[a-z][a-z0-9-]{0,39}$/),
+  sourcePort: z.string().trim().regex(/^[A-Za-z0-9/._-]{1,64}$/),
+  targetPort: z.string().trim().regex(/^[A-Za-z0-9/._-]{1,64}$/),
+}).refine(link => link.sourceNodeId !== link.targetNodeId, "A link must join two distinct nodes.");
+const secretlessConfigurationSchema = z.string().trim().min(1).max(8_000).refine(
+  value => !/(?:password|secret|community)\s+(?!<redacted>)[^\s]+|-----BEGIN [A-Z ]*PRIVATE KEY-----|ssh-rsa\s+[A-Za-z0-9+/=]{20,}/i.test(value),
+  "Configurations must not contain credentials or private-key material.",
+);
+const networkLabCreateSchema = z.object({
+  title: z.string().trim().min(3).max(160),
+  objective: z.string().trim().min(12).max(2_000),
+  vendorFamilies: z.array(z.enum(["cisco", "juniper", "arista"])).min(1).max(3).refine(values => new Set(values).size === values.length, "Vendor families must be unique."),
+  topology: z.object({
+    nodes: z.array(networkLabNodeSchema).min(2).max(24).refine(nodes => new Set(nodes.map(node => node.id)).size === nodes.length, "Node IDs must be unique."),
+    links: z.array(networkLabLinkSchema).min(1).max(48).refine(links => new Set(links.map(link => link.id)).size === links.length, "Link IDs must be unique."),
+  }).superRefine(({ nodes, links }, ctx) => {
+    const nodeIds = new Set(nodes.map(node => node.id));
+    links.forEach((link, index) => {
+      if (!nodeIds.has(link.sourceNodeId) || !nodeIds.has(link.targetNodeId)) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["links", index], message: "Each link must reference declared topology nodes." });
+      }
+    });
+  }),
+  configurationCandidates: z.array(z.object({
+    nodeId: z.string().trim().regex(/^[a-z][a-z0-9-]{0,39}$/),
+    label: z.string().trim().min(2).max(120),
+    content: secretlessConfigurationSchema,
+  })).min(1).max(24),
+  validationPlan: z.array(z.object({
+    id: z.string().trim().regex(/^[a-z][a-z0-9-]{0,39}$/),
+    title: z.string().trim().min(3).max(180),
+    kind: z.enum(["reachability", "routing", "interface_state", "policy"]),
+    expected: z.string().trim().min(2).max(500),
+  })).min(1).max(30),
+  rollbackPlan: z.string().trim().min(12).max(4_000),
+});
+const networkLabIdSchema = z.object({ labId: z.string().uuid() });
+const networkLabApprovalSchema = networkLabIdSchema.extend({
+  approvalId: z.string().uuid(),
+  decision: z.enum(["approved", "rejected"]),
+  reviewNote: z.string().trim().min(2).max(1_000).optional(),
+});
 const taskLessonSchema = taskIdSchema.extend({ lesson: z.string().trim().min(20).max(1_200), confidence: z.number().min(0).max(1).default(0.7) });
 const reviewTaskLessonSchema = taskIdSchema.extend({ memoryId: z.string().uuid(), decision: z.enum(["active", "archived"]) });
 const evaluationCriterionSchema = z.object({ criterion: z.string().trim().min(4).max(240), rationale: z.string().trim().min(4).max(500).optional() });
@@ -537,6 +591,62 @@ export const appRouter = router({
           description: input.description || undefined,
         });
       }),
+  }),
+  networkLabs: router({
+    list: protectedProcedure.query(({ ctx }) => listNetworkLabsForUser(ctx.user.id)),
+    get: protectedProcedure.input(networkLabIdSchema).query(async ({ ctx, input }) => {
+      const record = await getNetworkLabForUser(input.labId, ctx.user.id);
+      if (!record) throw new TRPCError({ code: "NOT_FOUND", message: "The requested network lab was not found." });
+      return record;
+    }),
+    create: protectedProcedure.input(networkLabCreateSchema).mutation(async ({ ctx, input }) => {
+      await enforceUserMutationLimit(ctx.user.id, "network-lab-create", 12, 3_600);
+      try {
+        return await createNetworkLabForUser({ ...input, userId: ctx.user.id });
+      } catch (error) {
+        logger.error({ event: "network_lab_create_failed", userId: ctx.user.id, errorKind: error instanceof Error ? error.name : "unknown" }, "Network lab creation failed");
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "The network lab could not be saved. Please retry." });
+      }
+    }),
+    submitForReview: protectedProcedure.input(networkLabIdSchema).mutation(async ({ ctx, input }) => {
+      await enforceUserMutationLimit(ctx.user.id, "network-lab-submit-review", 30, 3_600);
+      try {
+        return await submitNetworkLabForReview(input.labId, ctx.user.id);
+      } catch (error) {
+        logger.warn({ event: "network_lab_submit_unavailable", userId: ctx.user.id, labId: input.labId, errorKind: error instanceof Error ? error.name : "unknown" }, "Network lab could not be submitted for review");
+        throw new TRPCError({ code: "PRECONDITION_FAILED", message: "This network lab is not ready for review. Refresh the workspace and try again." });
+      }
+    }),
+    decideApproval: protectedProcedure.input(networkLabApprovalSchema).mutation(async ({ ctx, input }) => {
+      await enforceUserMutationLimit(ctx.user.id, "network-lab-approval", 30, 3_600);
+      try {
+        return await decideNetworkLabApproval({ ...input, userId: ctx.user.id });
+      } catch (error) {
+        logger.warn({ event: "network_lab_approval_unavailable", userId: ctx.user.id, labId: input.labId, errorKind: error instanceof Error ? error.name : "unknown" }, "Network lab approval could not be recorded");
+        throw new TRPCError({ code: "PRECONDITION_FAILED", message: "This review is no longer available. Refresh the workspace before deciding again." });
+      }
+    }),
+    issueManifest: protectedProcedure.input(networkLabIdSchema).mutation(async ({ ctx, input }) => {
+      await enforceUserMutationLimit(ctx.user.id, "network-lab-manifest", 12, 3_600);
+      try {
+        const record = await getNetworkLabForUser(input.labId, ctx.user.id);
+        const approval = record?.approvals.find(item => item.decision === "approved");
+        if (!record || record.lab.status !== "approved" || !approval) {
+          throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Approve this lab proposal before creating a local runner manifest." });
+        }
+        const labInput = networkLabCreateSchema.pick({ topology: true, configurationCandidates: true, validationPlan: true, rollbackPlan: true }).parse(record.lab);
+        return issueNetworkLabManifest({
+          labId: record.lab.id,
+          approvalId: approval.id,
+          ownerId: ctx.user.id,
+          ...labInput,
+        });
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        logger.warn({ event: "network_lab_manifest_unavailable", userId: ctx.user.id, labId: input.labId, errorKind: error instanceof Error ? error.name : "unknown" }, "Network lab manifest could not be created");
+        throw new TRPCError({ code: "PRECONDITION_FAILED", message: "A local runner manifest is unavailable. Review the approved lab and try again." });
+      }
+    }),
   }),
   scheduled: router({
     status: protectedProcedure.query(() => ({

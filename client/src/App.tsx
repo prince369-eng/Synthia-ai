@@ -18,6 +18,7 @@ const Scheduled = lazy(() => import("./pages/Scheduled"));
 const Agent = lazy(() => import("./pages/Agent"));
 const Plugins = lazy(() => import("./pages/Plugins"));
 const Docs = lazy(() => import("./pages/Docs"));
+const NetworkLabs = lazy(() => import("./pages/NetworkLabs"));
 
 function RouteFallback() {
   return <div className="flex min-h-screen items-center justify-center bg-[#0e1716] text-sm text-[#9cb4af]">Loading Synthia workspace…</div>;
@@ -46,6 +47,7 @@ function Router() {
       <Route path={"/scheduled"}><SynthiaRoute><Scheduled /></SynthiaRoute></Route>
       <Route path={"/agent"}><SynthiaRoute><Agent /></SynthiaRoute></Route>
       <Route path={"/plugins"}><SynthiaRoute><Plugins /></SynthiaRoute></Route>
+      <Route path={"/network-labs"}><SynthiaRoute><NetworkLabs /></SynthiaRoute></Route>
       <Route path={"/docs"}><SynthiaRoute><Docs /></SynthiaRoute></Route>
       <Route path={"/settings"}><SynthiaRoute><Settings /></SynthiaRoute></Route>
       <Route path={"/settings/:section"}><SynthiaRoute><Settings /></SynthiaRoute></Route>
