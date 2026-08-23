@@ -22,7 +22,13 @@ describe("clientErrorMessage", () => {
     };
 
     expect(clientErrorMessage(crossBundleError, "The task could not be created. Please try again.")).toBe(
-      "The task could not be created. Please try again.",
+      "The workspace returned an unrecognized response. Refresh the page, then try again.",
     );
+  });
+
+  it("keeps internal and transport failures actionable without exposing raw error details", () => {
+    const internal = { name: "TRPCClientError", data: { code: "INTERNAL_SERVER_ERROR" }, message: "postgres://operator:credential@database.internal" };
+    expect(clientErrorMessage(internal, "fallback")).toBe("The workspace encountered a temporary server error before task execution. Refresh the page, then try again.");
+    expect(clientErrorMessage(new TypeError("network detail"), "fallback")).toBe("The workspace connection is unavailable. Check your connection and try again.");
   });
 });

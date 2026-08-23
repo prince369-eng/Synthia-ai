@@ -5,7 +5,7 @@ import { UNAUTHED_ERR_MSG } from "../shared/const";
 
 describe("clientErrorMessage", () => {
   it("returns bounded guidance for local and unknown failure values", () => {
-    expect(clientErrorMessage(new TypeError("network detail that must not reach the UI"))).toBe("Check your connection and try again.");
+    expect(clientErrorMessage(new TypeError("network detail that must not reach the UI"))).toBe("The workspace connection is unavailable. Check your connection and try again.");
     expect(clientErrorMessage(new Error("credential=value"), "A safe fallback.")).toBe("A safe fallback.");
   });
 

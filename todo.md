@@ -3696,3 +3696,4 @@
 - [x] Correct cross-bundle tRPC error recognition so the composer displays and reports safe structured error codes instead of falling back to a generic message.
 - [x] Apply structural cross-bundle tRPC recognition to global mutation and query error handling so client diagnostics and session recovery are consistent.
 - [x] Add stage-specific safe error conversion around composer preparation steps that run before persistence.
+- [x] Replace the composer’s generic client fallback with bounded visible transport or tRPC recovery guidance that never exposes error messages or task content.
