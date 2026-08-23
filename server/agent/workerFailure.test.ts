@@ -16,9 +16,14 @@ describe("exhausted worker retries", () => {
 
   it("records a durable terminal task outcome after the final retry fails", async () => {
     const { persistExhaustedWorkerFailure } = await import("./workerFailure");
-    const persisted = await persistExhaustedWorkerFailure({ data: { taskId: "task-1" }, attemptsMade: 3, opts: { attempts: 3 } }, new Error("provider unavailable"));
+    const privateFailure = "provider unavailable at https://internal.example.test?token=secret";
+    const persisted = await persistExhaustedWorkerFailure({ data: { taskId: "task-1" }, attemptsMade: 3, opts: { attempts: 3 } }, new Error(privateFailure));
     expect(persisted).toBe(true);
-    expect(db.updateTaskForWorker).toHaveBeenCalledWith("task-1", expect.objectContaining({ status: "failed", failedReason: "provider unavailable" }));
+    expect(db.updateTaskForWorker).toHaveBeenCalledWith("task-1", expect.objectContaining({
+      status: "failed",
+      failedReason: "The task ended after all retry attempts. Review the task and try again.",
+    }));
     expect(db.appendTaskEvent).toHaveBeenCalledWith("task-1", expect.objectContaining({ type: "status_change", payload: expect.objectContaining({ status: "failed" }) }));
+    expect(JSON.stringify(db.updateTaskForWorker.mock.calls)).not.toContain(privateFailure);
   });
 });

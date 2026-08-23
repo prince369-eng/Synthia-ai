@@ -3592,6 +3592,11 @@
 - [x] Add deterministic coverage for safe worker failure recording without executing a task cycle.
 - [x] Validate strict typing, focused tests, the full deterministic suite, production build, and diff hygiene without starting external work.
 
+## Exhausted-worker failure diagnostic hardening
+- [x] Keep raw final worker exceptions out of persisted task failure reasons while retaining the failure state and generic recovery summary.
+- [x] Add deterministic coverage for safe exhausted-worker failure persistence without queue or task execution.
+- [x] Validate strict typing, focused tests, the full deterministic suite, production build, and diff hygiene without starting external work.
+
 ## Voice Mode session diagnostic hardening
 - [x] Keep unknown realtime dispatch exceptions out of persisted Voice Mode session failure reasons while preserving safe client recovery guidance.
 - [x] Add deterministic coverage for bounded Voice Mode dispatch-failure recording without creating a realtime session.
