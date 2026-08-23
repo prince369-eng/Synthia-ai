@@ -3596,3 +3596,8 @@
 - [x] Keep unknown realtime dispatch exceptions out of persisted Voice Mode session failure reasons while preserving safe client recovery guidance.
 - [x] Add deterministic coverage for bounded Voice Mode dispatch-failure recording without creating a realtime session.
 - [x] Validate strict typing, focused tests, the full deterministic suite, production build, and diff hygiene without starting external work.
+
+## NetPilot network-engineering capability assessment
+- [x] Research NetPilot’s publicly documented network-engineering capabilities, workflows, and integration model.
+- [x] Compare relevant capabilities against Synthia’s approval-first, owner-scoped architecture and identify safe product boundaries.
+- [x] Produce a phased implementation plan with prerequisites, security controls, provider decisions, and explicit approval gates before any build work.
