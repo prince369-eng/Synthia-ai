@@ -1676,6 +1676,13 @@
 
 - [ ] Audit center interface.
 
+## Composer reliability audit — August 2026
+
+- [x] Make task persistence failures return bounded recovery guidance and classified logs without leaking database details.
+- [x] Make post-persistence task-metadata and queue failures non-fatal to successful task creation.
+- [x] Add deterministic composer regressions for persistence, event, and queue-stage failures without invoking task execution.
+- [x] Prevent a newly created task from remaining misleadingly queued when its initial queue handoff is unavailable.
+
 ## End
 
 - [ ] Continue.

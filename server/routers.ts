@@ -1541,31 +1541,95 @@ export const appRouter = router({
         });
         const autonomySettings = { ...input.autonomySettings, selectedConnectedApps, automaticRoute };
         const estimate = estimateTaskCredits({ goal: input.goal, planSteps: plan.length, involvesCode: input.involvesCode });
-        const task = await createTaskForUser({
-          userId: ctx.user.id,
-          projectId: input.projectId,
-          title: input.title ?? titleFromGoal(input.goal),
-          goal: input.goal,
-          plan,
-          autonomySettings,
-          involvesCode: input.involvesCode,
-          attachments,
-          ...estimate,
-        });
-        if (!task) {
-          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "The task could not be created." });
+        let task;
+        try {
+          task = await createTaskForUser({
+            userId: ctx.user.id,
+            projectId: input.projectId,
+            title: input.title ?? titleFromGoal(input.goal),
+            goal: input.goal,
+            plan,
+            autonomySettings,
+            involvesCode: input.involvesCode,
+            attachments,
+            ...estimate,
+          });
+        } catch (error) {
+          if (error instanceof TRPCError) throw error;
+          logger.error({
+            event: "task_create_persistence_failed",
+            userId: ctx.user.id,
+            taskCreationStage: "persistence",
+            errorKind: error instanceof Error ? error.name : "unknown",
+          }, "Task persistence failed");
+          throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Task creation is temporarily unavailable. Please try again shortly." });
         }
-        await appendTaskEvent(task.id, {
-          type: "task_metadata",
-          payload: {
-            action: "automatic_route_selected",
-            route: automaticRoute.kind,
-            reason: automaticRoute.reason,
-            requestedRoute: automaticRoute.requestedKind ?? null,
-          },
-        });
-        const executionQueued = await enqueueTaskCycle(task.id);
-        return { task, executionQueued };
+        if (!task) {
+          logger.error({ event: "task_create_persistence_failed", userId: ctx.user.id, taskCreationStage: "persistence", errorKind: "empty_result" }, "Task persistence returned no task");
+          throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Task creation is temporarily unavailable. Please try again shortly." });
+        }
+        try {
+          await appendTaskEvent(task.id, {
+            type: "task_metadata",
+            payload: {
+              action: "automatic_route_selected",
+              route: automaticRoute.kind,
+              reason: automaticRoute.reason,
+              requestedRoute: automaticRoute.requestedKind ?? null,
+            },
+          });
+        } catch (error) {
+          logger.error({
+            event: "task_create_metadata_event_failed",
+            userId: ctx.user.id,
+            taskId: task.id,
+            taskCreationStage: "metadata_event",
+            errorKind: error instanceof Error ? error.name : "unknown",
+          }, "Task metadata event could not be persisted after creation");
+        }
+        let executionQueued = false;
+        let responseTask = task;
+        const markQueueUnavailable = async () => {
+          const updatedTask = await updateTaskForUser(task.id, ctx.user.id, {
+            status: "needs_input",
+            currentStepSummary: "Task created, but execution could not be queued. Restore the queue service, then resume this task.",
+          });
+          if (updatedTask) responseTask = updatedTask;
+          await appendTaskEvent(task.id, {
+            type: "error",
+            payload: {
+              category: "queue_unavailable",
+              summary: "Task created, but execution could not be queued. Restore the queue service, then resume this task.",
+            },
+          });
+        };
+        const recoverQueueUnavailable = async () => {
+          try {
+            await markQueueUnavailable();
+          } catch (persistenceError) {
+            logger.error({
+              event: "task_create_queue_recovery_failed",
+              userId: ctx.user.id,
+              taskId: task.id,
+              taskCreationStage: "queue_recovery",
+              errorKind: persistenceError instanceof Error ? persistenceError.name : "unknown",
+            }, "Task queue recovery state could not be persisted");
+          }
+        };
+        try {
+          executionQueued = await enqueueTaskCycle(task.id);
+          if (!executionQueued) await recoverQueueUnavailable();
+        } catch (error) {
+          logger.error({
+            event: "task_create_queue_failed",
+            userId: ctx.user.id,
+            taskId: task.id,
+            taskCreationStage: "queue",
+            errorKind: error instanceof Error ? error.name : "unknown",
+          }, "Task was created but its initial execution cycle was not queued");
+          await recoverQueueUnavailable();
+        }
+        return { task: responseTask, executionQueued };
       }),
     addMessage: protectedProcedure
       .input(taskIdSchema.extend({ content: z.string().trim().min(1).max(12_000) }))

@@ -22,6 +22,8 @@ export function clientErrorMessage(error: unknown, fallback = genericGuidance): 
         return "The requested item is no longer available.";
       case "TOO_MANY_REQUESTS":
         return "Too many requests were made. Wait a moment, then try again.";
+      case "PRECONDITION_FAILED":
+        return "This workspace is temporarily unavailable. Please try again shortly.";
       case "UNAUTHORIZED":
         return "Your session has expired. Sign in again to continue.";
       default:

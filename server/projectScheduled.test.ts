@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import * as db from "./db";
 import * as rateLimit from "./security/rateLimit";
 import * as queue from "./agent/queue";
+import { logger } from "./security/logger";
 import { appRouter } from "./routers";
 import type { TrpcContext } from "./_core/context";
 
@@ -111,6 +112,127 @@ describe("projects and scheduled router procedures", () => {
     }));
     expect(queue.enqueueTaskCycle).toHaveBeenCalledWith(taskId);
     expect(result).toEqual({ task: createdTask, executionQueued: true });
+  });
+
+  it("returns bounded recovery guidance when task persistence fails without queueing work", async () => {
+    const persistenceFailure = new Error("postgres://operator:credential@database.internal/task-store");
+    vi.spyOn(db, "createTaskForUser").mockRejectedValue(persistenceFailure);
+    const enqueueTask = vi.spyOn(queue, "enqueueTaskCycle");
+    const logError = vi.spyOn(logger, "error").mockImplementation(() => undefined as never);
+
+    await expect(appRouter.createCaller(createContext()).tasks.create({
+      goal: "Prepare a compact recovery brief for the protected task store.",
+      autonomySettings: {
+        mode: "ask_before_risky",
+        allowWebSearch: false,
+        allowCodeExecution: false,
+        allowFileWrites: false,
+      },
+      involvesCode: false,
+    })).rejects.toMatchObject({
+      code: "PRECONDITION_FAILED",
+      message: "Task creation is temporarily unavailable. Please try again shortly.",
+    });
+
+    expect(enqueueTask).not.toHaveBeenCalled();
+    expect(logError).toHaveBeenCalledWith(expect.objectContaining({
+      event: "task_create_persistence_failed",
+      userId: applicationUserId,
+      taskCreationStage: "persistence",
+      errorKind: "Error",
+    }), "Task persistence failed");
+    expect(JSON.stringify(logError.mock.calls)).not.toContain("postgres://operator:credential@database.internal/task-store");
+  });
+
+  it("keeps a created task available when automatic-route event persistence fails", async () => {
+    const taskId = "44444444-4444-4444-8444-444444444444";
+    const createdTask = { id: taskId, userId: applicationUserId, status: "queued", title: "Persisted task" };
+    vi.spyOn(db, "createTaskForUser").mockResolvedValue(createdTask as never);
+    vi.spyOn(db, "appendTaskEvent").mockRejectedValue(new Error("event sequence unavailable"));
+    vi.spyOn(queue, "enqueueTaskCycle").mockResolvedValue(true);
+    const logError = vi.spyOn(logger, "error").mockImplementation(() => undefined as never);
+
+    const result = await appRouter.createCaller(createContext()).tasks.create({
+      goal: "Prepare a bounded summary of retained task state after event failure.",
+      autonomySettings: {
+        mode: "ask_before_risky",
+        allowWebSearch: false,
+        allowCodeExecution: false,
+        allowFileWrites: false,
+      },
+      involvesCode: false,
+    });
+
+    expect(result).toEqual({ task: createdTask, executionQueued: true });
+    expect(logError).toHaveBeenCalledWith(expect.objectContaining({
+      event: "task_create_metadata_event_failed",
+      taskId,
+      taskCreationStage: "metadata_event",
+      errorKind: "Error",
+    }), "Task metadata event could not be persisted after creation");
+  });
+
+  it("keeps a created task available when the initial queue operation fails", async () => {
+    const taskId = "55555555-5555-4555-8555-555555555555";
+    const createdTask = { id: taskId, userId: applicationUserId, status: "queued", title: "Persisted task" };
+    const pausedForRecovery = { ...createdTask, status: "needs_input", currentStepSummary: "Task created, but execution could not be queued. Restore the queue service, then resume this task." };
+    vi.spyOn(db, "createTaskForUser").mockResolvedValue(createdTask as never);
+    vi.spyOn(db, "appendTaskEvent").mockResolvedValue({ id: "event-automatic-route", sequenceNumber: 3 } as never);
+    vi.spyOn(db, "updateTaskForUser").mockResolvedValue(pausedForRecovery as never);
+    vi.spyOn(queue, "enqueueTaskCycle").mockRejectedValue(new Error("redis task queue unavailable"));
+    const logError = vi.spyOn(logger, "error").mockImplementation(() => undefined as never);
+
+    const result = await appRouter.createCaller(createContext()).tasks.create({
+      goal: "Prepare a compact report while the deferred execution queue is unavailable.",
+      autonomySettings: {
+        mode: "ask_before_risky",
+        allowWebSearch: false,
+        allowCodeExecution: false,
+        allowFileWrites: false,
+      },
+      involvesCode: false,
+    });
+
+    expect(result).toEqual({ task: pausedForRecovery, executionQueued: false });
+    expect(db.updateTaskForUser).toHaveBeenCalledWith(taskId, applicationUserId, expect.objectContaining({ status: "needs_input" }));
+    expect(db.appendTaskEvent).toHaveBeenLastCalledWith(taskId, expect.objectContaining({
+      type: "error",
+      payload: expect.objectContaining({ category: "queue_unavailable" }),
+    }));
+    expect(logError).toHaveBeenCalledWith(expect.objectContaining({
+      event: "task_create_queue_failed",
+      taskId,
+      taskCreationStage: "queue",
+      errorKind: "Error",
+    }), "Task was created but its initial execution cycle was not queued");
+  });
+
+  it("marks a created task for recovery when queueing is not configured", async () => {
+    const taskId = "66666666-6666-4666-8666-666666666666";
+    const createdTask = { id: taskId, userId: applicationUserId, status: "queued", title: "Deferred task" };
+    const pausedForRecovery = { ...createdTask, status: "needs_input", currentStepSummary: "Task created, but execution could not be queued. Restore the queue service, then resume this task." };
+    vi.spyOn(db, "createTaskForUser").mockResolvedValue(createdTask as never);
+    vi.spyOn(db, "appendTaskEvent").mockResolvedValue({ id: "event-automatic-route", sequenceNumber: 4 } as never);
+    vi.spyOn(db, "updateTaskForUser").mockResolvedValue(pausedForRecovery as never);
+    vi.spyOn(queue, "enqueueTaskCycle").mockResolvedValue(false);
+
+    const result = await appRouter.createCaller(createContext()).tasks.create({
+      goal: "Prepare a recovery-ready task while the execution queue is not configured.",
+      autonomySettings: {
+        mode: "ask_before_risky",
+        allowWebSearch: false,
+        allowCodeExecution: false,
+        allowFileWrites: false,
+      },
+      involvesCode: false,
+    });
+
+    expect(result).toEqual({ task: pausedForRecovery, executionQueued: false });
+    expect(db.updateTaskForUser).toHaveBeenCalledWith(taskId, applicationUserId, expect.objectContaining({ status: "needs_input" }));
+    expect(db.appendTaskEvent).toHaveBeenLastCalledWith(taskId, expect.objectContaining({
+      type: "error",
+      payload: expect.objectContaining({ category: "queue_unavailable" }),
+    }));
   });
 
   it("refuses unconnected app selections before creating a task or queueing work", async () => {
