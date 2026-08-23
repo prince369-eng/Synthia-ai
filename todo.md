@@ -3586,3 +3586,8 @@
 - [x] Keep unknown public-video integration exceptions out of persisted user-visible task-event messages while retaining classified task status and structured logs.
 - [x] Add deterministic coverage for safe public-video task-event failure recording without invoking the provider.
 - [x] Validate strict typing, focused tests, the full deterministic suite, production build, and diff hygiene without starting external work.
+
+## Agent task-runner diagnostic hardening
+- [x] Keep unknown worker exceptions out of persisted task failure reasons and user-visible task-event messages while preserving retry behavior and structured logs.
+- [x] Add deterministic coverage for safe worker failure recording without executing a task cycle.
+- [x] Validate strict typing, focused tests, the full deterministic suite, production build, and diff hygiene without starting external work.

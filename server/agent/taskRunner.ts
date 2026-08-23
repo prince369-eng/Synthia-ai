@@ -369,8 +369,9 @@ export async function runTaskCycle(taskId: string) {
       await enqueueTaskCycle(task.id, 150);
     }
   } catch (error) {
-    const message = error instanceof Error ? error.message.slice(0, 1_000) : "Unknown agent-cycle failure.";
-    logger.error({ event: "agent_cycle_error", taskId: task.id, error: message }, "Agent task cycle failed");
+    const errorKind = error instanceof Error && error.name ? error.name : "unknown_error";
+    const message = "The task worker encountered a temporary issue and will retry according to task policy.";
+    logger.error({ event: "agent_cycle_error", taskId: task.id, errorKind }, "Agent task cycle failed");
     await updateTaskForWorker(task.id, { status: "queued", currentStepSummary: "Recovering from a worker error.", failedReason: message });
     await appendTaskEvent(task.id, { type: "error", payload: { code: "agent_cycle_error", message } });
     const user = await getUserById(task.userId);

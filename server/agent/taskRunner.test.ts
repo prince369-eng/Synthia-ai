@@ -224,4 +224,26 @@ describe("Synthia task worker recovery", () => {
     expect(llm.generateWithFallback).not.toHaveBeenCalled();
     expect(db.createApprovalForTask).toHaveBeenCalledWith(expect.objectContaining({ taskId: "task-1", toolName: "media.public_video", riskLevel: "medium" }));
   });
+
+  it("records bounded worker retry guidance without persisting an unknown exception message", async () => {
+    const privateFailure = "connect ECONNREFUSED 10.0.0.8:443 bearer private-token";
+    llm.generateWithFallback.mockRejectedValue(new Error(privateFailure));
+    db.getUserById.mockResolvedValue({ email: null });
+    const { runTaskCycle } = await import("./taskRunner");
+
+    await expect(runTaskCycle(baseTask.id)).rejects.toThrow(privateFailure);
+
+    const expectedMessage = "The task worker encountered a temporary issue and will retry according to task policy.";
+    expect(db.updateTaskForWorker).toHaveBeenCalledWith("task-1", expect.objectContaining({
+      status: "queued",
+      currentStepSummary: "Recovering from a worker error.",
+      failedReason: expectedMessage,
+    }));
+    expect(db.appendTaskEvent).toHaveBeenCalledWith("task-1", {
+      type: "error",
+      payload: { code: "agent_cycle_error", message: expectedMessage },
+    });
+    expect(JSON.stringify(db.updateTaskForWorker.mock.calls)).not.toContain(privateFailure);
+    expect(JSON.stringify(db.appendTaskEvent.mock.calls)).not.toContain(privateFailure);
+  });
 });
