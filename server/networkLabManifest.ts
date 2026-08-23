@@ -1,3 +1,7 @@
+/**
+ * Local-lab manifest contract. Owns short-lived integrity checks and restrictive
+ * runner policy; it defines control-plane data only and performs no lab execution.
+ */
 import { createHash, createHmac, randomUUID, timingSafeEqual } from "node:crypto";
 import { ENV } from "./_core/env";
 import type { NetworkLabConfigurationCandidate, NetworkLabTopology, NetworkLabValidationAssertion } from "./networkLabs";

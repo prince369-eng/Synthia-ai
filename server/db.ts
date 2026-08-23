@@ -1,4 +1,8 @@
 import { and, asc, desc, eq, gt, isNull, or, sql } from "drizzle-orm";
+/**
+ * Central PostgreSQL persistence layer. Owns owner-scoped data helpers and
+ * immutable task records; callers must not bypass it with unscoped queries.
+ */
 import { drizzle, type NodePgDatabase } from "drizzle-orm/node-postgres";
 import { randomUUID } from "node:crypto";
 import * as schema from "../drizzle/schema";

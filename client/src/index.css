@@ -1,4 +1,8 @@
 @import "tailwindcss";
+/*
+ * Global Synthia design tokens and workspace interaction styles. Preserve dark
+ * contrast, compact teal/cyan hierarchy, focus visibility, and bounded overlays.
+ */
 @import "tw-animate-css";
 
 @custom-variant dark (&:is(.dark *));

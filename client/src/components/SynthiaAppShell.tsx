@@ -1,4 +1,8 @@
 import { useAuth } from "@/_core/hooks/useAuth";
+/**
+ * Authenticated workspace shell. Owns navigation, profile affordances, density,
+ * and escape routes; it must not imply an unavailable capability is active.
+ */
 import { startGoogleLogin, startLogin, startSignup } from "@/const";
 import { isSidebarCollapsed, PROFILE_MENU_DESTINATIONS, SIDEBAR_COLLAPSE_STORAGE_KEY } from "@/lib/workspaceLayout";
 import { trpc } from "@/lib/trpc";

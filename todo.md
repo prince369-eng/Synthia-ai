@@ -3633,3 +3633,19 @@
 - [x] Define the restricted runner command vocabulary for preflight, image-alias verification, topology prepare, approved configuration apply, allow-listed validation, bounded evidence collection, cleanup, and local stop.
 - [x] Define local image-alias registration that records vendor family, compatibility profile, SHA-256 digest, entitlement acknowledgement, and resource profile without uploading images or license files.
 - [x] Define Linux runner rejection rules for bridged adapters, NAT/NAT Network, port forwarding, cloud adapters, physical-device targets, arbitrary CLI content, expired/replayed manifests, and exceeded resource limits.
+
+## Linux local virtual-lab runner implementation
+- [ ] Implement a separate local-only Linux runner CLI that requires explicit operator confirmation and validates a signed Synthia manifest before any VM command is eligible to run.
+- [ ] Implement manifest signature, expiry, platform, network-policy, resource-limit, vendor-image alias, and restricted-operation validation before command planning.
+- [ ] Implement safe VirtualBox command planning that permits only internal-network adapter operations and rejects bridge, NAT, port forwarding, cloud adapters, physical targets, and shell interpolation.
+- [ ] Implement bounded local validation evidence, redaction, integrity digests, cleanup planning, and a human-reviewed submission package without automatically transmitting it.
+- [ ] Add runner unit tests and dry-run integration tests that prove no subprocess, VirtualBox, vendor-image, device, or external request is invoked during validation.
+
+## Product, developer, and operational documentation
+- [x] Audit and document what is working, configuration-gated, planned, or intentionally disabled in the current Synthia product state.
+- [x] Write beginner setup and safe local-development guidance, including required environment, authentication, database, test, and build workflows.
+- [x] Write advanced architecture, security, data-flow, extension, and production-readiness guidance for experienced developers.
+- [x] Write design-system and UI-change guidance for maintaining Synthia’s compact teal/cyan workspace without breaking navigation or accessibility.
+- [x] Add concise file-level responsibility headers to core Synthia modules and a developer map showing safe change points and protected boundaries.
+- [x] Validate documentation links, strict typing, deterministic tests, production build, and secret exclusion before committing.
+- [ ] Commit and push the verified project state and documentation to the selected `prince369-eng/Synthia-ai` GitHub repository.

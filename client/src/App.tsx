@@ -1,3 +1,7 @@
+/**
+ * Application route composition. Owns authenticated route framing, lazy page
+ * boundaries, theming, and user-safe fallbacks; it must not import server code.
+ */
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/NotFound";

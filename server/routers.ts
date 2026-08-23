@@ -1,4 +1,8 @@
 import { COOKIE_NAME } from "@shared/const";
+/**
+ * Protected tRPC API composition. Owns browser-input validation, authorization,
+ * rate limits, and bounded failures; it must never expose raw operational data.
+ */
 import { TRPCError } from "@trpc/server";
 import { parse as parseCookieHeader } from "cookie";
 import { randomUUID } from "node:crypto";

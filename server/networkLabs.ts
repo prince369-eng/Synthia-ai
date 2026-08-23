@@ -1,4 +1,8 @@
 import { and, desc, eq, isNull } from "drizzle-orm";
+/**
+ * Network Lab control-plane persistence. Owns proposals, approvals, one-time
+ * manifests, and bounded evidence; it never starts VMs, imports images, or contacts devices.
+ */
 import { createHash, randomUUID } from "node:crypto";
 import { getDb } from "./db";
 import { networkLabApprovals, networkLabEvidence, networkLabManifests, networkLabs } from "../drizzle/schema";
