@@ -2,7 +2,7 @@
  * Local-lab manifest contract. Owns short-lived integrity checks and restrictive
  * runner policy; it defines control-plane data only and performs no lab execution.
  */
-import { createHash, createHmac, randomUUID, timingSafeEqual } from "node:crypto";
+import { randomUUID, sign, verify } from "node:crypto";
 import { ENV } from "./_core/env";
 import type { NetworkLabConfigurationCandidate, NetworkLabTopology, NetworkLabValidationAssertion } from "./networkLabs";
 
@@ -30,16 +30,18 @@ export type NetworkLabManifestPayload = {
 
 export type SignedNetworkLabManifest = { payload: NetworkLabManifestPayload; signature: string };
 
-function signingKey(secret: string) {
-  return createHash("sha256").update(`synthia-network-lab-manifest-v1:${secret}`).digest();
-}
-
 function payloadBytes(payload: NetworkLabManifestPayload) {
-  return Buffer.from(JSON.stringify(payload), "utf8");
+  const serialize = (value: unknown): string => {
+    if (value === null || typeof value !== "object") return JSON.stringify(value);
+    if (Array.isArray(value)) return `[${value.map(serialize).join(",")}]`;
+    const record = value as Record<string, unknown>;
+    return `{${Object.keys(record).sort().map(key => `${JSON.stringify(key)}:${serialize(record[key])}`).join(",")}}`;
+  };
+  return Buffer.from(serialize(payload), "utf8");
 }
 
-function signatureFor(payload: NetworkLabManifestPayload, secret: string) {
-  return createHmac("sha256", signingKey(secret)).update(payloadBytes(payload)).digest("base64url");
+function signatureFor(payload: NetworkLabManifestPayload, privateKey: string) {
+  return sign(null, payloadBytes(payload), privateKey).toString("base64url");
 }
 
 export function issueNetworkLabManifest(input: {
@@ -51,10 +53,10 @@ export function issueNetworkLabManifest(input: {
   validationPlan: NetworkLabValidationAssertion[];
   rollbackPlan: string;
   now?: Date;
-  secret?: string;
+  privateKey?: string;
 }): SignedNetworkLabManifest {
-  const secret = input.secret ?? ENV.cookieSecret;
-  if (!secret) throw new Error("Network lab manifest signing is unavailable.");
+  const privateKey = input.privateKey ?? ENV.networkLabManifestPrivateKey;
+  if (!privateKey) throw new Error("Network lab manifest signing is unavailable.");
   const now = input.now ?? new Date();
   const payload: NetworkLabManifestPayload = {
     version: 1,
@@ -75,19 +77,23 @@ export function issueNetworkLabManifest(input: {
     validationPlan: input.validationPlan,
     rollbackPlan: input.rollbackPlan,
   };
-  return { payload, signature: signatureFor(payload, secret) };
+  return { payload, signature: signatureFor(payload, privateKey) };
 }
 
 /**
  * A local runner may verify integrity and expiry before it considers the
  * allow-listed manifest. Verification does not execute any operation.
  */
-export function verifyNetworkLabManifest(input: SignedNetworkLabManifest, options?: { now?: Date; secret?: string }) {
-  const secret = options?.secret ?? ENV.cookieSecret;
-  if (!secret) return false;
-  const expected = Buffer.from(signatureFor(input.payload, secret));
-  const supplied = Buffer.from(input.signature);
-  if (expected.length !== supplied.length || !timingSafeEqual(expected, supplied)) return false;
+export function verifyNetworkLabManifest(input: SignedNetworkLabManifest, options?: { now?: Date; publicKey?: string }) {
+  const publicKey = options?.publicKey;
+  if (!publicKey) return false;
+  let signatureIsValid = false;
+  try {
+    signatureIsValid = verify(null, payloadBytes(input.payload), publicKey, Buffer.from(input.signature, "base64url"));
+  } catch {
+    return false;
+  }
+  if (!signatureIsValid) return false;
   const expiresAt = Date.parse(input.payload.expiresAt);
   return Number.isFinite(expiresAt) && expiresAt > (options?.now ?? new Date()).getTime();
 }

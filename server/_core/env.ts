@@ -152,6 +152,7 @@ export const ENV = {
   workerMode: process.env.SYNTHIA_WORKER_MODE ?? "embedded",
   logLevel: process.env.SYNTHIA_LOG_LEVEL ?? "info",
   encryptionKey: process.env.SYNTHIA_ENCRYPTION_KEY ?? "",
+  networkLabManifestPrivateKey: process.env.SYNTHIA_NETWORK_LAB_MANIFEST_PRIVATE_KEY ?? "",
   eventRetentionDays: boundedPositiveInteger(process.env.SYNTHIA_EVENT_RETENTION_DAYS, 30, { min: 1, max: 3_650 }),
   sandboxRetentionDays: boundedPositiveInteger(process.env.SYNTHIA_SANDBOX_RETENTION_DAYS, 30, { min: 1, max: 3_650 }),
   maxAgentIterations: boundedPositiveInteger(process.env.SYNTHIA_MAX_AGENT_ITERATIONS, 80, { min: 1, max: 500 }),

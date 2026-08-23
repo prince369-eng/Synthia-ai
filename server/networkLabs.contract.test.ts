@@ -1,4 +1,5 @@
 import { readFileSync } from "node:fs";
+import { generateKeyPairSync } from "node:crypto";
 import { describe, expect, it } from "vitest";
 import { issueNetworkLabManifest, verifyNetworkLabManifest } from "./networkLabManifest";
 
@@ -48,6 +49,9 @@ describe("Network Lab Workspace contracts", () => {
 
   it("signs an expiring internal-only runner contract and rejects alteration", () => {
     const now = new Date("2026-08-23T00:00:00.000Z");
+    const keyPair = generateKeyPairSync("ed25519");
+    const privateKey = keyPair.privateKey.export({ type: "pkcs8", format: "pem" }).toString();
+    const publicKey = keyPair.publicKey.export({ type: "spki", format: "pem" }).toString();
     const manifest = issueNetworkLabManifest({
       labId: "11111111-1111-4111-8111-111111111111",
       approvalId: "22222222-2222-4222-8222-222222222222",
@@ -57,7 +61,7 @@ describe("Network Lab Workspace contracts", () => {
       validationPlan: [],
       rollbackPlan: "Remove the isolated local resources after validation.",
       now,
-      secret: "test-only-manifest-secret",
+      privateKey,
     });
 
     expect(manifest.payload.runner.platform).toBe("linux_virtualbox");
@@ -70,8 +74,18 @@ describe("Network Lab Workspace contracts", () => {
       cloudAdapters: false,
       physicalDeviceTargets: false,
     });
-    expect(verifyNetworkLabManifest(manifest, { now, secret: "test-only-manifest-secret" })).toBe(true);
-    expect(verifyNetworkLabManifest({ ...manifest, payload: { ...manifest.payload, ownerId: 43 } }, { now, secret: "test-only-manifest-secret" })).toBe(false);
-    expect(verifyNetworkLabManifest(manifest, { now: new Date("2026-08-23T00:10:00.001Z"), secret: "test-only-manifest-secret" })).toBe(false);
+    expect(verifyNetworkLabManifest(manifest, { now, publicKey })).toBe(true);
+    expect(verifyNetworkLabManifest({ ...manifest, payload: { ...manifest.payload, ownerId: 43 } }, { now, publicKey })).toBe(false);
+    expect(verifyNetworkLabManifest(manifest, { now: new Date("2026-08-23T00:10:00.001Z"), publicKey })).toBe(false);
+  });
+
+  it("keeps the server signing key out of the local-runner verification boundary", () => {
+    const manifestModule = read("server/networkLabManifest.ts");
+
+    expect(manifestModule).toContain('sign(null, payloadBytes(payload), privateKey)');
+    expect(manifestModule).toContain('verify(null, payloadBytes(input.payload), publicKey');
+    expect(manifestModule).toContain("ENV.networkLabManifestPrivateKey");
+    expect(manifestModule).not.toContain("ENV.cookieSecret");
+    expect(manifestModule).not.toContain("createHmac");
   });
 });

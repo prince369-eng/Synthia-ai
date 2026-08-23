@@ -3640,6 +3640,7 @@
 - [ ] Implement safe VirtualBox command planning that permits only internal-network adapter operations and rejects bridge, NAT, port forwarding, cloud adapters, physical targets, and shell interpolation.
 - [ ] Implement bounded local validation evidence, redaction, integrity digests, cleanup planning, and a human-reviewed submission package without automatically transmitting it.
 - [ ] Add runner unit tests and dry-run integration tests that prove no subprocess, VirtualBox, vendor-image, device, or external request is invoked during validation.
+- [x] Replace the control-plane shared-secret manifest signing design with Ed25519 private-key signing and local-runner public-key verification so the runner never receives a server signing secret.
 
 ## Product, developer, and operational documentation
 - [x] Audit and document what is working, configuration-gated, planned, or intentionally disabled in the current Synthia product state.

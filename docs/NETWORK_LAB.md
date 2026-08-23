@@ -22,7 +22,7 @@ The first vendor families are Cisco, Juniper, and Arista, but the engineer suppl
 | VirtualBox installation on the Linux lab host | The runner remains separate from the deployed web app. |
 | Dedicated non-administrator runner account | Limits host-level blast radius. |
 | Internal-only VirtualBox networking | Prevents lab adapters from bridging to the LAN or reaching production infrastructure. |
-| Pinned runner public key | Lets the runner verify server-issued manifests without storing the server private signing key. |
+| Pinned Ed25519 runner public key | Lets the runner verify server-issued manifests without storing the server private signing key. Synthia stores `SYNTHIA_NETWORK_LAB_MANIFEST_PRIVATE_KEY` only in encrypted server settings; the paired public key stays with the local runner. |
 | Licensed vendor images supplied by the engineer | Preserves vendor licensing and image custody. |
 
 ## Non-negotiable runner rejections
@@ -31,4 +31,4 @@ The runner must reject bridged adapters, NAT adapters, NAT networks, port forwar
 
 ## Current limitation
 
-The workspace and control contracts exist, but the database migrations must be applied to the configured PostgreSQL deployment database. The local runner package and asymmetric signing key are not yet installed. No lab has been started, no vendor image has been imported, and no device has been contacted.
+The workspace and Ed25519 manifest contract exist, but the database migrations must be applied to the configured PostgreSQL deployment database. The local runner package and the production private/public key pair are not yet configured. No lab has been started, no vendor image has been imported, and no device has been contacted.
