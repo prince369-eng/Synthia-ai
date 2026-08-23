@@ -12,3 +12,5 @@ pnpm exec tsx runner/synthia-network-lab-runner.ts \
 ```
 
 It rejects expired or altered manifests, unsafe network policies, unknown aliases, bridged or NAT policies, port forwarding, unsafe configuration content, and configurations outside the declared limits. Its evidence helper is intentionally **inconclusive** and marks every assertion `not_run`; it does not claim a lab was validated. A future execution package must remain separately reviewed and must preserve this verification boundary.
+
+The package can also build a reviewed `VBoxManage` **argv plan**. The plan contains only `createvm` and `modifyvm --nicN intnet --intnetN` records, never a shell command or an execution function. It excludes bridge, NAT, NAT Network, port forwarding, cloud adapters, physical targets, and arbitrary CLI configuration.

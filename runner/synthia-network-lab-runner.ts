@@ -51,6 +51,13 @@ export type DryRunEvidence = {
   evidenceDigest: string;
 };
 
+export type VirtualBoxCommandPlan = {
+  mode: "not_run";
+  manifestId: string;
+  commands: Array<{ binary: "VBoxManage"; args: string[]; purpose: string }>;
+  excludedCapabilities: Array<"bridged_adapter" | "nat_adapter" | "nat_network" | "port_forward" | "cloud_adapter" | "physical_target" | "shell">;
+};
+
 export function canonicalManifestPayload(value: unknown): string {
   if (value === null || typeof value !== "object") return JSON.stringify(value);
   if (Array.isArray(value)) return `[${value.map(canonicalManifestPayload).join(",")}]`;
@@ -101,6 +108,36 @@ export function buildDryRunPlan(manifest: SignedRunnerManifest, publicKey: strin
     cleanup: ["Plan removal of the isolated topology.", "Plan local evidence redaction and digest generation."],
     validationAssertions: manifest.payload.validationPlan.length,
   };
+}
+
+function commandSafeToken(value: string, label: string): string {
+  if (!/^[a-zA-Z0-9._-]{1,80}$/.test(value)) reject(`${label} contains an unsafe command token`);
+  return value;
+}
+
+/**
+ * Produces structured argv records for engineer review. This function does not
+ * import child_process, invoke VBoxManage, or format a shell command.
+ */
+export function buildVirtualBoxCommandPlan(manifest: SignedRunnerManifest, publicKey: string, now = new Date()): VirtualBoxCommandPlan {
+  const dryRun = buildDryRunPlan(manifest, publicKey, now);
+  const prefix = `synthia-${commandSafeToken(dryRun.manifestId, "manifest ID").slice(0, 28)}`;
+  const commands: VirtualBoxCommandPlan["commands"] = [];
+  for (const node of manifest.payload.topology.nodes) {
+    const name = `${prefix}-${commandSafeToken(node.id, "node ID")}`;
+    commands.push({ binary: "VBoxManage", args: ["createvm", "--name", name, "--register"], purpose: `Create isolated VM shell for ${node.label}.` });
+  }
+  const linkIndexByNode = new Map<string, number>();
+  for (const link of manifest.payload.topology.links) {
+    const segment = `${prefix}-${commandSafeToken(link.id, "link ID")}`;
+    for (const nodeId of [link.sourceNodeId, link.targetNodeId]) {
+      const adapterIndex = (linkIndexByNode.get(nodeId) ?? 0) + 1;
+      linkIndexByNode.set(nodeId, adapterIndex);
+      const vmName = `${prefix}-${commandSafeToken(nodeId, "node ID")}`;
+      commands.push({ binary: "VBoxManage", args: ["modifyvm", vmName, `--nic${adapterIndex}`, "intnet", `--intnet${adapterIndex}`, segment, `--cableconnected${adapterIndex}`, "on"], purpose: `Attach ${nodeId} to sealed internal segment ${link.id}.` });
+    }
+  }
+  return { mode: "not_run", manifestId: dryRun.manifestId, commands, excludedCapabilities: ["bridged_adapter", "nat_adapter", "nat_network", "port_forward", "cloud_adapter", "physical_target", "shell"] };
 }
 
 /** Produces reviewable dry-run evidence only; no validation assertion is executed. */

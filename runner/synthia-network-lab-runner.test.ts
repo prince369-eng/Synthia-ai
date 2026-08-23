@@ -1,6 +1,6 @@
 import { generateKeyPairSync, sign } from "node:crypto";
 import { describe, expect, it } from "vitest";
-import { buildDryRunPlan, canonicalManifestPayload, createDryRunEvidence, type SignedRunnerManifest } from "./synthia-network-lab-runner";
+import { buildDryRunPlan, buildVirtualBoxCommandPlan, canonicalManifestPayload, createDryRunEvidence, type SignedRunnerManifest } from "./synthia-network-lab-runner";
 
 function signedFixture(): { manifest: SignedRunnerManifest; publicKey: string } {
   const pair = generateKeyPairSync("ed25519");
@@ -32,5 +32,13 @@ describe("local Network Lab dry-run runner", () => {
     expect(evidence).toMatchObject({ verdict: "inconclusive", assertionResults: [{ assertionId: "assert-1", status: "not_run" }] });
     expect(evidence.redactedNotes.join(" ")).not.toContain("do-not-retain");
     expect(evidence.evidenceDigest).toMatch(/^[a-f0-9]{64}$/);
+  });
+
+  it("produces reviewed argv records for internal links without a shell or unsafe network mode", () => {
+    const { manifest, publicKey } = signedFixture();
+    const plan = buildVirtualBoxCommandPlan(manifest, publicKey, new Date("2026-08-23T00:01:00.000Z"));
+    expect(plan).toMatchObject({ mode: "not_run", excludedCapabilities: expect.arrayContaining(["shell", "nat_adapter", "bridged_adapter"]) });
+    expect(plan.commands).toEqual([{ binary: "VBoxManage", args: ["createvm", "--name", "synthia-runner-test-r1", "--register"], purpose: "Create isolated VM shell for Router 1." }]);
+    expect(JSON.stringify(plan.commands)).not.toMatch(/nat|bridge|port.?forward|bash|sh\s/i);
   });
 });
