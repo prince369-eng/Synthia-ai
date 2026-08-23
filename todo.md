@@ -3577,3 +3577,7 @@
 - [x] Remove rendered client error stacks from the shared Error Boundary while preserving the recovery action.
 - [x] Add deterministic source-contract coverage that prevents raw error stacks from returning to the client UI.
 - [x] Validate strict typing, focused tests, the full deterministic suite, production build, and diff hygiene without starting external work.
+
+## Page-level client diagnostic regression coverage
+- [x] Expand the source contract to cover every routed user-facing page against direct error-message rendering.
+- [x] Validate strict typing, focused tests, the full deterministic suite, production build, and diff hygiene without starting external work.

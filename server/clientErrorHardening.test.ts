@@ -71,7 +71,19 @@ describe("client error disclosure hardening", () => {
       "../client/src/pages/TaskWorkspace.tsx",
     ].map(path => readFileSync(new URL(path, import.meta.url), "utf8"));
 
-    for (const source of featureSources) {
+    const routedPageSources = [
+      "../client/src/pages/Agent.tsx",
+      "../client/src/pages/Docs.tsx",
+      "../client/src/pages/Library.tsx",
+      "../client/src/pages/Plugins.tsx",
+      "../client/src/pages/Projects.tsx",
+      "../client/src/pages/Scheduled.tsx",
+      "../client/src/pages/Settings.tsx",
+      "../client/src/pages/TaskDashboard.tsx",
+      "../client/src/pages/TaskWorkspace.tsx",
+    ].map(path => readFileSync(new URL(path, import.meta.url), "utf8"));
+
+    for (const source of [...featureSources, ...routedPageSources]) {
       expect(source).not.toMatch(/(?:\w+\.)?error\?\.message/);
       expect(source).not.toMatch(/(?:\w+\.)?error\.message/);
     }
