@@ -9,7 +9,8 @@ describe("production client bundle hardening", () => {
     expect(html).toContain('<script defer src="/synthia-preview.js"></script>');
     expect(viteConfig).toContain('name: "synthia-production-preview-guard"');
     expect(viteConfig).toContain('isProductionBuild = config.command === "build" && config.mode === "production";');
-    expect(viteConfig).toContain("if (!isProductionBuild) return html;");
+    expect(viteConfig).toContain("const previewBundle = path.resolve(PROJECT_ROOT, \"client\", \"public\", \"synthia-preview.js\");");
+    expect(viteConfig).toContain("return revisionedClassicPreviewScript(html, revision);");
     expect(viteConfig).toContain('html.replace(/\\s*<script defer src="\\/synthia-preview\\.js"><\\/script>/, "")');
   });
 });

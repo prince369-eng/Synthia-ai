@@ -5,6 +5,10 @@ import type { TrpcContext } from "./context";
 import { logger } from "../security/logger";
 import { getUserByOpenId, upsertUser } from "../db";
 
+export function safeTrpcErrorKind(error: { name: string; cause?: unknown }): string {
+  return error.cause instanceof Error ? error.cause.name : error.name;
+}
+
 const t = initTRPC.context<TrpcContext>().create({
   transformer: superjson,
   errorFormatter({ shape, error, ctx, path }) {
@@ -15,6 +19,7 @@ const t = initTRPC.context<TrpcContext>().create({
         code: error.code,
         path,
         userId: ctx?.user?.id,
+        errorKind: safeTrpcErrorKind(error),
       },
       "tRPC request failed",
     );

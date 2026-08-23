@@ -3683,5 +3683,7 @@
 - [x] Replace the oversized inline static-preview compatibility bundle with a versioned same-origin classic script while retaining the blocked-module fallback.
 - [x] Add privacy-preserving static-preview RPC lifecycle telemetry to classify the pending auth request without recording request data or credentials.
 - [x] Correct static-preview RPC telemetry matching so procedure-specific tRPC paths are observed without capturing request contents.
+- [x] Revise the managed development preview’s classic bundle URL on each served HTML response to eliminate stale browser-cache execution.
 - [x] Include the sanitized task-store diagnostic contract in standard deterministic test discovery.
+- [x] Log only the safe exception type for unexpected tRPC errors so a user-approved composer retry can identify the remaining server boundary without leaking details.
 - [ ] Capture the remaining composer creation boundary with a user-approved retry after the safe failure-classification update is validated.

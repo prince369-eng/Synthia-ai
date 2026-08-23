@@ -5,6 +5,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { defineConfig, type Plugin, type ViteDevServer } from "vite";
 import { vitePluginManusRuntime } from "vite-plugin-manus-runtime";
+import { revisionedClassicPreviewScript } from "./shared/previewBundle";
 
 // =============================================================================
 // Manus Debug Collector - Vite Plugin
@@ -159,8 +160,12 @@ function vitePluginSynthiaProductionPreviewGuard(): Plugin {
       isProductionBuild = config.command === "build" && config.mode === "production";
     },
     transformIndexHtml(html) {
-      if (!isProductionBuild) return html;
-      return html.replace(/\s*<script defer src="\/synthia-preview\.js"><\/script>/, "");
+      if (isProductionBuild) {
+        return html.replace(/\s*<script defer src="\/synthia-preview\.js"><\/script>/, "");
+      }
+      const previewBundle = path.resolve(PROJECT_ROOT, "client", "public", "synthia-preview.js");
+      const revision = fs.existsSync(previewBundle) ? String(Math.trunc(fs.statSync(previewBundle).mtimeMs)) : "development";
+      return revisionedClassicPreviewScript(html, revision);
     },
   };
 }

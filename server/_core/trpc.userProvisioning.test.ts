@@ -10,7 +10,7 @@ vi.mock("../security/logger", () => ({
 }));
 
 import { getUserByOpenId, upsertUser } from "../db";
-import { protectedProcedure, router } from "./trpc";
+import { protectedProcedure, router, safeTrpcErrorKind } from "./trpc";
 
 const authenticatedUser = {
   id: 12,
@@ -29,6 +29,11 @@ const testRouter = router({
 });
 
 describe("protected user provisioning", () => {
+  it("classifies error types without returning a cause message", () => {
+    expect(safeTrpcErrorKind({ name: "TRPCError", cause: new Error("postgres://operator:credential@database.internal") })).toBe("Error");
+    expect(safeTrpcErrorKind({ name: "TRPCError" })).toBe("TRPCError");
+  });
+
   it("mirrors the authenticated user and uses the PostgreSQL owner id", async () => {
     vi.mocked(upsertUser).mockResolvedValue();
     vi.mocked(getUserByOpenId).mockResolvedValue({ id: 73 } as never);
