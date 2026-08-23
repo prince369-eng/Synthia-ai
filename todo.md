@@ -3597,6 +3597,11 @@
 - [x] Add deterministic coverage for safe exhausted-worker failure persistence without queue or task execution.
 - [x] Validate strict typing, focused tests, the full deterministic suite, production build, and diff hygiene without starting external work.
 
+## Task media configuration diagnostic hardening
+- [x] Replace raw media configuration exception text with generic availability guidance at the protected API boundary.
+- [x] Add deterministic regression coverage that confirms provider configuration details cannot be returned by the media-generation route.
+- [x] Validate strict typing, focused tests, the full deterministic suite, production build, and diff hygiene without starting external work.
+
 ## Voice Mode session diagnostic hardening
 - [x] Keep unknown realtime dispatch exceptions out of persisted Voice Mode session failure reasons while preserving safe client recovery guidance.
 - [x] Add deterministic coverage for bounded Voice Mode dispatch-failure recording without creating a realtime session.

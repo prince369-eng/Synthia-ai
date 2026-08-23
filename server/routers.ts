@@ -186,6 +186,7 @@ const mediaGenerationSchema = taskIdSchema.extend({
   aspectRatio: z.enum(["1:1", "16:9", "9:16", "4:3", "3:4"]).optional(),
   referenceAttachmentId: z.string().uuid().optional(),
 });
+export const MEDIA_CONFIGURATION_UNAVAILABLE_MESSAGE = "Media generation is not available for this workspace yet. Please try again after capability access has been enabled.";
 const liveComputerSourceSchema = taskIdSchema.extend({
   path: z.string().trim().min(12).max(512),
 });
@@ -1214,7 +1215,7 @@ export const appRouter = router({
         }
         const message = error instanceof Error ? error.message : "Media generation failed.";
         if (message.includes("Configure") || message.includes("configuration")) {
-          throw new TRPCError({ code: "PRECONDITION_FAILED", message });
+          throw new TRPCError({ code: "PRECONDITION_FAILED", message: MEDIA_CONFIGURATION_UNAVAILABLE_MESSAGE });
         }
         throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Media generation could not be completed. Please retry shortly." });
       }
