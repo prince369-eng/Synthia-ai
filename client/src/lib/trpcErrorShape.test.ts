@@ -12,4 +12,9 @@ describe("safeTrpcErrorCode", () => {
     expect(safeTrpcErrorCode({ name: "Error", data: { code: "PRECONDITION_FAILED" } })).toBeNull();
     expect(safeTrpcErrorCode({ name: "TRPCClientError", data: { code: "RAW_DATABASE_ERROR" } })).toBeNull();
   });
+
+  it("retains standard protocol codes that can occur before application code runs", () => {
+    expect(safeTrpcErrorCode({ name: "TRPCClientError", data: { code: "PARSE_ERROR" } })).toBe("PARSE_ERROR");
+    expect(safeTrpcErrorCode({ name: "TRPCClientError", data: { code: "PAYLOAD_TOO_LARGE" } })).toBe("PAYLOAD_TOO_LARGE");
+  });
 });

@@ -95,8 +95,8 @@ async function startServer() {
     }
     const kind = req.body?.kind;
     const trpcCode = req.body?.trpcCode;
-    const validKind = kind === "trpc" || kind === "network" || kind === "unknown";
-    const validCode = trpcCode === null || ["BAD_REQUEST", "UNAUTHORIZED", "FORBIDDEN", "NOT_FOUND", "TOO_MANY_REQUESTS", "PRECONDITION_FAILED", "INTERNAL_SERVER_ERROR", "TIMEOUT", "CLIENT_CLOSED_REQUEST"].includes(trpcCode);
+    const validKind = kind === "trpc" || kind === "network" || kind === "decode" || kind === "client" || kind === "unknown";
+    const validCode = trpcCode === null || ["PARSE_ERROR", "BAD_REQUEST", "INTERNAL_SERVER_ERROR", "UNAUTHORIZED", "FORBIDDEN", "NOT_FOUND", "METHOD_NOT_SUPPORTED", "TIMEOUT", "CONFLICT", "GONE", "PAYLOAD_TOO_LARGE", "UNPROCESSABLE_CONTENT", "TOO_MANY_REQUESTS", "CLIENT_CLOSED_REQUEST", "PRECONDITION_FAILED"].includes(trpcCode);
     if (validKind && validCode) {
       logger.info({ event: "composer_client_failure", kind, trpcCode }, "Composer client failure diagnostic");
     }

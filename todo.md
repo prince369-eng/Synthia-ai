@@ -3696,6 +3696,10 @@
 - [x] Identify and correct the fresh-preview browser transport condition that classified the composer request as a network failure before tRPC reached the server: duplicate classic-client injection.
 - [x] Remove duplicate classic-preview script injection so static and development preview pages mount exactly one workspace client.
 - [x] Verify the fresh preview completes authenticated workspace loading and task-list rendering after the single-client correction without submitting a task.
+- [ ] Capture and trace the malformed composer response now received after the duplicate-client transport correction.
+- [ ] Correct the confirmed composer API response-contract boundary without resubmitting task work.
+- [x] Extend bounded client tRPC recognition to every standard protocol error code so malformed responses are classified rather than treated as unknown.
+- [x] Classify safe response-decoding and client-runtime error categories in composer diagnostics without recording raw error messages or response bodies.
 - [x] Correct cross-bundle tRPC error recognition so the composer displays and reports safe structured error codes instead of falling back to a generic message.
 - [x] Apply structural cross-bundle tRPC recognition to global mutation and query error handling so client diagnostics and session recovery are consistent.
 - [x] Add stage-specific safe error conversion around composer preparation steps that run before persistence.

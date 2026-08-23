@@ -14,6 +14,11 @@ describe("classifyComposerFailure", () => {
     expect(classifyComposerFailure({ name: "TRPCClientError", data: { code: "UNSAFE_CODE" } })).toEqual({ kind: "trpc", trpcCode: null });
   });
 
+  it("distinguishes safe decoding and client-runtime categories without retaining messages", () => {
+    expect(classifyComposerFailure(new SyntaxError("response body detail"))).toEqual({ kind: "decode", trpcCode: null });
+    expect(classifyComposerFailure(new Error("client runtime detail"))).toEqual({ kind: "client", trpcCode: null });
+  });
+
   it("posts only the bounded diagnostic payload to the same-origin endpoint", async () => {
     const fetchMock = vi.fn().mockResolvedValue(new Response(null, { status: 204 }));
     vi.stubGlobal("fetch", fetchMock);

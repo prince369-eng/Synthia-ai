@@ -1,7 +1,7 @@
 import { isTrpcLikeError, safeTrpcErrorCode } from "./trpcErrorShape";
 
 export type ComposerFailureReport = {
-  kind: "trpc" | "network" | "unknown";
+  kind: "trpc" | "network" | "decode" | "client" | "unknown";
   trpcCode: string | null;
 };
 
@@ -9,6 +9,12 @@ export type ComposerFailureReport = {
 export function classifyComposerFailure(error: unknown): ComposerFailureReport {
   if (error instanceof TypeError) return { kind: "network", trpcCode: null };
   if (isTrpcLikeError(error)) return { kind: "trpc", trpcCode: safeTrpcErrorCode(error) };
+  if (error instanceof SyntaxError || (error && typeof error === "object" && "name" in error && (error as { name?: unknown }).name === "SyntaxError")) {
+    return { kind: "decode", trpcCode: null };
+  }
+  if (error instanceof Error || (error && typeof error === "object" && "name" in error && (error as { name?: unknown }).name === "Error")) {
+    return { kind: "client", trpcCode: null };
+  }
   return { kind: "unknown", trpcCode: null };
 }
 
