@@ -117,8 +117,8 @@ import { generateWithFallback, parseStructuredModelOutput } from "./agent/llm";
 import { createVoiceModeJoinCredentials, getVoiceModeAvailability } from "./realtime/voiceMode";
 import { buildTaskOfficeExport, OFFICE_EXPORT_FORMATS } from "./office/taskOfficeExport";
 import { appConnectorReadiness, browseAdditionalUserFacingApps, completeZapierMcpAuthorization, listUserFacingApps, startAppConnectorAuthorization, verifyComposioAuthorization, verifyPipedreamAuthorization } from "./integrations/appConnectors";
-import { createNetworkLabForUser, decideNetworkLabApproval, getNetworkLabForUser, listNetworkLabsForUser, submitNetworkLabForReview } from "./networkLabs";
-import { issueNetworkLabManifest } from "./networkLabManifest";
+import { consumeNetworkLabManifestAndRecordEvidence, createNetworkLabForUser, decideNetworkLabApproval, getNetworkLabForUser, listNetworkLabsForUser, recordNetworkLabManifest, submitNetworkLabForReview } from "./networkLabs";
+import { issueNetworkLabManifest, verifyNetworkLabManifest, type SignedNetworkLabManifest } from "./networkLabManifest";
 
 const taskIdSchema = z.object({ taskId: z.string().uuid() });
 const taskTitleSchema = z.string().trim().min(1).max(180);
@@ -251,6 +251,41 @@ const networkLabApprovalSchema = networkLabIdSchema.extend({
   approvalId: z.string().uuid(),
   decision: z.enum(["approved", "rejected"]),
   reviewNote: z.string().trim().min(2).max(1_000).optional(),
+});
+const networkLabManifestSchema = z.object({
+  payload: z.object({
+    version: z.literal(1),
+    manifestId: z.string().uuid(),
+    labId: z.string().uuid(),
+    approvalId: z.string().uuid(),
+    ownerId: z.number().int().positive(),
+    issuedAt: z.string().datetime(),
+    expiresAt: z.string().datetime(),
+    runner: z.object({
+      platform: z.literal("linux_virtualbox"),
+      allowedOperations: z.array(z.enum(["preflight", "resolve_image_alias", "prepare_internal_topology", "apply_candidate_config", "run_validation", "collect_bounded_evidence", "cleanup"])).min(7).max(7),
+      networkPolicy: z.object({ internalNetworkOnly: z.literal(true), bridgedAdapters: z.literal(false), natAdapters: z.literal(false), natNetworks: z.literal(false), portForwarding: z.literal(false), cloudAdapters: z.literal(false), physicalDeviceTargets: z.literal(false) }),
+      resourceLimits: z.object({ maxNodes: z.literal(24), maxLinks: z.literal(48), maxConfigurationBytes: z.literal(192_000), maxEvidenceBytes: z.literal(1_048_576) }),
+    }),
+    topology: networkLabCreateSchema.shape.topology,
+    configurationCandidates: networkLabCreateSchema.shape.configurationCandidates,
+    validationPlan: networkLabCreateSchema.shape.validationPlan,
+    rollbackPlan: networkLabCreateSchema.shape.rollbackPlan,
+  }),
+  signature: z.string().regex(/^[A-Za-z0-9_-]{43}$/),
+});
+const redactedEvidenceTextSchema = z.string().trim().min(2).max(1_000).refine(
+  value => !/(?:password|secret|community)\s+(?!<redacted>)[^\s]+|-----BEGIN [A-Z ]*PRIVATE KEY-----|ssh-rsa\s+[A-Za-z0-9+/=]{20,}/i.test(value),
+  "Evidence must not contain credentials, keys, or raw device output.",
+);
+const networkLabEvidenceSchema = z.object({
+  labId: z.string().uuid(),
+  manifest: networkLabManifestSchema,
+  verdict: z.enum(["passed", "failed", "inconclusive"]),
+  summary: redactedEvidenceTextSchema,
+  assertionResults: z.array(z.object({ assertionId: z.string().trim().regex(/^[a-z][a-z0-9-]{0,39}$/), status: z.enum(["passed", "failed", "not_run"]), note: redactedEvidenceTextSchema.optional() })).max(30),
+  artifactDigests: z.array(z.string().regex(/^[a-f0-9]{64}$/)).max(12),
+  runnerAttestation: z.string().trim().min(32).max(512).regex(/^[A-Za-z0-9_.:-]+$/),
 });
 const taskLessonSchema = taskIdSchema.extend({ lesson: z.string().trim().min(20).max(1_200), confidence: z.number().min(0).max(1).default(0.7) });
 const reviewTaskLessonSchema = taskIdSchema.extend({ memoryId: z.string().uuid(), decision: z.enum(["active", "archived"]) });
@@ -635,16 +670,49 @@ export const appRouter = router({
           throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Approve this lab proposal before creating a local runner manifest." });
         }
         const labInput = networkLabCreateSchema.pick({ topology: true, configurationCandidates: true, validationPlan: true, rollbackPlan: true }).parse(record.lab);
-        return issueNetworkLabManifest({
+        const manifest = issueNetworkLabManifest({
           labId: record.lab.id,
           approvalId: approval.id,
           ownerId: ctx.user.id,
           ...labInput,
         });
+        await recordNetworkLabManifest({
+          manifestId: manifest.payload.manifestId,
+          labId: record.lab.id,
+          approvalId: approval.id,
+          userId: ctx.user.id,
+          signature: manifest.signature,
+          expiresAt: new Date(manifest.payload.expiresAt),
+        });
+        return manifest;
       } catch (error) {
         if (error instanceof TRPCError) throw error;
         logger.warn({ event: "network_lab_manifest_unavailable", userId: ctx.user.id, labId: input.labId, errorKind: error instanceof Error ? error.name : "unknown" }, "Network lab manifest could not be created");
         throw new TRPCError({ code: "PRECONDITION_FAILED", message: "A local runner manifest is unavailable. Review the approved lab and try again." });
+      }
+    }),
+    submitEvidence: protectedProcedure.input(networkLabEvidenceSchema).mutation(async ({ ctx, input }) => {
+      await enforceUserMutationLimit(ctx.user.id, "network-lab-evidence", 30, 3_600);
+      try {
+        const manifest = input.manifest as SignedNetworkLabManifest;
+        if (manifest.payload.ownerId !== ctx.user.id || manifest.payload.labId !== input.labId || !verifyNetworkLabManifest(manifest)) {
+          throw new TRPCError({ code: "FORBIDDEN", message: "This local-runner evidence package is not valid for the selected lab." });
+        }
+        return await consumeNetworkLabManifestAndRecordEvidence({
+          userId: ctx.user.id,
+          labId: input.labId,
+          manifestId: manifest.payload.manifestId,
+          signature: manifest.signature,
+          verdict: input.verdict,
+          summary: input.summary,
+          assertionResults: input.assertionResults,
+          artifactDigests: input.artifactDigests,
+          runnerAttestation: input.runnerAttestation,
+        });
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        logger.warn({ event: "network_lab_evidence_rejected", userId: ctx.user.id, labId: input.labId, errorKind: error instanceof Error ? error.name : "unknown" }, "Network lab evidence was rejected");
+        throw new TRPCError({ code: "PRECONDITION_FAILED", message: "This evidence package cannot be recorded. Check the local runner manifest and retry." });
       }
     }),
   }),

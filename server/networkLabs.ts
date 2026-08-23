@@ -1,7 +1,7 @@
-import { and, desc, eq } from "drizzle-orm";
-import { randomUUID } from "node:crypto";
+import { and, desc, eq, isNull } from "drizzle-orm";
+import { createHash, randomUUID } from "node:crypto";
 import { getDb } from "./db";
-import { networkLabApprovals, networkLabEvidence, networkLabs } from "../drizzle/schema";
+import { networkLabApprovals, networkLabEvidence, networkLabManifests, networkLabs } from "../drizzle/schema";
 
 export type NetworkLabNode = {
   id: string;
@@ -142,5 +142,80 @@ export async function decideNetworkLabApproval(input: {
       .returning();
     if (!lab) throw new Error("The network lab is unavailable.");
     return { lab, approval };
+  });
+}
+
+export async function recordNetworkLabManifest(input: {
+  manifestId: string;
+  labId: string;
+  approvalId: string;
+  userId: number;
+  signature: string;
+  expiresAt: Date;
+}) {
+  const database = requireDatabase(await getDb());
+  const [manifest] = await database.insert(networkLabManifests).values({
+    id: input.manifestId,
+    labId: input.labId,
+    approvalId: input.approvalId,
+    userId: input.userId,
+    signatureDigest: createHash("sha256").update(input.signature).digest("hex"),
+    expiresAt: input.expiresAt,
+  }).returning();
+  if (!manifest) throw new Error("The network lab manifest could not be recorded.");
+  return manifest;
+}
+
+export type NetworkLabEvidenceInput = {
+  userId: number;
+  labId: string;
+  manifestId: string;
+  signature: string;
+  verdict: "passed" | "failed" | "inconclusive";
+  summary: string;
+  assertionResults: Array<{ assertionId: string; status: "passed" | "failed" | "not_run"; note?: string }>;
+  artifactDigests: string[];
+  runnerAttestation: string;
+};
+
+/**
+ * Atomically consumes one valid local-runner manifest and stores only bounded,
+ * redacted summary evidence. It neither invokes a runner nor receives device
+ * output, configuration files, vendor images, or arbitrary artifacts.
+ */
+export async function consumeNetworkLabManifestAndRecordEvidence(input: NetworkLabEvidenceInput) {
+  const database = requireDatabase(await getDb());
+  const now = new Date();
+  const signatureDigest = createHash("sha256").update(input.signature).digest("hex");
+  return database.transaction(async transaction => {
+    const [manifest] = await transaction.select().from(networkLabManifests).where(and(
+      eq(networkLabManifests.id, input.manifestId),
+      eq(networkLabManifests.labId, input.labId),
+      eq(networkLabManifests.userId, input.userId),
+    )).limit(1);
+    if (!manifest || manifest.signatureDigest !== signatureDigest || manifest.expiresAt.getTime() <= now.getTime() || manifest.consumedAt) {
+      throw new Error("The local-runner manifest is invalid, expired, or already used.");
+    }
+    const [consumed] = await transaction.update(networkLabManifests).set({ consumedAt: now })
+      .where(and(eq(networkLabManifests.id, input.manifestId), eq(networkLabManifests.userId, input.userId), eq(networkLabManifests.signatureDigest, signatureDigest), isNull(networkLabManifests.consumedAt)))
+      .returning();
+    if (!consumed || consumed.consumedAt?.getTime() !== now.getTime()) throw new Error("The local-runner manifest is no longer available.");
+    const [evidence] = await transaction.insert(networkLabEvidence).values({
+      id: randomUUID(),
+      labId: input.labId,
+      manifestId: input.manifestId,
+      userId: input.userId,
+      verdict: input.verdict === "passed" ? "pass" : input.verdict === "failed" ? "fail" : "inconclusive",
+      summary: input.summary,
+      assertionResults: input.assertionResults,
+      artifactDigests: input.artifactDigests,
+      runnerAttestation: input.runnerAttestation,
+      createdAt: now,
+    }).returning();
+    if (!evidence) throw new Error("The validation evidence could not be recorded.");
+    const nextStatus = input.verdict === "passed" ? "validation_passed" : input.verdict === "failed" ? "validation_failed" : "incomplete";
+    await transaction.update(networkLabs).set({ status: nextStatus, updatedAt: now })
+      .where(and(eq(networkLabs.id, input.labId), eq(networkLabs.userId, input.userId)));
+    return evidence;
   });
 }

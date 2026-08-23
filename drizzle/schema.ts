@@ -684,6 +684,26 @@ export const networkLabApprovals = pgTable("network_lab_approvals", {
 ]);
 
 /**
+ * A one-time reference to a locally downloaded manifest. Only a SHA-256 digest
+ * of the manifest signature is retained; the signed topology payload is never
+ * persisted as an execution artifact. Consumption is recorded atomically with
+ * bounded evidence ingestion to block replay.
+ */
+export const networkLabManifests = pgTable("network_lab_manifests", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  labId: varchar("lab_id", { length: 36 }).notNull().references(() => networkLabs.id, { onDelete: "cascade" }),
+  approvalId: varchar("approval_id", { length: 36 }).notNull().references(() => networkLabApprovals.id, { onDelete: "cascade" }),
+  userId: integer("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  signatureDigest: varchar("signature_digest", { length: 64 }).notNull(),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  consumedAt: timestamp("consumed_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, table => [
+  index("network_lab_manifests_user_lab_expiry_idx").on(table.userId, table.labId, table.expiresAt),
+  index("network_lab_manifests_unconsumed_expiry_idx").on(table.expiresAt, table.consumedAt),
+]);
+
+/**
  * Bounded, redacted validation evidence returned by a future local runner.
  * No raw device output, image artifacts, credentials, or live-network metadata
  * are accepted by this record.
@@ -691,6 +711,7 @@ export const networkLabApprovals = pgTable("network_lab_approvals", {
 export const networkLabEvidence = pgTable("network_lab_evidence", {
   id: varchar("id", { length: 36 }).primaryKey(),
   labId: varchar("lab_id", { length: 36 }).notNull().references(() => networkLabs.id, { onDelete: "cascade" }),
+  manifestId: varchar("manifest_id", { length: 36 }).notNull().references(() => networkLabManifests.id, { onDelete: "cascade" }),
   userId: integer("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   verdict: networkLabEvidenceVerdictEnum("verdict").notNull(),
   summary: varchar("summary", { length: 1_000 }).notNull(),
@@ -700,6 +721,7 @@ export const networkLabEvidence = pgTable("network_lab_evidence", {
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 }, table => [
   index("network_lab_evidence_user_lab_created_idx").on(table.userId, table.labId, table.createdAt),
+  uniqueIndex("network_lab_evidence_manifest_unique").on(table.manifestId),
 ]);
 
 export type User = typeof users.$inferSelect;

@@ -11,9 +11,11 @@ describe("Network Lab Workspace contracts", () => {
 
     expect(schema).toContain('export const networkLabs = pgTable("network_labs"');
     expect(schema).toContain('export const networkLabApprovals = pgTable("network_lab_approvals"');
+    expect(schema).toContain('export const networkLabManifests = pgTable("network_lab_manifests"');
     expect(schema).toContain('export const networkLabEvidence = pgTable("network_lab_evidence"');
     expect(schema).toContain('index("network_labs_user_status_updated_idx").on(table.userId, table.status, table.updatedAt)');
     expect(schema).toContain('uniqueIndex("network_lab_approvals_lab_revision_unique").on(table.labId, table.revision)');
+    expect(schema).toContain('uniqueIndex("network_lab_evidence_manifest_unique").on(table.manifestId)');
   });
 
   it("requires protected procedures, bounded schemas, and a one-time approval transition", () => {
@@ -24,9 +26,13 @@ describe("Network Lab Workspace contracts", () => {
     expect(routers).toContain("create: protectedProcedure.input(networkLabCreateSchema)");
     expect(routers).toContain("submitForReview: protectedProcedure.input(networkLabIdSchema)");
     expect(routers).toContain("decideApproval: protectedProcedure.input(networkLabApprovalSchema)");
+    expect(routers).toContain("submitEvidence: protectedProcedure.input(networkLabEvidenceSchema)");
     expect(routers).toContain("Configurations must not contain credentials or private-key material.");
+    expect(routers).toContain("Evidence must not contain credentials, keys, or raw device output.");
     expect(routers).toContain("A link must join two distinct nodes.");
     expect(helpers).toContain('eq(networkLabApprovals.decision, "pending")');
+    expect(helpers).toContain('signatureDigest: createHash("sha256").update(input.signature).digest("hex")');
+    expect(helpers).toContain("The local-runner manifest is invalid, expired, or already used.");
     expect(helpers).toContain("does not dispatch a runner, start a VM, or grant device access");
   });
 

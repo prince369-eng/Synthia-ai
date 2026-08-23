@@ -3622,14 +3622,14 @@
 - [x] Add owner-scoped network-lab domain schema and migrations for typed change intents, topologies, image references, configuration candidates, validation plans, approvals, manifests, and redacted evidence.
 - [x] Add protected tRPC procedures that validate bounded topology and validation-plan input, enforce immutable approval state transitions, and never dispatch a lab run directly.
 - [x] Implement the Network Lab Workspace route with responsive topology, configuration-diff, validation, approval, and evidence states that never claim an unrun lab was validated.
-- [ ] Implement signed, short-lived, single-use local-runner manifest generation with explicit internal-network-only, no-bridge, no-NAT, no-port-forward, resource-limit, and no-arbitrary-command constraints.
-- [ ] Implement bounded runner evidence ingestion with owner scope, attestation verification, secret-redaction guardrails, artifact-size limits, and safe user-facing failure guidance.
-- [ ] Add deterministic tests for authorization, topology validation, manifest policy, approval replay protection, evidence redaction, and absence of device, image, or lab execution during tests.
+- [x] Implement signed, short-lived, single-use local-runner manifest generation with explicit internal-network-only, no-bridge, no-NAT, no-port-forward, resource-limit, and no-arbitrary-command constraints.
+- [x] Implement bounded runner evidence ingestion with owner scope, attestation verification, secret-redaction guardrails, artifact-size limits, and safe user-facing failure guidance.
+- [x] Add deterministic tests for authorization, topology validation, manifest policy, approval replay protection, evidence redaction, and absence of device, image, or lab execution during tests.
 - [x] Validate strict typing, focused tests, full deterministic suite, production build, and diff hygiene without starting a virtual lab, device operation, vendor-image import, or external workload.
 - [ ] Apply the reviewed PostgreSQL network-lab migration to the configured application database after confirming the deployment database connection and migration pathway.
 
 ## Linux-first VirtualBox runner contract
-- [ ] Define the Linux runner installation, minimum privilege, host-only management, internal-network-only, and outbound-control-plane communication prerequisites without installing or starting VirtualBox.
-- [ ] Define the restricted runner command vocabulary for preflight, image-alias verification, topology prepare, approved configuration apply, allow-listed validation, bounded evidence collection, cleanup, and local stop.
-- [ ] Define local image-alias registration that records vendor family, compatibility profile, SHA-256 digest, entitlement acknowledgement, and resource profile without uploading images or license files.
-- [ ] Define Linux runner rejection rules for bridged adapters, NAT/NAT Network, port forwarding, cloud adapters, physical-device targets, arbitrary CLI content, expired/replayed manifests, and exceeded resource limits.
+- [x] Define the Linux runner installation, minimum privilege, host-only management, internal-network-only, and outbound-control-plane communication prerequisites without installing or starting VirtualBox.
+- [x] Define the restricted runner command vocabulary for preflight, image-alias verification, topology prepare, approved configuration apply, allow-listed validation, bounded evidence collection, cleanup, and local stop.
+- [x] Define local image-alias registration that records vendor family, compatibility profile, SHA-256 digest, entitlement acknowledgement, and resource profile without uploading images or license files.
+- [x] Define Linux runner rejection rules for bridged adapters, NAT/NAT Network, port forwarding, cloud adapters, physical-device targets, arbitrary CLI content, expired/replayed manifests, and exceeded resource limits.
