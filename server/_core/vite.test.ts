@@ -4,6 +4,7 @@ import {
   inlineStaticPreviewCompatibilityBundle,
   injectStaticPreviewBundleRevision,
   publicRuntimeConfigScript,
+  removeClassicPreviewBundleEntry,
   STATIC_PREVIEW_CACHE_CONTROL,
   staticPreviewRpcDiagnosticScript,
 } from "./vite";
@@ -70,13 +71,20 @@ describe("inlineStaticPreviewCompatibilityBundle", () => {
 
 describe("attachStaticPreviewCompatibilityBundle", () => {
   it("uses one versioned same-origin classic bundle while excluding the gateway-blocked module asset", () => {
-    const document = '<head><script type="module" crossorigin src="/assets/index-a1b2.js"></script></head><body><div id="root"></div></body>';
+    const document = '<head><script type="module" crossorigin src="/assets/index-a1b2.js"></script></head><body><div id="root"></div><script defer src="/synthia-preview.js"></script></body>';
     const result = attachStaticPreviewCompatibilityBundle(document, "1787130000000");
 
     expect(result).not.toContain('src="/assets/index-a1b2.js"');
     expect(result).toContain('data-synthia-preview-compatibility="true"');
     expect(result).toContain('src="/synthia-preview.js?v=1787130000000"');
     expect(result.match(/synthia-preview\.js/g)).toHaveLength(1);
+  });
+});
+
+describe("removeClassicPreviewBundleEntry", () => {
+  it("removes both unversioned and compatibility-marked classic preview entries", () => {
+    const document = '<script defer src="/synthia-preview.js"></script><script defer data-synthia-preview-compatibility="true" src="/synthia-preview.js?v=stale"></script><main />';
+    expect(removeClassicPreviewBundleEntry(document)).toBe("<main />");
   });
 });
 

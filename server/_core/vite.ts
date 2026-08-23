@@ -33,10 +33,17 @@ export function injectStaticPreviewBundleRevision(document: string, revision: st
   );
 }
 
+export function removeClassicPreviewBundleEntry(document: string) {
+  return document.replace(
+    /\s*<script(?: defer)?(?: data-synthia-preview-compatibility="true")? src="\/synthia-preview\.js(?:\?[^\"]*)?"><\/script>/g,
+    ""
+  );
+}
+
 export function inlineStaticPreviewCompatibilityBundle(document: string, bundle: string) {
   const compatibilityBundle = bundle.replace(/<\/script/gi, "<\\/script");
-  const withoutModuleEntry = document.replace(
-    /\s*<script type="module" crossorigin src="\/assets\/[^"]+\.js"><\/script>/,
+  const withoutModuleEntry = removeClassicPreviewBundleEntry(document).replace(
+    /\s*<script type="module" crossorigin src="\/assets\/[^\"]+\.js"><\/script>/,
     ""
   );
 
@@ -47,8 +54,8 @@ export function inlineStaticPreviewCompatibilityBundle(document: string, bundle:
 }
 
 export function attachStaticPreviewCompatibilityBundle(document: string, revision: string) {
-  const withoutModuleEntry = document.replace(
-    /\s*<script type="module" crossorigin src="\/assets\/[^"]+\.js"><\/script>/,
+  const withoutModuleEntry = removeClassicPreviewBundleEntry(document).replace(
+    /\s*<script type="module" crossorigin src="\/assets\/[^\"]+\.js"><\/script>/,
     ""
   );
 
@@ -86,6 +93,7 @@ export async function setupVite(app: Express, server: Server) {
 
       // always reload the index.html file from disk incase it changes
       let template = await fs.promises.readFile(clientTemplate, "utf-8");
+      template = removeClassicPreviewBundleEntry(template);
       template = template.replace("</head>", `${publicRuntimeConfigScript()}</head>`);
       template = template.replace(
         `src="/src/main.tsx"`,

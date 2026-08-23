@@ -3686,13 +3686,16 @@
 - [x] Revise the managed development preview’s classic bundle URL on each served HTML response to eliminate stale browser-cache execution.
 - [x] Include the sanitized task-store diagnostic contract in standard deterministic test discovery.
 - [x] Log only the safe exception type for unexpected tRPC errors so a user-approved composer retry can identify the remaining server boundary without leaking details.
-- [ ] Capture the remaining composer creation boundary with a user-approved retry after the safe failure-classification update is validated.
-- [ ] Inspect and trace the safe exception classification emitted by the repeated live composer failure after commit 7b3b089.
+- [x] Capture the bounded client failure classification from the fresh-preview composer reproduction: network transport failure with no tRPC response.
+- [x] Inspect and trace the safe exception classification emitted by the repeated live composer failure after commit 7b3b089.
 - [x] Verify that the previously used public preview address served a stale inline bundle while a fresh project proxy served the current versioned classic bundle and bounded telemetry.
-- [ ] Extract and trace the bounded RPC lifecycle evidence from the fresh-preview composer reproduction captured in the user screenshot.
+- [x] Extract and trace the bounded RPC lifecycle evidence from the fresh-preview composer reproduction captured in the user screenshot.
 - [x] Add a bounded client-side composer failure report that records only transport category and tRPC code, never task text, payloads, messages, or credentials.
 - [ ] Verify why the bounded composer diagnostic callback does not reach the fresh-preview server before requesting any further user retry.
 - [ ] Reproduce the remaining composer client failure through a no-op diagnostic contract rather than another task creation request.
+- [x] Identify and correct the fresh-preview browser transport condition that classified the composer request as a network failure before tRPC reached the server: duplicate classic-client injection.
+- [x] Remove duplicate classic-preview script injection so static and development preview pages mount exactly one workspace client.
+- [x] Verify the fresh preview completes authenticated workspace loading and task-list rendering after the single-client correction without submitting a task.
 - [x] Correct cross-bundle tRPC error recognition so the composer displays and reports safe structured error codes instead of falling back to a generic message.
 - [x] Apply structural cross-bundle tRPC recognition to global mutation and query error handling so client diagnostics and session recovery are consistent.
 - [x] Add stage-specific safe error conversion around composer preparation steps that run before persistence.
