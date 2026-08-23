@@ -1682,6 +1682,8 @@
 - [x] Make post-persistence task-metadata and queue failures non-fatal to successful task creation.
 - [x] Add deterministic composer regressions for persistence, event, and queue-stage failures without invoking task execution.
 - [x] Prevent a newly created task from remaining misleadingly queued when its initial queue handoff is unavailable.
+- [ ] Capture and classify the remaining live composer pre-execution failure without triggering another task cycle.
+- [ ] Repair the confirmed live composer request-boundary failure and publish the verified update.
 
 ## End
 
@@ -3672,3 +3674,14 @@
 ## Task-event persistence schema repair
 - [x] Verify and apply an additive MySQL-compatible migration for the missing task-event sequence table required by protected task creation.
 - [ ] Add a deterministic task-persistence availability regression that reports bounded recovery guidance when required task-event tables are unavailable.
+
+## Live composer request-boundary follow-up
+- [x] Confirm through an authenticated read-only RPC request that protected task listing and PostgreSQL task access are reachable after restart.
+- [x] Fail closed with bounded recovery guidance when mutation rate-limit infrastructure is unavailable.
+- [x] Suppress server stack traces from serialized tRPC error responses.
+- [x] Prevent duplicate classic-preview and module bootstrap roots from competing for workspace queries.
+- [x] Replace the oversized inline static-preview compatibility bundle with a versioned same-origin classic script while retaining the blocked-module fallback.
+- [x] Add privacy-preserving static-preview RPC lifecycle telemetry to classify the pending auth request without recording request data or credentials.
+- [x] Correct static-preview RPC telemetry matching so procedure-specific tRPC paths are observed without capturing request contents.
+- [x] Include the sanitized task-store diagnostic contract in standard deterministic test discovery.
+- [ ] Capture the remaining composer creation boundary with a user-approved retry after the safe failure-classification update is validated.

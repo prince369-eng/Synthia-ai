@@ -68,6 +68,26 @@ async function startServer() {
   registerStorageProxy(app);
   registerOAuthRoutes(app);
   registerTaskEventStream(app);
+  app.post("/__synthia__/preview-rpc-diagnostic", (req, res) => {
+    if (process.env.SYNTHIA_STATIC_PREVIEW !== "true") {
+      res.status(404).end();
+      return;
+    }
+    const phase = req.body?.phase;
+    const method = req.body?.method;
+    const status = req.body?.status;
+    const durationBucket = req.body?.durationBucket;
+    const errorKind = req.body?.errorKind;
+    const validPhase = phase === "request" || phase === "pending" || phase === "response" || phase === "error";
+    const validMethod = method === "GET" || method === "POST";
+    const validStatus = status === null || (typeof status === "number" && status >= 100 && status <= 599);
+    const validDuration = durationBucket === null || ["lt_1s", "lt_5s", "lt_15s", "gte_15s"].includes(durationBucket);
+    const validError = errorKind === null || errorKind === "abort" || errorKind === "network";
+    if (validPhase && validMethod && validStatus && validDuration && validError) {
+      logger.info({ event: "static_preview_rpc_lifecycle", phase, method, status, durationBucket, errorKind }, "Static preview RPC lifecycle diagnostic");
+    }
+    res.status(204).end();
+  });
   app.post("/api/scheduled/workflow", runScheduledWorkflow);
   // tRPC API
   app.use(

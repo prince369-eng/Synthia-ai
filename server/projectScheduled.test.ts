@@ -69,6 +69,35 @@ describe("projects and scheduled router procedures", () => {
     expect(createTask).not.toHaveBeenCalled();
   });
 
+  it("fails closed with bounded guidance when mutation rate-limit infrastructure is unavailable", async () => {
+    vi.spyOn(rateLimit, "enforceRateLimit").mockRejectedValue(new Error("redis://operator:credential@cache.internal:6379"));
+    const createTask = vi.spyOn(db, "createTaskForUser");
+    const logError = vi.spyOn(logger, "error").mockImplementation(() => undefined as never);
+
+    await expect(appRouter.createCaller(createContext()).tasks.create({
+      goal: "Prepare a secure recovery note for unavailable task protection.",
+      autonomySettings: {
+        mode: "ask_before_risky",
+        allowWebSearch: false,
+        allowCodeExecution: false,
+        allowFileWrites: false,
+      },
+      involvesCode: false,
+    })).rejects.toMatchObject({
+      code: "PRECONDITION_FAILED",
+      message: "Request protection is temporarily unavailable. Please try again shortly.",
+    });
+
+    expect(createTask).not.toHaveBeenCalled();
+    expect(logError).toHaveBeenCalledWith(expect.objectContaining({
+      event: "mutation_rate_limit_unavailable",
+      userId: applicationUserId,
+      scope: "task-create",
+      errorKind: "Error",
+    }), "Mutation rate-limit infrastructure is unavailable");
+    expect(JSON.stringify(logError.mock.calls)).not.toContain("redis://operator:credential@cache.internal:6379");
+  });
+
   it("creates an authenticated task with owned uploaded inputs and queues its first execution cycle", async () => {
     const taskId = "33333333-3333-4333-8333-333333333333";
     const createdTask = { id: taskId, userId: applicationUserId, status: "queued", title: "Prepare a secured implementation brief" };

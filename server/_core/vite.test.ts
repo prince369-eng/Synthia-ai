@@ -1,9 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
+  attachStaticPreviewCompatibilityBundle,
   inlineStaticPreviewCompatibilityBundle,
   injectStaticPreviewBundleRevision,
   publicRuntimeConfigScript,
   STATIC_PREVIEW_CACHE_CONTROL,
+  staticPreviewRpcDiagnosticScript,
 } from "./vite";
 
 describe("publicRuntimeConfigScript", () => {
@@ -63,5 +65,30 @@ describe("inlineStaticPreviewCompatibilityBundle", () => {
 
     expect(result).toContain("const marker = '$&';");
     expect(result.match(/<\/body>/g)).toHaveLength(1);
+  });
+});
+
+describe("attachStaticPreviewCompatibilityBundle", () => {
+  it("uses one versioned same-origin classic bundle while excluding the gateway-blocked module asset", () => {
+    const document = '<head><script type="module" crossorigin src="/assets/index-a1b2.js"></script></head><body><div id="root"></div></body>';
+    const result = attachStaticPreviewCompatibilityBundle(document, "1787130000000");
+
+    expect(result).not.toContain('src="/assets/index-a1b2.js"');
+    expect(result).toContain('data-synthia-preview-compatibility="true"');
+    expect(result).toContain('src="/synthia-preview.js?v=1787130000000"');
+    expect(result.match(/synthia-preview\.js/g)).toHaveLength(1);
+  });
+});
+
+describe("staticPreviewRpcDiagnosticScript", () => {
+  it("reports only bounded RPC lifecycle fields and never reads request bodies or authorization headers", () => {
+    const script = staticPreviewRpcDiagnosticScript();
+
+    expect(script).toContain("/__synthia__/preview-rpc-diagnostic");
+    expect(script).toContain("pathname!=='/api/trpc'&&!pathname.startsWith('/api/trpc/')");
+    expect(script).toContain("durationBucket");
+    expect(script).not.toContain("Authorization");
+    expect(script).not.toContain("input.body");
+    expect(script).not.toContain("requestBody");
   });
 });

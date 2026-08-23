@@ -582,7 +582,16 @@ async function enforceUserMutationLimit(userId: number, scope: string, limit: nu
     if (error instanceof RateLimitError) {
       throw new TRPCError({ code: "TOO_MANY_REQUESTS", message: error.message });
     }
-    throw error;
+    logger.error({
+      event: "mutation_rate_limit_unavailable",
+      userId,
+      scope,
+      errorKind: error instanceof Error ? error.name : "unknown",
+    }, "Mutation rate-limit infrastructure is unavailable");
+    throw new TRPCError({
+      code: "PRECONDITION_FAILED",
+      message: "Request protection is temporarily unavailable. Please try again shortly.",
+    });
   }
 }
 

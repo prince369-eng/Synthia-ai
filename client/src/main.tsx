@@ -7,6 +7,7 @@ import { createRoot } from "react-dom/client";
 import superjson from "superjson";
 import App from "./App";
 import { EXPLICIT_SIGNED_OUT_STORAGE_KEY, startLogin } from "./const";
+import { shouldMountSynthiaWorkspace } from "./lib/bootstrap";
 import "./index.css";
 
 const queryClient = new QueryClient();
@@ -122,18 +123,16 @@ declare global {
 }
 
 try {
-  if (window.__SYNTHIA_BOOTSTRAPPED__) {
-    // A compatible classic preview bundle has already mounted this root.
-  } else {
+  if (shouldMountSynthiaWorkspace(window.__SYNTHIA_BOOTSTRAPPED__)) {
     window.__SYNTHIA_BOOTSTRAPPED__ = true;
-  bootstrap?.remove();
-  createRoot(rootElement).render(
-    <trpc.Provider client={trpcClient} queryClient={queryClient}>
-      <QueryClientProvider client={queryClient}>
-        <App />
-      </QueryClientProvider>
-    </trpc.Provider>,
-  );
+    bootstrap?.remove();
+    createRoot(rootElement).render(
+      <trpc.Provider client={trpcClient} queryClient={queryClient}>
+        <QueryClientProvider client={queryClient}>
+          <App />
+        </QueryClientProvider>
+      </trpc.Provider>,
+    );
   }
 } catch (error) {
   rootElement.innerHTML = `<div id="synthia-bootstrap" role="alert"><div id="synthia-bootstrap-card"><div id="synthia-bootstrap-mark">!</div><h1>Unable to open Synthia AI</h1><p>The workspace could not start in this browser. Reload the preview once to refresh its secure client session.</p></div></div>`;

@@ -22,6 +22,10 @@ export function publicRuntimeConfigScript(configValues?: {
   return `<script>window.__SYNTHIA_PUBLIC_CONFIG__=${config};</script>`;
 }
 
+export function staticPreviewRpcDiagnosticScript() {
+  return `<script>(function(){var originalFetch=window.fetch.bind(window);function bucket(duration){return duration<1000?'lt_1s':duration<5000?'lt_5s':duration<15000?'lt_15s':'gte_15s'}function report(phase,method,status,durationBucket,errorKind){try{originalFetch('/__synthia__/preview-rpc-diagnostic',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({phase:phase,method:method,status:status,durationBucket:durationBucket,errorKind:errorKind}),credentials:'omit',keepalive:true}).catch(function(){})}catch(_){}}window.fetch=function(input,init){var rawUrl=typeof input==='string'?input:input&&input.url;var pathname;try{pathname=new URL(rawUrl,window.location.origin).pathname}catch(_){return originalFetch(input,init)}if(pathname!=='/api/trpc'&&!pathname.startsWith('/api/trpc/'))return originalFetch(input,init);var method=(init&&init.method)||(input&&input.method)||'GET';var started=Date.now();var pendingTimer=window.setTimeout(function(){report('pending',method,null,bucket(Date.now()-started),null)},5000);report('request',method,null,null,null);return originalFetch(input,init).then(function(response){window.clearTimeout(pendingTimer);report('response',method,response.status,bucket(Date.now()-started),null);return response},function(error){window.clearTimeout(pendingTimer);report('error',method,null,bucket(Date.now()-started),error&&error.name==='AbortError'?'abort':'network');throw error})}})();</script>`;
+}
+
 export function injectStaticPreviewBundleRevision(document: string, revision: string) {
   return document.replace(
     /src="\/synthia-preview\.js(?:\?[^\"]*)?"/,
@@ -32,13 +36,25 @@ export function injectStaticPreviewBundleRevision(document: string, revision: st
 export function inlineStaticPreviewCompatibilityBundle(document: string, bundle: string) {
   const compatibilityBundle = bundle.replace(/<\/script/gi, "<\\/script");
   const withoutModuleEntry = document.replace(
-    /\s*<script type="module" crossorigin src="\/assets\/[^\"]+\.js"><\/script>/,
+    /\s*<script type="module" crossorigin src="\/assets\/[^"]+\.js"><\/script>/,
     ""
   );
 
   return withoutModuleEntry.replace(
     "</body>",
     () => `<script data-synthia-preview-compatibility="true">${compatibilityBundle}</script></body>`
+  );
+}
+
+export function attachStaticPreviewCompatibilityBundle(document: string, revision: string) {
+  const withoutModuleEntry = document.replace(
+    /\s*<script type="module" crossorigin src="\/assets\/[^"]+\.js"><\/script>/,
+    ""
+  );
+
+  return withoutModuleEntry.replace(
+    "</body>",
+    () => `<script defer data-synthia-preview-compatibility="true" src="/synthia-preview.js?v=${encodeURIComponent(revision)}"></script></body>`
   );
 }
 
@@ -120,10 +136,8 @@ export function serveStatic(app: Express) {
       }
       const previewBundlePath = path.resolve(distPath, "synthia-preview.js");
       const previewBundleStat = await fs.promises.stat(previewBundlePath);
-      document = injectStaticPreviewBundleRevision(document, String(previewBundleStat.mtimeMs));
-      const previewBundle = await fs.promises.readFile(previewBundlePath, "utf8");
-      document = inlineStaticPreviewCompatibilityBundle(document, previewBundle);
-      document = document.replace("</head>", `${publicRuntimeConfigScript()}</head>`);
+      document = attachStaticPreviewCompatibilityBundle(document, String(previewBundleStat.mtimeMs));
+      document = document.replace("</head>", `${publicRuntimeConfigScript()}${staticPreviewRpcDiagnosticScript()}</head>`);
       res.status(200).set({ "Content-Type": "text/html", "Cache-Control": STATIC_PREVIEW_CACHE_CONTROL }).end(document);
     } catch (error) {
       next(error);

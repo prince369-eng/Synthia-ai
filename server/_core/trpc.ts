@@ -23,6 +23,7 @@ const t = initTRPC.context<TrpcContext>().create({
       message: isInternal ? "An unexpected server error occurred." : shape.message,
       data: {
         ...shape.data,
+        stack: undefined,
         requestId: ctx?.req.headers["x-request-id"] ?? undefined,
       },
     };
