@@ -8,4 +8,10 @@ describe("revisionedClassicPreviewScript", () => {
       '<script defer src="/synthia-preview.js?v=20260823-0644"></script>',
     );
   });
+
+  it("injects one cache-busted classic preview fallback when the source document has no static tag", () => {
+    expect(revisionedClassicPreviewScript("<head>\n</head><body></body>", "20260824-1030")).toBe(
+      '<head>\n    <script defer src="/synthia-preview.js?v=20260824-1030"></script>\n  </head><body></body>',
+    );
+  });
 });

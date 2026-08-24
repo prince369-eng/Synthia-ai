@@ -161,7 +161,7 @@ function vitePluginSynthiaProductionPreviewGuard(): Plugin {
     },
     transformIndexHtml(html) {
       if (isProductionBuild) {
-        return html.replace(/\s*<script defer src="\/synthia-preview\.js"><\/script>/, "");
+        return html;
       }
       const previewBundle = path.resolve(PROJECT_ROOT, "client", "public", "synthia-preview.js");
       const revision = fs.existsSync(previewBundle) ? String(Math.trunc(fs.statSync(previewBundle).mtimeMs)) : "development";
