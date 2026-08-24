@@ -3817,4 +3817,5 @@
 - [x] Remove raw upstream response bodies from agent LLM provider errors while preserving retry and route-availability classification.
 - [x] Remove raw upstream body and transport detail from agent search-provider failures while retaining safe status and fallback observability.
 - [x] Remove raw sandbox command stderr and provider-detail messages from agent error paths while preserving stable operation classification.
+- [x] Audit and bound tRPC mutation catch-path error messages so unexpected internal exceptions cannot be returned verbatim to clients.
 - [ ] Monitor ExcelJS for a compatible UUID upgrade; do not force an incompatible override while the verified Synthia export path uses only UUID `v4`.

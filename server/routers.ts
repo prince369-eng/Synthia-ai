@@ -838,8 +838,8 @@ export const appRouter = router({
         try {
           return await generateReviewedSkillDraft({ source: "idea", detail: { idea: input.idea }, category: input.category });
         } catch (error) {
-          const message = error instanceof Error ? error.message : "Skill draft generation failed.";
-          throw new TRPCError({ code: "PRECONDITION_FAILED", message: message.slice(0, 600) });
+          logger.error({ event: "skill_draft_generation_failed", userId: ctx.user.id, errorKind: error instanceof Error ? error.name : "unknown" }, "Skill draft generation failed");
+          throw new TRPCError({ code: "PRECONDITION_FAILED", message: "A reviewed Skill draft is not available right now. Please retry shortly." });
         }
       }),
     createDraftFromExample: protectedProcedure
@@ -864,8 +864,8 @@ export const appRouter = router({
             },
           });
         } catch (error) {
-          const message = error instanceof Error ? error.message : "Example-based Skill draft generation failed.";
-          throw new TRPCError({ code: "PRECONDITION_FAILED", message: message.slice(0, 600) });
+          logger.error({ event: "skill_example_draft_generation_failed", userId: ctx.user.id, errorKind: error instanceof Error ? error.name : "unknown" }, "Example-based Skill draft generation failed");
+          throw new TRPCError({ code: "PRECONDITION_FAILED", message: "A reviewed Skill draft is not available right now. Please retry shortly." });
         }
       }),
     createDraftFromTask: protectedProcedure
@@ -887,8 +887,8 @@ export const appRouter = router({
             },
           });
         } catch (error) {
-          const message = error instanceof Error ? error.message : "Task-derived Skill draft generation failed.";
-          throw new TRPCError({ code: "PRECONDITION_FAILED", message: message.slice(0, 600) });
+          logger.error({ event: "skill_task_draft_generation_failed", taskId: input.taskId, userId: ctx.user.id, errorKind: error instanceof Error ? error.name : "unknown" }, "Task-derived Skill draft generation failed");
+          throw new TRPCError({ code: "PRECONDITION_FAILED", message: "A reviewed Skill draft is not available right now. Please retry shortly." });
         }
       }),
     create: protectedProcedure
@@ -1001,8 +1001,8 @@ export const appRouter = router({
           const deliverableId = await createDeliverable({ taskId: task.id, eventId: event.id, filename: document.filename, fileType: document.contentType, storageKey: artifact.key, storageUrl: artifact.url, isFinal: true });
           return { deliverableId, filename: document.filename, fileType: document.contentType };
         } catch (error) {
-          const message = error instanceof Error ? error.message : "Office export storage failed.";
-          throw new TRPCError({ code: "PRECONDITION_FAILED", message: `The Office export could not be stored. ${message}` });
+          logger.error({ event: "task_office_export_storage_failed", taskId: task.id, userId: ctx.user.id, errorKind: error instanceof Error ? error.name : "unknown" }, "Office export storage failed");
+          throw new TRPCError({ code: "PRECONDITION_FAILED", message: "The Office export could not be stored. Please retry shortly." });
         }
       }),
     proposeTaskLesson: protectedProcedure
@@ -1109,9 +1109,8 @@ export const appRouter = router({
         try {
           return await createVoiceModeJoinCredentials({ taskId: task.id, userId: ctx.user.id, settings: input.settings });
         } catch (error) {
-          const message = error instanceof Error ? error.message : "Voice Mode could not be started.";
-          const code = message.includes("disabled") || message.includes("needs") ? "PRECONDITION_FAILED" : "INTERNAL_SERVER_ERROR";
-          throw new TRPCError({ code, message: code === "PRECONDITION_FAILED" ? message : "Voice Mode could not be started. Please retry shortly." });
+          logger.error({ event: "voice_mode_start_failed", taskId: task.id, userId: ctx.user.id, errorKind: error instanceof Error ? error.name : "unknown" }, "Voice Mode start failed");
+          throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Voice Mode is not available for this task right now." });
         }
       }),
     updateVoiceModeSession: protectedProcedure
@@ -1174,7 +1173,7 @@ export const appRouter = router({
           return await createTaskRemediationProposalForUser({ ...input, userId: ctx.user.id });
         } catch (error) {
           const message = error instanceof Error ? error.message : "The remediation proposal could not be saved.";
-          if (message.includes("signal")) throw new TRPCError({ code: "NOT_FOUND", message });
+          if (message.includes("signal")) throw new TRPCError({ code: "NOT_FOUND", message: "The referenced pipeline health signal is unavailable." });
           logger.error({ event: "remediation_proposal_failed", taskId: input.taskId, userId: ctx.user.id, errorKind: error instanceof Error ? error.name : "unknown" }, "Remediation proposal creation failed");
           throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "The remediation proposal could not be saved. Please retry." });
         }
@@ -1188,7 +1187,7 @@ export const appRouter = router({
           return await createTaskDelegationForUser({ ...input, userId: ctx.user.id });
         } catch (error) {
           const message = error instanceof Error ? error.message : "The specialist delegation could not be saved.";
-          if (message.includes("delegation")) throw new TRPCError({ code: "NOT_FOUND", message });
+          if (message.includes("delegation")) throw new TRPCError({ code: "NOT_FOUND", message: "The referenced specialist delegation is unavailable." });
           logger.error({ event: "task_delegation_proposal_failed", taskId: input.taskId, userId: ctx.user.id, errorKind: error instanceof Error ? error.name : "unknown" }, "Task delegation proposal creation failed");
           throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "The specialist delegation could not be saved. Please retry." });
         }
@@ -1214,7 +1213,7 @@ export const appRouter = router({
           return await updateTaskHandoffPolicyForUser({ ...input, userId: ctx.user.id });
         } catch (error) {
           const message = error instanceof Error ? error.message : "The handoff policy could not be updated.";
-          if (message.includes("unavailable")) throw new TRPCError({ code: "NOT_FOUND", message });
+          if (message.includes("unavailable")) throw new TRPCError({ code: "NOT_FOUND", message: "That handoff policy is unavailable." });
           logger.error({ event: "task_handoff_policy_update_failed", taskId: input.taskId, userId: ctx.user.id, errorKind: error instanceof Error ? error.name : "unknown" }, "Task handoff policy update failed");
           throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "The handoff policy could not be updated. Please retry." });
         }
@@ -1228,7 +1227,7 @@ export const appRouter = router({
           return await archiveTaskHandoffPolicyForUser({ ...input, userId: ctx.user.id });
         } catch (error) {
           const message = error instanceof Error ? error.message : "The handoff policy could not be archived.";
-          if (message.includes("unavailable")) throw new TRPCError({ code: "NOT_FOUND", message });
+          if (message.includes("unavailable")) throw new TRPCError({ code: "NOT_FOUND", message: "That handoff policy is unavailable." });
           logger.error({ event: "task_handoff_policy_archive_failed", taskId: input.taskId, userId: ctx.user.id, errorKind: error instanceof Error ? error.name : "unknown" }, "Task handoff policy archive failed");
           throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "The handoff policy could not be archived. Please retry." });
         }
@@ -1254,7 +1253,7 @@ export const appRouter = router({
           return await updateTaskRecoveryPlaybookForUser({ ...input, userId: ctx.user.id });
         } catch (error) {
           const message = error instanceof Error ? error.message : "The recovery playbook could not be updated.";
-          if (message.includes("unavailable")) throw new TRPCError({ code: "NOT_FOUND", message });
+          if (message.includes("unavailable")) throw new TRPCError({ code: "NOT_FOUND", message: "That recovery playbook is unavailable." });
           logger.error({ event: "task_recovery_playbook_update_failed", taskId: input.taskId, userId: ctx.user.id, errorKind: error instanceof Error ? error.name : "unknown" }, "Task recovery playbook update failed");
           throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "The recovery playbook could not be updated. Please retry." });
         }
@@ -1268,7 +1267,7 @@ export const appRouter = router({
           return await archiveTaskRecoveryPlaybookForUser({ ...input, userId: ctx.user.id });
         } catch (error) {
           const message = error instanceof Error ? error.message : "The recovery playbook could not be archived.";
-          if (message.includes("unavailable")) throw new TRPCError({ code: "NOT_FOUND", message });
+          if (message.includes("unavailable")) throw new TRPCError({ code: "NOT_FOUND", message: "That recovery playbook is unavailable." });
           logger.error({ event: "task_recovery_playbook_archive_failed", taskId: input.taskId, userId: ctx.user.id, errorKind: error instanceof Error ? error.name : "unknown" }, "Task recovery playbook archive failed");
           throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "The recovery playbook could not be archived. Please retry." });
         }
@@ -1294,7 +1293,7 @@ export const appRouter = router({
           return await updateTaskPolicyPackForUser({ ...input, userId: ctx.user.id });
         } catch (error) {
           const message = error instanceof Error ? error.message : "The policy pack could not be updated.";
-          if (message.includes("unavailable")) throw new TRPCError({ code: "NOT_FOUND", message });
+          if (message.includes("unavailable")) throw new TRPCError({ code: "NOT_FOUND", message: "That policy pack is unavailable." });
           logger.error({ event: "task_policy_pack_update_failed", taskId: input.taskId, userId: ctx.user.id, errorKind: error instanceof Error ? error.name : "unknown" }, "Task policy pack update failed");
           throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "The policy pack could not be updated. Please retry." });
         }
@@ -1308,7 +1307,7 @@ export const appRouter = router({
           return await archiveTaskPolicyPackForUser({ ...input, userId: ctx.user.id });
         } catch (error) {
           const message = error instanceof Error ? error.message : "The policy pack could not be archived.";
-          if (message.includes("unavailable")) throw new TRPCError({ code: "NOT_FOUND", message });
+          if (message.includes("unavailable")) throw new TRPCError({ code: "NOT_FOUND", message: "That policy pack is unavailable." });
           logger.error({ event: "task_policy_pack_archive_failed", taskId: input.taskId, userId: ctx.user.id, errorKind: error instanceof Error ? error.name : "unknown" }, "Task policy pack archive failed");
           throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "The policy pack could not be archived. Please retry." });
         }
@@ -1334,7 +1333,7 @@ export const appRouter = router({
           return await updateTaskQualityBudgetForUser({ ...input, userId: ctx.user.id });
         } catch (error) {
           const message = error instanceof Error ? error.message : "The quality budget could not be updated.";
-          if (message.includes("unavailable")) throw new TRPCError({ code: "NOT_FOUND", message });
+          if (message.includes("unavailable")) throw new TRPCError({ code: "NOT_FOUND", message: "That quality budget is unavailable." });
           logger.error({ event: "task_quality_budget_update_failed", taskId: input.taskId, userId: ctx.user.id, errorKind: error instanceof Error ? error.name : "unknown" }, "Task quality-budget update failed");
           throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "The quality budget could not be updated. Please retry." });
         }
@@ -1348,7 +1347,7 @@ export const appRouter = router({
           return await archiveTaskQualityBudgetForUser({ ...input, userId: ctx.user.id });
         } catch (error) {
           const message = error instanceof Error ? error.message : "The quality budget could not be archived.";
-          if (message.includes("unavailable")) throw new TRPCError({ code: "NOT_FOUND", message });
+          if (message.includes("unavailable")) throw new TRPCError({ code: "NOT_FOUND", message: "That quality budget is unavailable." });
           logger.error({ event: "task_quality_budget_archive_failed", taskId: input.taskId, userId: ctx.user.id, errorKind: error instanceof Error ? error.name : "unknown" }, "Task quality-budget archive failed");
           throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "The quality budget could not be archived. Please retry." });
         }
@@ -1374,7 +1373,7 @@ export const appRouter = router({
           return await updateTaskBrowserChangeSetForUser({ ...input, userId: ctx.user.id });
         } catch (error) {
           const message = error instanceof Error ? error.message : "The browser change set could not be updated.";
-          if (message.includes("unavailable")) throw new TRPCError({ code: "NOT_FOUND", message });
+          if (message.includes("unavailable")) throw new TRPCError({ code: "NOT_FOUND", message: "That browser change set is unavailable." });
           logger.error({ event: "task_browser_change_set_update_failed", taskId: input.taskId, userId: ctx.user.id, errorKind: error instanceof Error ? error.name : "unknown" }, "Task browser change-set update failed");
           throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "The browser change set could not be updated. Please retry." });
         }
@@ -1388,7 +1387,7 @@ export const appRouter = router({
           return await archiveTaskBrowserChangeSetForUser({ ...input, userId: ctx.user.id });
         } catch (error) {
           const message = error instanceof Error ? error.message : "The browser change set could not be archived.";
-          if (message.includes("unavailable")) throw new TRPCError({ code: "NOT_FOUND", message });
+          if (message.includes("unavailable")) throw new TRPCError({ code: "NOT_FOUND", message: "That browser change set is unavailable." });
           logger.error({ event: "task_browser_change_set_archive_failed", taskId: input.taskId, userId: ctx.user.id, errorKind: error instanceof Error ? error.name : "unknown" }, "Task browser change-set archive failed");
           throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "The browser change set could not be archived. Please retry." });
         }
