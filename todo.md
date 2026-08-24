@@ -3769,4 +3769,6 @@
 - [x] Assess the remaining `exceljs` and `pptxgenjs` transitive advisory paths before selecting a compatible upgrade or isolation strategy.
 - [x] Verify the current text-and-table-only PowerPoint export has no untrusted image-processing path; require server-side image type, byte-size, pixel-count, and decode-time limits before any future image export feature is added.
 - [x] Build and run a real spreadsheet export/import compatibility suite before assessing a scoped `exceljs → uuid` override.
+- [x] Reconcile the remaining-area audit with the verified dependency-remediation results and residual advisory boundaries.
+- [x] Reconcile the historical security-completeness audit with the verified current dependency-audit results.
 - [ ] Monitor ExcelJS for a compatible UUID upgrade; do not force an incompatible override while the verified Synthia export path uses only UUID `v4`.

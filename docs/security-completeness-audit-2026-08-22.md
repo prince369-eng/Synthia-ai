@@ -34,9 +34,9 @@ The following visible unavailable capabilities are **truthful configuration gate
 
 ## Remaining dependency risk
 
-The final production audit reports **three high advisories and one moderate advisory**. The remaining high paths are two SDK-owned `form-data@4.0.4` instances beneath the current HopX and Hyperbrowser releases, and `image-size@1.2.1` beneath the current PPTX export library. The installed versions are the latest available upstream releases, and the `image-size` advisories list no patched release. The application does not expose a generic multipart-upload route; task attachment metadata is validated and storage access is owner-checked. PPTX export currently composes task-owned textual content rather than parsing user-provided images. These limitations reduce exposure but do not eliminate supply-chain risk.
+The current production audit reports **two high advisories and one moderate advisory**. The prior SDK-owned `form-data@4.0.4` paths beneath the HopX and Hyperbrowser releases were removed by the reviewed fixed lockfile override. The remaining moderate ExcelJS-to-UUID advisory is constrained by the installed ExcelJS UUID `v4` call site and Synthia's real export/import compatibility contract; the advisory affects UUID `v3`, `v5`, and `v6` external-buffer operations. The two remaining high findings are `image-size@1.2.1` beneath the current PPTX export library, for which the audit identifies no patched release. The application does not expose a generic multipart-upload route; task attachment metadata is validated and storage access is owner-checked. PPTX export currently composes task-owned textual content rather than parsing user-provided images. These boundaries reduce exposure but do not eliminate supply-chain risk.
 
-> **Deployment decision:** keep the residual SDK and PPTX advisories visible and monitor their upstream release notes. Do not suppress the audit, disable legitimate sandbox/PPTX capabilities, or claim the dependency tree is vulnerability-free.
+> **Deployment decision:** keep the residual ExcelJS and PPTX advisories visible and monitor their upstream release notes. Do not suppress the audit, force an incompatible UUID override, add an unguarded image-processing path, or claim the dependency tree is vulnerability-free.
 
 ## Validation
 
@@ -47,3 +47,4 @@ Focused security tests cover the bounded session value, storage-key traversal re
 [1]: https://github.com/advisories/GHSA-hmw2-7cc7-3qxx "form-data CRLF injection advisory"
 [2]: https://github.com/advisories/GHSA-w3rx-r6r6-pgpr "image-size ICNS parser denial-of-service advisory"
 [3]: https://github.com/advisories/GHSA-5p2g-fcmc-qvqq "image-size JXL and HEIF parser denial-of-service advisory"
+[4]: https://github.com/advisories/GHSA-w5hq-g745-h8pq "uuid external-buffer bounds advisory"
