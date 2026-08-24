@@ -3784,4 +3784,5 @@
 - [x] Diagnose why the managed preview service is not returning a preview link despite a running development server, then restore or document the bounded recovery path.
 - [x] Record the user's decision to defer durable artifact storage configuration; leave storage-dependent live verification disabled.
 - [x] Recheck whether the managed preview service has issued a public preview mapping and report the verified user-visible status.
+- [x] Audit client HTML-rendering and external-link surfaces for configuration-independent XSS or unsafe-navigation hardening opportunities.
 - [ ] Monitor ExcelJS for a compatible UUID upgrade; do not force an incompatible override while the verified Synthia export path uses only UUID `v4`.

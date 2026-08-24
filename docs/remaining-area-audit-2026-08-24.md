@@ -60,6 +60,10 @@ The local Synthia server restarted cleanly, listens on the expected port, and re
 
 On a subsequent user-reported check, the managed screenshot service again reported no preview URL while the development server remained running and TypeScript remained clean. The user selected **deferred storage**, so artifact-store configuration and its live verification remain intentionally disabled until a storage provider is chosen.
 
+## Client HTML and navigation boundary
+
+A scoped client-source audit found one `innerHTML` use: the startup failure fallback renders a fixed literal message and does not interpolate task, provider, URL, or user-controlled data. No markdown-to-HTML renderer or dynamic HTML injection path was found. The only direct navigation helper validates the configured account-portal origin as public HTTPS without credentials, port, query, or fragment before it constructs the OAuth callback URL; it uses a fresh nonce and explicit user interaction. No client-side XSS or unsafe external-navigation correction was required by this review.
+
 ## Recommended sequence
 
 First, retain the fixed `form-data` lockfile resolution and the ExcelJS export/import contract while monitoring for an upstream-compatible UUID upgrade. Second, preserve the current no-image PowerPoint export boundary; if a future feature needs user-provided images, introduce strict type/size checks and an isolated execution boundary before dependency changes or image parsing. Third, conduct a real deployment readiness pass for OAuth redirects, worker supervision, Redis reliability, provider quotas, storage, and the integrations the operator actually intends to enable.
