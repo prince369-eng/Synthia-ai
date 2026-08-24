@@ -97,7 +97,7 @@ async function hydrateTaskAttachments(taskId: string, descriptor: SandboxDescrip
   if (!attachments.length) return [];
   const provider = sandboxProviderFor(descriptor.provider);
   const directory = await provider.execute(descriptor, "mkdir -p /workspace/inputs");
-  if (directory.exitCode !== 0) throw new Error(directory.stderr || "The attachment workspace could not be prepared.");
+  if (directory.exitCode !== 0) throw new Error("The attachment workspace could not be prepared.");
   return Promise.all(attachments.map(async (attachment, index) => {
     const url = attachment.sourceType === "library"
       ? await getTaskArtifactUrl(attachment.storageKey)

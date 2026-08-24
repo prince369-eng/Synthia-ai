@@ -334,6 +334,33 @@ describe("Synthia task worker recovery", () => {
     expect(JSON.stringify(db.appendTaskEvent.mock.calls)).not.toContain(privateFailure);
   });
 
+  it("does not propagate raw sandbox stderr when attachment-workspace preparation fails", async () => {
+    const privateStderr = "mkdir: permission denied /workspace/inputs bearer private-token";
+    db.getRecoverableSandboxForTask.mockResolvedValue({
+      id: "sandbox-row-1",
+      provider: "docker",
+      status: "active",
+      providerSandboxId: "sandbox-1",
+      region: "local",
+      maxSessionSeconds: 3_600,
+    });
+    db.listTaskAttachments.mockResolvedValue([{ sourceType: "library", filename: "reference.txt", fileType: "text/plain", storageKey: "task-input.txt" }]);
+    provider.execute.mockResolvedValue({ exitCode: 1, stdout: "", stderr: privateStderr });
+    llm.generateWithFallback.mockResolvedValue({
+      provider: "groq",
+      model: "model",
+      content: JSON.stringify({ narration: "I will inspect the attachment.", action: { kind: "run_command", command: "ls /workspace/inputs" } }),
+      usage: { inputTokens: 20, outputTokens: 5, totalTokens: 25 },
+    });
+    db.getUserById.mockResolvedValue({ email: null });
+    const { runTaskCycle } = await import("./taskRunner");
+
+    await expect(runTaskCycle(baseTask.id)).rejects.toThrow("The attachment workspace could not be prepared.");
+
+    expect(JSON.stringify(db.updateTaskForWorker.mock.calls)).not.toContain(privateStderr);
+    expect(JSON.stringify(db.appendTaskEvent.mock.calls)).not.toContain(privateStderr);
+  });
+
   it("pauses a task without re-enqueueing when all configured model routes are unavailable", async () => {
     const { LlmRouteUnavailableError } = await import("./llm");
     llm.generateWithFallback.mockRejectedValue(new LlmRouteUnavailableError());
