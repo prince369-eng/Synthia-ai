@@ -269,13 +269,17 @@ export async function generateWithFallback(input: {
     } catch (error) {
       const errorKind = error instanceof Error && error.name ? error.name : "unknown_provider_error";
       errorKinds.add(errorKind);
+      // Task routing passes one explicit candidate at a time. Treat every
+      // transport or provider failure on that bounded route as unavailable so
+      // the worker never falls through to its generic retry path before an
+      // agent action has happened.
+      if (input.candidateModels?.length) unavailableRoute = true;
       if (error instanceof LlmProviderError) {
         if (error.availability) unavailableRoute = true;
         // Automatic routing invokes one allowlisted route at a time. Any
         // provider-level failure on that route is safe to classify as a route
         // unavailable for this cycle, allowing the planner to advance only to
         // the next compatible configured candidate before any agent action.
-        if (input.candidateModels?.length) unavailableRoute = true;
         if (error.retryable || error.availability || Boolean(input.candidateModels?.length)) continue;
       }
       // Default provider routing has historically continued through every

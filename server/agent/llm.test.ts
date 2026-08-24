@@ -119,6 +119,17 @@ describe("structured model output parsing", () => {
     })).rejects.toBeInstanceOf(LlmRouteUnavailableError);
   });
 
+  it("converts a single explicit candidate transport failure into a bounded unavailable-route error", async () => {
+    ENV.groqApiKey = "groq-test-key";
+    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new TypeError("network unavailable")));
+
+    await expect(generateWithFallback({
+      purpose: "orchestrator",
+      candidateModels: [{ provider: "groq", model: "automatic-model" }],
+      messages: [{ role: "user", content: "Return a structured agent action." }],
+    })).rejects.toBeInstanceOf(LlmRouteUnavailableError);
+  });
+
   it("sends image parts only through a model explicitly configured for vision", async () => {
     ENV.openRouterApiKey = "openrouter-test-key";
     ENV.visionModels = ["openrouter:vision-model"];

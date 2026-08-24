@@ -3762,6 +3762,8 @@
 - [x] Review the remaining high-priority security, runtime, schema, and integration gaps without invoking paid or quota-consuming services.
 - [x] Verify representative high-priority user workflows and classify each remaining blocker as implementation, configuration, or external availability.
 - [x] Publish a prioritized next-step roadmap.
+- [x] Run one user-approved bounded text-only provider validation with web search, code execution, file writes, connectors, media, voice, browser, and Network Lab actions disabled; do not retry the previously stopped task.
+- [x] Convert bounded explicit-model transport failures into safe unavailable-route pauses instead of generic worker retries.
 
 ## Production dependency remediation
 - [x] Refresh the production lockfile so the existing safe `form-data` override is consistently applied to configured transitive paths.

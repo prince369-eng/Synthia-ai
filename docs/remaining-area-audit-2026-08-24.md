@@ -1,7 +1,7 @@
 # Synthia AI Remaining-Area Production-Readiness Audit
 
 **Audit date:** 24 August 2026  
-**Scope:** Repository implementation, runtime health, PostgreSQL schema readiness, deterministic tests, dependency advisory output, and configuration-gated product areas. This audit did not submit an agent task, call an LLM or media provider, access a user connector, or read user task content.
+**Scope:** Repository implementation, runtime health, PostgreSQL schema readiness, deterministic tests, dependency advisory output, and configuration-gated product areas. One subsequent user-approved, bounded text-only provider validation was run without reading task content or accessing any connector, media, browser, sandbox, device, or Network Lab capability.
 
 ## Executive assessment
 
@@ -14,7 +14,7 @@ The product is not yet safe to describe as fully production-ready for every adve
 | Priority | Area | Current status | Verified boundary | Remaining action |
 |---|---|---|---|---|
 | P0 | Production dependency advisories | **Partially remediated; monitored** | The fixed `form-data` override is applied. The production audit retains one moderate ExcelJS/UUID advisory and two high PptxGenJS/image-size advisories. | Monitor ExcelJS for a compatible UUID upgrade; retain the verified spreadsheet boundary and prohibit untrusted image processing in PowerPoint export until an upstream-safe replacement or isolated guarded path is available. |
-| P0 | Model/provider execution | **Configuration-gated** | Automatic planner fallback, malformed-response pause, and quota-safe media routing are implemented. | Maintain valid free-tier or paid provider routes, a running worker, Redis, and explicit usage limits. A failed route pauses safely rather than pretending success. |
+| P0 | Model/provider execution | **Configuration-gated** | Automatic planner fallback, malformed-response pause, transport-failure pause, and quota-safe media routing are implemented. | Maintain valid free-tier or paid provider routes, a running worker, Redis, and explicit usage limits. A failed route pauses safely rather than pretending success. |
 | P0 | Storage and external actions | **Configuration-gated** | Policies, approval states, and service boundaries exist. | Configure authorized storage and connector accounts before enabling write-capable tasks; retain user approval for consequential external actions. |
 | P1 | Authentication | **Implemented, deployment-gated** | Protected procedures and Manus OAuth flow are present. | Confirm production redirect configuration and execute production user acceptance testing before go-live. |
 | P1 | Voice and screen sharing | **Configuration-gated** | UI controls, protected dispatch, and safe unavailable states are present. | Supply valid LiveKit configuration and test only with a user’s explicit browser permission. |
@@ -45,6 +45,10 @@ The remaining advisories are inherited through `exceljs` (`uuid`) and `pptxgenjs
 ## Implementation-marker classification
 
 A scoped scan of application source, excluding tests and historical scan artifacts, found no active `TODO`, `FIXME`, `not implemented`, `coming soon`, or `stub` marker that represents an unfinished production feature. The remaining placeholder matches are standard input hints, such as field examples and accessible empty-state copy. The reviewed Office export menu invokes the authenticated task-bound export procedure and explicitly states that it does not start a model run. These are implemented control surfaces, not feature-only placeholders.
+
+## Approved bounded provider validation
+
+One explicitly approved text-only validation was created with web search, code execution, file writes, connectors, media, voice, browser, sandbox, and Network Lab capabilities disabled. It reached a provider transport failure and paused after that single attempt; no follow-up task cycle was queued and no prohibited action ran. The validation revealed that a non-provider transport exception on an explicit model candidate could reach the generic worker-retry path. The worker now classifies every explicit-candidate transport failure as an unavailable route before any agent action, and deterministic coverage verifies that it pauses safely rather than requeueing side effects. The previously stopped task remains untouched.
 
 ## Visual-audit availability
 
