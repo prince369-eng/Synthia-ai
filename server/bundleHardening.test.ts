@@ -15,6 +15,7 @@ describe("production client bundle hardening", () => {
     expect(viteConfig).toContain("if (isProductionBuild) {");
     expect(viteConfig).toContain("return html;");
     expect(viteConfig).toContain('delete bundle["synthia-preview.js"];');
+    expect(viteConfig).toContain('fs.rmSync(path.resolve(PROJECT_ROOT, "dist", "public", "__manus__", "debug-collector.js"), { force: true });');
     expect(packageManifest).toContain('"build": "vite build && esbuild server/_core/index.ts');
     expect(packageManifest).not.toMatch(/"build": [^\n]*synthia-preview\.js/);
     expect(packageManifest).toContain('"build:preview": "pnpm build && esbuild client/src/main.tsx');

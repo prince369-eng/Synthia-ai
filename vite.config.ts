@@ -174,6 +174,11 @@ function vitePluginSynthiaProductionPreviewGuard(): Plugin {
         delete bundle["synthia-preview.js"];
       }
     },
+    writeBundle() {
+      if (isProductionBuild) {
+        fs.rmSync(path.resolve(PROJECT_ROOT, "dist", "public", "__manus__", "debug-collector.js"), { force: true });
+      }
+    },
   };
 }
 
