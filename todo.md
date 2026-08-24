@@ -3714,4 +3714,17 @@
 ## Live queue and worker readiness follow-up
 - [x] Inspect the successfully persisted user-approved task and queue/worker readiness without dispatching or resuming task work.
 - [x] Correct only a confirmed queue configuration or recovery-boundary blocker, preserving explicit user control over task execution.
-- [ ] Add deterministic regression coverage and push any verified queue-reliability correction without force-overwriting GitHub history.
+- [x] Add deterministic regression coverage and push any verified queue-reliability correction without force-overwriting GitHub history.
+
+## User-approved constrained task execution
+- [x] Verify the approved task’s persisted constraints and configured model route before starting the separate worker.
+- [x] Persist the user-approved no-browser, no-code, and no-file permissions before worker startup so policy enforcement matches the task prompt.
+- [x] Start one dedicated worker for the approved text-only task and monitor only its bounded state/events.
+- [x] Stop the worker after the approved task settles, then inspect its persisted result without automatically retrying or expanding scope.
+
+## Confirmed BullMQ queue handoff correction
+- [x] Replace the illegal colon-containing BullMQ custom job ID with a queue-compatible generated ID and add regression coverage.
+- [x] Re-enqueue only the approved constrained task after the corrected queue handoff validates successfully.
+
+## Configured free-tier model availability follow-up
+- [ ] Replace or configure the unavailable automatic text-model route with a currently available user-approved free-tier text model before any task retry.

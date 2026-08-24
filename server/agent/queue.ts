@@ -7,6 +7,11 @@ export type AgentJob = { taskId: string };
 const QUEUE_NAME = "synthia-agent-cycles";
 let queue: Queue<AgentJob> | undefined;
 
+/** BullMQ forbids ':' in user-supplied job IDs. */
+export function agentCycleJobId(taskId: string, suffix = crypto.randomUUID()) {
+  return `${taskId}-${suffix}`;
+}
+
 function redisConnection() {
   if (!ENV.redisUrl) throw new Error("REDIS_URL is required before task execution can be queued.");
   return new IORedis(ENV.redisUrl, {
@@ -28,7 +33,7 @@ export function taskQueue() {
 export async function enqueueTaskCycle(taskId: string, delayMs = 0) {
   if (!isQueueConfigured()) return false;
   await taskQueue().add("agent-cycle", { taskId }, {
-    jobId: `${taskId}:${crypto.randomUUID()}`,
+    jobId: agentCycleJobId(taskId),
     delay: delayMs,
     attempts: 3,
     backoff: { type: "exponential", delay: 5_000 },
