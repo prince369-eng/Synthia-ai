@@ -2996,9 +2996,9 @@
 
 ## Confirmed provider selection
 
-- [ ] Implement the provider-neutral readiness contract for Gemini image generation using `gemini-3.1-flash-image`.
-- [ ] Implement the provider-neutral readiness contract for Gemini Omni Flash video generation.
-- [ ] Keep image and video generation disabled until Gemini credentials, storage, rate limits, and runtime verification are present.
+- [x] Implement the provider-neutral readiness contract for Gemini image generation using `gemini-3.1-flash-image`.
+- [x] Implement the provider-neutral readiness contract for Gemini Omni Flash video generation.
+- [x] Keep image and video generation disabled until Gemini credentials, storage, rate limits, and runtime verification are present.
 
 ## Continued Manus-style audit scope
 
@@ -3014,7 +3014,7 @@
 - [x] User selected Gemini image generation plus Gemini Omni Flash video generation.
 - [ ] User supplies credentials through secure project configuration when the key collection request is opened.
 - [ ] User publishes the verified application before live scheduler and media end-to-end tests.
-- [ ] GitHub push remains last and requires explicit confirmation.
+- [x] GitHub push remains last and requires explicit confirmation.
 
 ## Latest center refinement
 
