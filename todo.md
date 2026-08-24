@@ -3793,4 +3793,5 @@
 - [x] Audit server error responses for accidental exception, credential, or provider-detail disclosure.
 - [x] Replace raw heartbeat transport error messages with bounded client-safe responses and deterministic regression coverage.
 - [x] Replace raw voice-transcription transport and provider details with bounded client-safe failure metadata.
+- [x] Assess a compatible upstream remediation path for the retained PptxGenJS-to-image-size advisory without forcing a blind override; upstream `4.0.1` retains `image-size@^1.2.1`, so the guarded no-image export boundary remains in force.
 - [ ] Monitor ExcelJS for a compatible UUID upgrade; do not force an incompatible override while the verified Synthia export path uses only UUID `v4`.

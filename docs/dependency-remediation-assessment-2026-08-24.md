@@ -17,7 +17,7 @@ The application lockfile now resolves the affected `@hopx-ai/sdk` and `@hyperbro
 
 The ExcelJS maintainers’ issue tracker confirms that the latest `4.4.0` release still declares `uuid` `^8.3.0`; the corresponding request asks upstream to update it. A community discussion suggests a scoped override, but it also identifies possible compatibility implications from newer ESM-only UUID releases. This repository must therefore validate any scoped override against its own spreadsheet workflow before adopting it. [1] [2]
 
-The currently published PptxGenJS package page identifies `4.0.1` as the latest release. The current advisory gives no patched `image-size` release, so forcing a transitive version without compatibility evidence would not be an acceptable production remediation. [3]
+The currently published PptxGenJS package page identifies `4.0.1` as the latest release. Its upstream package manifest still declares `image-size` `^1.2.1`, so upgrading to the maintained release does **not** remove the retained dependency path. The current advisory gives no patched `image-size` release, so forcing a transitive version without compatibility evidence would not be an acceptable production remediation. [3] [4]
 
 ## Current spreadsheet-export exposure boundary
 
@@ -25,10 +25,12 @@ The verified server-side workbook export/import contract exercises the real Exce
 
 ## Current presentation-export exposure boundary
 
-The current server-side presentation export creates text, shapes, and tables only. It accepts task metadata and bounded event summaries; it has no `addImage` call and does not decode, fetch, inspect, or embed user-provided image bytes. Therefore, the image-processing advisory is **not reachable through the present task-export workflow**. Any future image-bearing presentation feature must first introduce server-side allowlisted MIME types, byte and pixel limits, bounded decoding, and deterministic rejection tests before it can use an image-processing path.
+The current server-side presentation export creates text, shapes, and tables only. It accepts task metadata and bounded event summaries; it has no `addImage` call and does not decode, fetch, inspect, or embed user-provided image bytes. Therefore, the image-processing advisory is **not reachable through the present task-export workflow**. The upstream image API accepts remote or local paths and base64 data and explicitly notes that image encoding consumes CPU, reinforcing the need for a guarded server-side ingestion boundary before the feature is ever enabled. [5] Any future image-bearing presentation feature must first introduce server-side allowlisted MIME types, byte and pixel limits, bounded decoding, and deterministic rejection tests before it can use an image-processing path.
 
 ## References
 
 [1]: https://github.com/exceljs/exceljs/issues/3041 "ExcelJS issue 3041 — UUID dependency security discussion"
 [2]: https://github.com/exceljs/exceljs/issues/3055 "ExcelJS issue 3055 — request to update vulnerable UUID dependency"
 [3]: https://www.npmjs.com/package/pptxgenjs "PptxGenJS package information"
+[4]: https://github.com/gitbrent/PptxGenJS/blob/master/package.json "PptxGenJS upstream package manifest"
+[5]: https://gitbrent.github.io/PptxGenJS/docs/api-images.html "PptxGenJS image API documentation"
