@@ -9,6 +9,7 @@ import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
 import { corsAllowedOrigins, ENV, isSameOriginRequest } from "./env";
+import { responseSecurityHeaders } from "./httpSecurity";
 import { registerTaskEventStream } from "../realtime/taskEventStream";
 import { runScheduledWorkflow } from "../scheduledWorkflows";
 import { logger } from "../security/logger";
@@ -55,12 +56,9 @@ async function startServer() {
       res.status(204).end();
       return;
     }
-    const scriptPolicy = ENV.isProduction ? "script-src 'self'" : "script-src 'self' 'unsafe-inline'";
-    res.setHeader("Content-Security-Policy", `default-src 'self'; ${scriptPolicy}; object-src 'none'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' wss:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'`);
-    res.setHeader("X-Content-Type-Options", "nosniff");
-    res.setHeader("X-Frame-Options", "DENY");
-    res.setHeader("Referrer-Policy", "no-referrer");
-    res.setHeader("Permissions-Policy", "camera=(), microphone=(self), geolocation=(), payment=()");
+    for (const [name, value] of Object.entries(responseSecurityHeaders(ENV.isProduction))) {
+      res.setHeader(name, value);
+    }
     next();
   });
   // Supports the largest supported base64 voice input while bounding memory use.

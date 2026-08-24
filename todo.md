@@ -3785,4 +3785,6 @@
 - [x] Record the user's decision to defer durable artifact storage configuration; leave storage-dependent live verification disabled.
 - [x] Recheck whether the managed preview service has issued a public preview mapping and report the verified user-visible status.
 - [x] Audit client HTML-rendering and external-link surfaces for configuration-independent XSS or unsafe-navigation hardening opportunities.
+- [x] Audit server response-security headers and origin controls for configuration-independent hardening opportunities.
+- [x] Add and test a production-only HSTS response-header contract without weakening local development or preview behavior.
 - [ ] Monitor ExcelJS for a compatible UUID upgrade; do not force an incompatible override while the verified Synthia export path uses only UUID `v4`.

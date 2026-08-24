@@ -64,6 +64,10 @@ On a subsequent user-reported check, the managed screenshot service again report
 
 A scoped client-source audit found one `innerHTML` use: the startup failure fallback renders a fixed literal message and does not interpolate task, provider, URL, or user-controlled data. No markdown-to-HTML renderer or dynamic HTML injection path was found. The only direct navigation helper validates the configured account-portal origin as public HTTPS without credentials, port, query, or fragment before it constructs the OAuth callback URL; it uses a fresh nonce and explicit user interaction. No client-side XSS or unsafe external-navigation correction was required by this review.
 
+## HTTP response-security boundary
+
+The server already limits credentialed CORS to configured public origins or exact same-origin managed previews, with no wildcard origin path. The response policy now centralizes content security, framing, MIME-sniffing, referrer, and permissions headers in a deterministic contract and adds `Strict-Transport-Security: max-age=31536000; includeSubDomains` only for production deployment. Development and preview modes deliberately omit HSTS so local HTTP access is not pinned to HTTPS. Focused header tests, strict TypeScript, the complete deterministic suite, and the production build passed; the existing classic preview-script and large client-chunk build advisories remain visible.
+
 ## Recommended sequence
 
 First, retain the fixed `form-data` lockfile resolution and the ExcelJS export/import contract while monitoring for an upstream-compatible UUID upgrade. Second, preserve the current no-image PowerPoint export boundary; if a future feature needs user-provided images, introduce strict type/size checks and an isolated execution boundary before dependency changes or image parsing. Third, conduct a real deployment readiness pass for OAuth redirects, worker supervision, Redis reliability, provider quotas, storage, and the integrations the operator actually intends to enable.
