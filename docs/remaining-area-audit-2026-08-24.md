@@ -58,6 +58,8 @@ The managed screenshot endpoint did not expose a preview URL during this review.
 
 The local Synthia server restarted cleanly, listens on the expected port, and returns HTTP 200 locally. The managed preview service did not publish a preview URL after restart, and the temporary public proxy returned its own unavailable page despite the healthy local process. This indicates a preview-routing or sandbox gateway availability issue rather than an application startup, type-check, or local HTTP failure. The safe recovery is to restart the managed service and wait for its preview mapping to be reissued; no source change, task submission, provider request, or external agent action is required. If the mapping remains absent, the project can still be checked from the Management UI once its preview service recovers.
 
+On a subsequent user-reported check, the managed screenshot service again reported no preview URL while the development server remained running and TypeScript remained clean. The user selected **deferred storage**, so artifact-store configuration and its live verification remain intentionally disabled until a storage provider is chosen.
+
 ## Recommended sequence
 
 First, retain the fixed `form-data` lockfile resolution and the ExcelJS export/import contract while monitoring for an upstream-compatible UUID upgrade. Second, preserve the current no-image PowerPoint export boundary; if a future feature needs user-provided images, introduce strict type/size checks and an isolated execution boundary before dependency changes or image parsing. Third, conduct a real deployment readiness pass for OAuth redirects, worker supervision, Redis reliability, provider quotas, storage, and the integrations the operator actually intends to enable.
