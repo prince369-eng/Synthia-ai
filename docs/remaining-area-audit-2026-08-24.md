@@ -46,6 +46,10 @@ The remaining advisories are inherited through `exceljs` (`uuid`) and `pptxgenjs
 
 A scoped scan of application source, excluding tests and historical scan artifacts, found no active `TODO`, `FIXME`, `not implemented`, `coming soon`, or `stub` marker that represents an unfinished production feature. The remaining placeholder matches are standard input hints, such as field examples and accessible empty-state copy. The reviewed Office export menu invokes the authenticated task-bound export procedure and explicitly states that it does not start a model run. These are implemented control surfaces, not feature-only placeholders.
 
+## Visual-audit availability
+
+The managed screenshot endpoint did not expose a preview URL during this review. A temporary local preview was recovered and reached its authenticated workspace loading state; no composer submission, task mutation, provider call, or user action was performed. A complete layout audit remains dependent on the authenticated workspace resolving in the preview environment, so the outstanding visual-refinement tracker items remain open rather than being inferred from source inspection alone.
+
 ## Recommended sequence
 
 First, retain the fixed `form-data` lockfile resolution and the ExcelJS export/import contract while monitoring for an upstream-compatible UUID upgrade. Second, preserve the current no-image PowerPoint export boundary; if a future feature needs user-provided images, introduce strict type/size checks and an isolated execution boundary before dependency changes or image parsing. Third, conduct a real deployment readiness pass for OAuth redirects, worker supervision, Redis reliability, provider quotas, storage, and the integrations the operator actually intends to enable.
