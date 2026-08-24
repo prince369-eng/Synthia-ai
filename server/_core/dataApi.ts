@@ -46,10 +46,7 @@ export async function callDataApi(
   });
 
   if (!response.ok) {
-    const detail = await response.text().catch(() => "");
-    throw new Error(
-      `Data API request failed (${response.status} ${response.statusText})${detail ? `: ${detail}` : ""}`
-    );
+    throw new Error(`Data API request failed with HTTP ${response.status}`);
   }
 
   const payload = await response.json().catch(() => ({}));
