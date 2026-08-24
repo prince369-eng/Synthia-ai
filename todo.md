@@ -3801,4 +3801,5 @@
 - [x] Review the remaining client bundle-size advisories and apply a measured, low-risk vendor chunking improvement: application and route entries are below the default warning threshold, while the lazy LiveKit runtime remains intentionally isolated for separate assessment.
 - [x] Audit and harden development debug-log collection so diagnostics retain event metadata without persisting prompt text, provider bodies, credentials, raw URLs, or exception details.
 - [x] Verify that the development-only browser debug collector is absent from production artifacts while preserving local development diagnostics.
+- [x] Bound local development diagnostic endpoint request parsing so malformed or oversized collector payloads are rejected before memory-intensive processing.
 - [ ] Monitor ExcelJS for a compatible UUID upgrade; do not force an incompatible override while the verified Synthia export path uses only UUID `v4`.

@@ -8,12 +8,19 @@ type DiagnosticSource = "browserConsole" | "networkRequests" | "sessionReplay";
 
 type UnknownRecord = Record<string, unknown>;
 
+export const MAX_DEBUG_LOG_PAYLOAD_BYTES = 256 * 1024;
+
 const HTTP_METHODS = new Set(["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]);
 const CONSOLE_LEVELS = new Set(["LOG", "DEBUG", "INFO", "WARN", "ERROR"]);
 const UI_KINDS = new Set(["click", "change", "focusin", "focusout", "keydown", "submit", "scroll", "navigate", "error", "unhandledrejection", "network_error"]);
 
 function asRecord(value: unknown): UnknownRecord {
   return value && typeof value === "object" && !Array.isArray(value) ? value as UnknownRecord : {};
+}
+
+/** True when a request body would exceed the bounded local diagnostics limit. */
+export function isDebugLogPayloadTooLarge(byteLength: unknown): boolean {
+  return typeof byteLength !== "number" || !Number.isSafeInteger(byteLength) || byteLength < 0 || byteLength > MAX_DEBUG_LOG_PAYLOAD_BYTES;
 }
 
 function finiteInteger(value: unknown, lowerBound: number, upperBound: number): number | null {

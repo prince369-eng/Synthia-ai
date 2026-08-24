@@ -5,7 +5,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { defineConfig, type Plugin, type ViteDevServer } from "vite";
 import { vitePluginManusRuntime } from "vite-plugin-manus-runtime";
-import { redactDebugLogEntries } from "./server/_core/debugDiagnostics";
+import { isDebugLogPayloadTooLarge, MAX_DEBUG_LOG_PAYLOAD_BYTES, redactDebugLogEntries } from "./server/_core/debugDiagnostics";
 import { revisionedClassicPreviewScript } from "./shared/previewBundle";
 
 // =============================================================================
@@ -107,16 +107,26 @@ function vitePluginManusDebugCollector(): Plugin {
           return next();
         }
 
-        const handlePayload = (payload: any) => {
+        const rejectPayload = (statusCode: 400 | 413, error: "INVALID_DEBUG_LOG_PAYLOAD" | "DEBUG_LOG_PAYLOAD_TOO_LARGE") => {
+          res.writeHead(statusCode, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ success: false, error }));
+        };
+
+        const handlePayload = (payload: unknown) => {
+          if (!payload || typeof payload !== "object") {
+            rejectPayload(400, "INVALID_DEBUG_LOG_PAYLOAD");
+            return;
+          }
+          const candidate = payload as Record<string, unknown>;
           // Write logs directly to files
-          if (payload.consoleLogs?.length > 0) {
-            writeToLogFile("browserConsole", payload.consoleLogs);
+          if (Array.isArray(candidate.consoleLogs) && candidate.consoleLogs.length > 0) {
+            writeToLogFile("browserConsole", candidate.consoleLogs);
           }
-          if (payload.networkRequests?.length > 0) {
-            writeToLogFile("networkRequests", payload.networkRequests);
+          if (Array.isArray(candidate.networkRequests) && candidate.networkRequests.length > 0) {
+            writeToLogFile("networkRequests", candidate.networkRequests);
           }
-          if (payload.sessionEvents?.length > 0) {
-            writeToLogFile("sessionReplay", payload.sessionEvents);
+          if (Array.isArray(candidate.sessionEvents) && candidate.sessionEvents.length > 0) {
+            writeToLogFile("sessionReplay", candidate.sessionEvents);
           }
 
           res.writeHead(200, { "Content-Type": "application/json" });
@@ -134,18 +144,38 @@ function vitePluginManusDebugCollector(): Plugin {
           return;
         }
 
+        const contentLengthHeader = req.headers["content-length"];
+        const declaredLength = typeof contentLengthHeader === "string" && /^\d+$/.test(contentLengthHeader)
+          ? Number(contentLengthHeader)
+          : null;
+        if (declaredLength !== null && isDebugLogPayloadTooLarge(declaredLength)) {
+          rejectPayload(413, "DEBUG_LOG_PAYLOAD_TOO_LARGE");
+          req.resume();
+          return;
+        }
+
         let body = "";
+        let receivedBytes = 0;
+        let rejected = false;
         req.on("data", (chunk) => {
+          if (rejected) return;
+          receivedBytes += Buffer.byteLength(chunk);
+          if (isDebugLogPayloadTooLarge(receivedBytes)) {
+            rejected = true;
+            rejectPayload(413, "DEBUG_LOG_PAYLOAD_TOO_LARGE");
+            req.resume();
+            return;
+          }
           body += chunk.toString();
         });
 
         req.on("end", () => {
+          if (rejected) return;
           try {
             const payload = JSON.parse(body);
             handlePayload(payload);
           } catch (e) {
-            res.writeHead(400, { "Content-Type": "application/json" });
-            res.end(JSON.stringify({ success: false, error: "INVALID_DEBUG_LOG_PAYLOAD" }));
+            rejectPayload(400, "INVALID_DEBUG_LOG_PAYLOAD");
           }
         });
       });

@@ -1,7 +1,15 @@
 import { describe, expect, it } from "vitest";
-import { redactDebugLogEntries } from "./debugDiagnostics";
+import { isDebugLogPayloadTooLarge, MAX_DEBUG_LOG_PAYLOAD_BYTES, redactDebugLogEntries } from "./debugDiagnostics";
 
 describe("redactDebugLogEntries", () => {
+  it("rejects malformed, negative, and oversized diagnostic payload lengths", () => {
+    expect(isDebugLogPayloadTooLarge(MAX_DEBUG_LOG_PAYLOAD_BYTES)).toBe(false);
+    expect(isDebugLogPayloadTooLarge(MAX_DEBUG_LOG_PAYLOAD_BYTES + 1)).toBe(true);
+    expect(isDebugLogPayloadTooLarge(-1)).toBe(true);
+    expect(isDebugLogPayloadTooLarge(Number.NaN)).toBe(true);
+    expect(isDebugLogPayloadTooLarge("1024")).toBe(true);
+  });
+
   it("keeps console diagnostics structural without retaining arguments or stack details", () => {
     expect(redactDebugLogEntries("browserConsole", [{
       timestamp: 1700000000000,
