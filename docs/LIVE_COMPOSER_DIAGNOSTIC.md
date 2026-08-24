@@ -21,3 +21,11 @@ The static-preview response was then changed from an embedded multi-megabyte com
 The earlier public proxy was confirmed to serve a stale inline compatibility bundle. A fresh same-origin proxy served the current versioned classic bundle and bounded RPC lifecycle script. The user reproduced the composer failure there with the approved text-only prompt. No bounded lifecycle, composer-boundary, or tRPC-error log record reached the server from that submission.
 
 A separate authenticated browser observation on the fresh proxy initially rendered the authenticated shell and then resolved to the current composer with an empty, owner-scoped task list. This proves that the current classic client can complete authentication and read-only task listing. The remaining discrepancy is localized to the composer mutation transport or its client-visible error object, not provider dispatch or worker execution. No further task was submitted during this observation.
+
+## Confirmed proxy-origin boundary and repair
+
+A preview-only, protected no-op mutation was added to exercise the same batched `POST` and SuperJSON response path as the composer without persisting a task, queueing work, or calling any provider. The authenticated no-op request initially failed on the temporary reverse-proxy preview host before reaching the tRPC adapter. The server CORS guard accepted configured public origins but did not recognize that proxied host as the browser's exact same origin.
+
+The origin guard now permits a request only when its `Origin` exactly matches the request's externally visible protocol and host, using the existing forwarded-HTTPS convention. This does not broaden cross-origin access: configured-origin checks remain in place, and non-matching origins remain rejected.
+
+After restart, the same authenticated no-op mutation completed in the browser. The bounded on-page status reported completion, the workspace loaded with an empty task list, and no task was created or executed. This verifies the protected mutation transport and response envelope through the repaired preview boundary. A user task submission has not been repeated automatically.

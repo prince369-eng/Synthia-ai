@@ -3692,7 +3692,7 @@
 - [x] Extract and trace the bounded RPC lifecycle evidence from the fresh-preview composer reproduction captured in the user screenshot.
 - [x] Add a bounded client-side composer failure report that records only transport category and tRPC code, never task text, payloads, messages, or credentials.
 - [ ] Verify why the bounded composer diagnostic callback does not reach the fresh-preview server before requesting any further user retry.
-- [ ] Reproduce the remaining composer client failure through a no-op diagnostic contract rather than another task creation request.
+- [x] Reproduce the remaining composer client failure through a no-op diagnostic contract rather than another task creation request.
 - [x] Add a preview-scoped authenticated no-op tRPC mutation that verifies batched POST and SuperJSON response handling without changing task, queue, provider, or external-service state.
 - [x] Render a query-only bounded probe status so silent browser-branch execution can be distinguished from a missing telemetry callback without exposing transport details.
 - [x] Expose only the bounded probe outcome and allow-listed tRPC code in preview DOM metadata so the authenticated mutation failure can be classified without response or task data.
@@ -3700,12 +3700,13 @@
 - [x] Identify and correct the fresh-preview browser transport condition that classified the composer request as a network failure before tRPC reached the server: duplicate classic-client injection.
 - [x] Remove duplicate classic-preview script injection so static and development preview pages mount exactly one workspace client.
 - [x] Verify the fresh preview completes authenticated workspace loading and task-list rendering after the single-client correction without submitting a task.
-- [ ] Capture and trace the malformed composer response now received after the duplicate-client transport correction.
-- [ ] Correct the confirmed composer API response-contract boundary without resubmitting task work.
-- [ ] Permit only verified same-origin proxied preview requests through the CORS guard so authenticated mutation responses reach the tRPC adapter.
+- [x] Capture and trace the malformed composer response now received after the duplicate-client transport correction.
+- [x] Correct the confirmed composer API response-contract boundary without resubmitting task work.
+- [x] Permit only verified same-origin proxied preview requests through the CORS guard so authenticated mutation responses reach the tRPC adapter.
 - [x] Extend bounded client tRPC recognition to every standard protocol error code so malformed responses are classified rather than treated as unknown.
 - [x] Classify safe response-decoding and client-runtime error categories in composer diagnostics without recording raw error messages or response bodies.
 - [x] Correct cross-bundle tRPC error recognition so the composer displays and reports safe structured error codes instead of falling back to a generic message.
 - [x] Apply structural cross-bundle tRPC recognition to global mutation and query error handling so client diagnostics and session recovery are consistent.
 - [x] Add stage-specific safe error conversion around composer preparation steps that run before persistence.
 - [x] Replace the composer’s generic client fallback with bounded visible transport or tRPC recovery guidance that never exposes error messages or task content.
+- [x] Update the live composer diagnostic record with the confirmed proxy-origin rejection and successful authenticated no-op mutation after the CORS correction.
