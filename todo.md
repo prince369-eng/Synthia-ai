@@ -3796,4 +3796,5 @@
 - [x] Assess a compatible upstream remediation path for the retained PptxGenJS-to-image-size advisory without forcing a blind override; upstream `4.0.1` retains `image-size@^1.2.1`, so the guarded no-image export boundary remains in force.
 - [x] Audit package-manager install-script and dependency execution controls: record reviewed pnpm 10 allow and deny lists, require strict failure for future unreviewed dependency builds, and retain application lifecycle-script behavior.
 - [x] Audit repository ignore rules and production build-output settings for credential or artifact-containment gaps without reading secret values; keep the development-only classic preview bundle out of production artifacts.
+- [x] Harden repository ignore rules so uncommitted environment-configuration filename variants remain excluded without reading or changing secret values.
 - [ ] Monitor ExcelJS for a compatible UUID upgrade; do not force an incompatible override while the verified Synthia export path uses only UUID `v4`.
