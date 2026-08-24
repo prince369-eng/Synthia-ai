@@ -58,6 +58,12 @@ const validatePayload = (input: NotificationPayload): NotificationPayload => {
   return { title, content };
 };
 
+const notificationUnavailableError = (): TRPCError =>
+  new TRPCError({
+    code: "SERVICE_UNAVAILABLE",
+    message: "Notifications are unavailable. Try again later.",
+  });
+
 /**
  * Dispatches a project-owner notification through the Manus Notification Service.
  * Returns `true` if the request was accepted, `false` when the upstream service
@@ -70,17 +76,11 @@ export async function notifyOwner(
   const { title, content } = validatePayload(payload);
 
   if (!ENV.forgeApiUrl) {
-    throw new TRPCError({
-      code: "INTERNAL_SERVER_ERROR",
-      message: "Notification service URL is not configured.",
-    });
+    throw notificationUnavailableError();
   }
 
   if (!ENV.forgeApiKey) {
-    throw new TRPCError({
-      code: "INTERNAL_SERVER_ERROR",
-      message: "Notification service API key is not configured.",
-    });
+    throw notificationUnavailableError();
   }
 
   const endpoint = buildEndpointUrl(ENV.forgeApiUrl);

@@ -3810,4 +3810,5 @@
 - [x] Audit the task-owned artifact storage proxy authorization, path normalization, signed redirect validation, and response-header boundary without accessing storage.
 - [x] Audit and harden public-web destination validation against private IPv6-mapped and special-use network addresses without invoking outbound requests.
 - [x] Audit core configured-service URL and error boundaries; ensure upstream Data API response bodies cannot become a reusable raw-error disclosure path.
+- [x] Audit notification delivery failure handling; preserve payload validation while preventing internal configuration details from reaching regular client paths.
 - [ ] Monitor ExcelJS for a compatible UUID upgrade; do not force an incompatible override while the verified Synthia export path uses only UUID `v4`.
