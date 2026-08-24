@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { assertDockerSandboxId, assertViewOnlyTerminalCommand, dockerSandboxRunArguments } from "./sandbox";
+import { assertDockerSandboxId, assertViewOnlyTerminalCommand, dockerSandboxRunArguments, sandboxOperationFailure } from "./sandbox";
 
 describe("interactive terminal policy", () => {
   it("permits bounded read-only inspection commands within the workspace", () => {
@@ -28,5 +28,14 @@ describe("local Docker sandbox isolation", () => {
     for (const value of ["", "other-container", "--privileged", "synthia-../../host", "synthia-task with space"]) {
       expect(() => assertDockerSandboxId(value)).toThrow("Invalid Docker sandbox descriptor");
     }
+  });
+});
+
+describe("sandbox failure boundary", () => {
+  it("returns stable operation-specific failures without command or provider detail", () => {
+    expect(sandboxOperationFailure("openUrl").message).toBe("The sandbox browser could not open the requested URL.");
+    expect(sandboxOperationFailure("readFile").message).toBe("The sandbox file could not be read.");
+    expect(sandboxOperationFailure("writeFile").message).toBe("The sandbox file could not be written.");
+    expect(sandboxOperationFailure("checkpoint").message).toBe("The sandbox checkpoint could not be created.");
   });
 });

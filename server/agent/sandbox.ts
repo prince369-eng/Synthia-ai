@@ -32,6 +32,17 @@ export type SandboxFile = {
   content: string | Uint8Array;
 };
 
+const SANDBOX_OPERATION_FAILURES = {
+  openUrl: "The sandbox browser could not open the requested URL.",
+  readFile: "The sandbox file could not be read.",
+  writeFile: "The sandbox file could not be written.",
+  checkpoint: "The sandbox checkpoint could not be created.",
+} as const;
+
+export function sandboxOperationFailure(operation: keyof typeof SANDBOX_OPERATION_FAILURES) {
+  return new Error(SANDBOX_OPERATION_FAILURES[operation]);
+}
+
 export interface SandboxProvider {
   readonly name: SandboxProviderName;
   create(taskId: string): Promise<SandboxDescriptor>;
@@ -173,7 +184,7 @@ export class E2BSandboxProvider implements SandboxProvider {
   async checkpoint(descriptor: SandboxDescriptor): Promise<string> {
     const sandbox = await this.connect(descriptor);
     const [fork] = await sandbox.fork({ count: 1 });
-    if (fork instanceof Error) throw fork;
+    if (fork instanceof Error) throw sandboxOperationFailure("checkpoint");
     await sandbox.kill();
     return fork.sandboxId;
   }
@@ -254,7 +265,7 @@ export class HopxSandboxProvider implements SandboxProvider {
     const parsed = await assertPublicWebDestination(url);
     const encodedUrl = Buffer.from(parsed.toString(), "utf8").toString("base64");
     const result = await this.execute(descriptor, `url=$(printf %s '${encodedUrl}' | base64 -d); xdg-open "$url"`, 30_000);
-    if (result.exitCode !== 0) throw new Error(result.stderr || "The HopX desktop browser could not open the URL.");
+    if (result.exitCode !== 0) throw sandboxOperationFailure("openUrl");
   }
 
   async screenshot(descriptor: SandboxDescriptor): Promise<SandboxScreenshot> {
@@ -315,7 +326,7 @@ export class DockerSandboxProvider implements SandboxProvider {
   async readFile(descriptor: SandboxDescriptor, path: string): Promise<string> {
     requireSafePath(path);
     const result = await this.execute(descriptor, `cat -- '${path.replace(/'/g, "'\\''")}'`);
-    if (result.exitCode !== 0) throw new Error(result.stderr || "The sandbox file could not be read.");
+    if (result.exitCode !== 0) throw sandboxOperationFailure("readFile");
     return result.stdout;
   }
 
@@ -324,7 +335,7 @@ export class DockerSandboxProvider implements SandboxProvider {
     const content = (typeof file.content === "string" ? Buffer.from(file.content, "utf8") : Buffer.from(file.content)).toString("base64");
     const escapedPath = file.path.replace(/'/g, "'\\''");
     const result = await this.execute(descriptor, `printf %s '${content}' | base64 -d > '${escapedPath}'`);
-    if (result.exitCode !== 0) throw new Error(result.stderr || "The sandbox file could not be written.");
+    if (result.exitCode !== 0) throw sandboxOperationFailure("writeFile");
   }
 
   async openUrl(): Promise<void> {
