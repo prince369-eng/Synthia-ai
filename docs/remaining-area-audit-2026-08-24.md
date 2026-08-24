@@ -126,6 +126,8 @@ The Network Lab runner should remain after those application-level controls. It 
 
 The core image-generation, image-model listing, map-proxy, LLM invocation, and LLM model-listing adapters now discard provider response bodies and status text on failed upstream requests. Their thrown failures retain only a stable operation label and numeric HTTP status. This preserves retry and operator classification while preventing provider-controlled body text from becoming a reusable error or logging disclosure path. The contract is covered by deterministic source-boundary regression and was validated without making an upstream request.
 
+The agent LLM router applies the same boundary while retaining its route-safety behavior: it may inspect a failed response locally to identify an unavailable route, but its retained provider error contains only the provider identifier and numeric HTTP status. Retryability and route-availability classification remain unchanged, and explicit automatic candidates still pause safely before any agent action when unavailable.
+
 ## References
 
 [1]: https://pnpm.io/10.x/settings#strictdepbuilds "pnpm 10.x Settings — strictDepBuilds"

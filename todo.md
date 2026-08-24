@@ -3814,4 +3814,5 @@
 - [x] Remove raw upstream response text from structured provider logs while retaining bounded failure classification and status observability.
 - [x] Expand structured logger redaction for credential-bearing cookie, token, secret, and request-header fields with serialization regression coverage.
 - [x] Remove raw upstream response bodies from core image, map, and LLM adapter errors while retaining bounded status and failure classification.
+- [x] Remove raw upstream response bodies from agent LLM provider errors while preserving retry and route-availability classification.
 - [ ] Monitor ExcelJS for a compatible UUID upgrade; do not force an incompatible override while the verified Synthia export path uses only UUID `v4`.

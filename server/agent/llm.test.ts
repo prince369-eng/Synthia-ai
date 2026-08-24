@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { ENV } from "../_core/env";
-import { generateWithFallback, isConfiguredVisionModel, LlmRouteUnavailableError, LlmStructuredOutputError, parseStructuredModelOutput } from "./llm";
+import { boundedLlmProviderFailureMessage, generateWithFallback, isConfiguredVisionModel, LlmRouteUnavailableError, LlmStructuredOutputError, parseStructuredModelOutput } from "./llm";
 
 const environmentSnapshot = {
   groqApiKey: ENV.groqApiKey,
@@ -28,6 +28,10 @@ afterEach(() => {
 });
 
 describe("structured model output parsing", () => {
+  it("formats provider failures with operation-safe status metadata only", () => {
+    expect(boundedLlmProviderFailureMessage("groq", 503)).toBe("groq returned HTTP 503.");
+  });
+
   it("accepts direct JSON agent decisions", () => {
     expect(parseStructuredModelOutput<{ narration: string }>(`{"narration":"Inspecting the task."}`)).toEqual({ narration: "Inspecting the task." });
   });

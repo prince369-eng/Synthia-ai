@@ -116,6 +116,10 @@ export function isConfiguredVisionModel(model: { provider: LlmProviderName; mode
   return Boolean(model && ENV.visionModels.includes(`${model.provider}:${model.model}`));
 }
 
+export function boundedLlmProviderFailureMessage(provider: LlmProviderName, status: number) {
+  return `${provider} returned HTTP ${status}.`;
+}
+
 async function parseJsonResponse(provider: LlmProviderName, response: Response) {
   const body = await response.text();
   if (!response.ok) {
@@ -126,7 +130,7 @@ async function parseJsonResponse(provider: LlmProviderName, response: Response) 
       : normalizedBody.includes("no_available_channel") || normalizedBody.includes("cannot be routed")
         ? "route_unavailable"
         : null;
-    throw new LlmProviderError(`${provider} returned ${response.status}: ${body.slice(0, 800)}`, provider, retryable, availability);
+    throw new LlmProviderError(boundedLlmProviderFailureMessage(provider, response.status), provider, retryable, availability);
   }
   try {
     return JSON.parse(body) as Record<string, unknown>;
