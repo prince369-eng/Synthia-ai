@@ -23,12 +23,25 @@ function isPrivateIpv4(address: string) {
     (first === 172 && second >= 16 && second <= 31) ||
     (first === 192 && second === 0) ||
     (first === 192 && second === 168) ||
-    (first === 198 && (second === 18 || second === 19));
+    (first === 192 && second === 88) ||
+    (first === 198 && (second === 18 || second === 19 || second === 51)) ||
+    (first === 203 && second === 0);
+}
+
+function mappedIpv4(address: string): string | null {
+  const dotted = address.match(/^::ffff:(\d+\.\d+\.\d+\.\d+)$/i)?.[1];
+  if (dotted) return dotted;
+  const hexadecimal = address.match(/^::ffff:([\da-f]{1,4}):([\da-f]{1,4})$/i);
+  if (!hexadecimal) return null;
+  const high = Number.parseInt(hexadecimal[1], 16);
+  const low = Number.parseInt(hexadecimal[2], 16);
+  return [high >>> 8, high & 0xff, low >>> 8, low & 0xff].join(".");
 }
 
 function isPrivateIpv6(address: string) {
   const normalized = address.toLowerCase();
-  return normalized === "::" || normalized === "::1" || normalized.startsWith("fe80:") || normalized.startsWith("fc") || normalized.startsWith("fd");
+  const mapped = mappedIpv4(normalized);
+  return normalized === "::" || normalized === "::1" || normalized.startsWith("fe80:") || normalized.startsWith("fc") || normalized.startsWith("fd") || normalized.startsWith("100:") || Boolean(mapped && isPrivateIpv4(mapped));
 }
 
 function isIpLiteral(hostname: string) {

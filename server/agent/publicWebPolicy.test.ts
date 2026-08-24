@@ -29,4 +29,16 @@ describe("public-web destination policy", () => {
     lookup.mockResolvedValue([{ address: "10.20.30.40", family: 4 }]);
     await expect(assertPublicWebDestination("https://research.example.com/")).rejects.toThrow("exclusively to public internet addresses");
   });
+
+  it.each([
+    { address: "::ffff:127.0.0.1", family: 6 },
+    { address: "::ffff:7f00:1", family: 6 },
+    { address: "::ffff:169.254.169.254", family: 6 },
+    { address: "100::1", family: 6 },
+    { address: "198.51.100.42", family: 4 },
+    { address: "203.0.113.42", family: 4 },
+  ])("blocks special-use DNS address $address", async ({ address, family }) => {
+    lookup.mockResolvedValue([{ address, family }]);
+    await expect(assertPublicWebDestination("https://research.example.com/")).rejects.toThrow("exclusively to public internet addresses");
+  });
 });

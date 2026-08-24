@@ -3808,4 +3808,5 @@
 - [x] Audit the secure-transport and reverse-proxy trust boundary for session cookies; preserve current managed-path behavior pending an explicit deployment topology decision rather than inventing a default trust policy.
 - [ ] Before enabling an external deployment, configure and validate an explicit reverse-proxy trust boundary for forwarded HTTPS headers, session cookies, OAuth callbacks, and task-owned artifact origins.
 - [x] Audit the task-owned artifact storage proxy authorization, path normalization, signed redirect validation, and response-header boundary without accessing storage.
+- [x] Audit and harden public-web destination validation against private IPv6-mapped and special-use network addresses without invoking outbound requests.
 - [ ] Monitor ExcelJS for a compatible UUID upgrade; do not force an incompatible override while the verified Synthia export path uses only UUID `v4`.
