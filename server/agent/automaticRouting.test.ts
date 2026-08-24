@@ -9,18 +9,22 @@ const models = [
 
 describe("resolveAutomaticTaskModel", () => {
   it("preserves a user's explicit model selection", () => {
-    expect(resolveAutomaticTaskModel({ selectedModel: { provider: "agnes", model: "agnes-2.0-flash" }, involvesCode: true, attachments: [{ fileType: "image/png" }], models })).toEqual({ model: { provider: "agnes", model: "agnes-2.0-flash" }, reason: "manual" });
+    expect(resolveAutomaticTaskModel({ selectedModel: { provider: "agnes", model: "agnes-2.0-flash" }, involvesCode: true, attachments: [{ fileType: "image/png" }], models })).toEqual({ model: { provider: "agnes", model: "agnes-2.0-flash" }, candidates: [{ provider: "agnes", model: "agnes-2.0-flash" }], reason: "manual" });
   });
 
   it("selects an available vision route for visual attachments", () => {
-    expect(resolveAutomaticTaskModel({ involvesCode: false, attachments: [{ fileType: "image/webp" }], models })).toEqual({ model: { provider: "agnes", model: "agnes-2.0-flash" }, reason: "vision_input" });
+    expect(resolveAutomaticTaskModel({ involvesCode: false, attachments: [{ fileType: "image/webp" }], models })).toEqual({ model: { provider: "agnes", model: "agnes-2.0-flash" }, candidates: [{ provider: "agnes", model: "agnes-2.0-flash" }], reason: "vision_input" });
   });
 
-  it("selects an available code-focused route for development tasks", () => {
-    expect(resolveAutomaticTaskModel({ involvesCode: true, attachments: [], models })).toEqual({ model: { provider: "aihubmix", model: "coding-glm-5.2-free" }, reason: "code_task" });
+  it("ranks code routes first and retains compatible configured fallback routes", () => {
+    expect(resolveAutomaticTaskModel({ involvesCode: true, attachments: [], models })).toEqual({ model: { provider: "aihubmix", model: "coding-glm-5.2-free" }, candidates: [{ provider: "aihubmix", model: "coding-glm-5.2-free" }, { provider: "aihubmix", model: "glm-5.2-free" }, { provider: "agnes", model: "agnes-2.0-flash" }], reason: "code_task" });
   });
 
-  it("falls back to the configured primary route for ordinary tasks", () => {
-    expect(resolveAutomaticTaskModel({ involvesCode: false, attachments: [], models })).toEqual({ model: { provider: "aihubmix", model: "glm-5.2-free" }, reason: "primary" });
+  it("ranks the configured primary route first and retains all configured text fallbacks", () => {
+    expect(resolveAutomaticTaskModel({ involvesCode: false, attachments: [], models })).toEqual({ model: { provider: "aihubmix", model: "glm-5.2-free" }, candidates: [{ provider: "aihubmix", model: "glm-5.2-free" }, { provider: "aihubmix", model: "coding-glm-5.2-free" }, { provider: "agnes", model: "agnes-2.0-flash" }], reason: "primary" });
+  });
+
+  it("does not send visual inputs to a text-only fallback when no vision route is configured", () => {
+    expect(resolveAutomaticTaskModel({ involvesCode: false, attachments: [{ fileType: "image/png" }], models: models.slice(0, 2) })).toEqual({ model: undefined, candidates: [], reason: "no_compatible_model" });
   });
 });

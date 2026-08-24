@@ -298,7 +298,7 @@ export async function runTaskCycle(taskId: string) {
       attachments,
       models: runtimeConfiguredComposerModels(),
     });
-    const selectedModel = routing.model;
+    if (!routing.candidates.length) throw new LlmRouteUnavailableError();
     const personalization = await getApprovedPersonalizationContext(task.userId);
     const personalizationPrompt = personalizationInstruction(personalization);
     const policyPacksPrompt = policyPackPlanningContext(await listEnabledPolicyPacksForPlanning(task.userId, task.goal));
@@ -316,23 +316,40 @@ export async function runTaskCycle(taskId: string) {
         })),
       });
     const skillsPrompt = skillPlanningContext(taskSkills);
-    const model = await generateWithFallback({
-    purpose: "orchestrator",
-    selectedModel,
-    messages: [
-      {
-        role: "system",
-        content: [
-          "You are Synthia AI's task orchestrator. Choose exactly one next action. Never execute external side effects; use external_effect to request approval. Keep all sandbox files under /workspace. Task input attachments are hydrated as read-only files in /workspace/inputs before a sandbox action; inspect them only through sandbox commands. Use publish_file with a workspace path, a plain filename, and a MIME type to deliver a file. Return only JSON: { narration: string, action: { kind: respond|web_search|run_command|write_file|open_url|capture_screen|publish_file|complete|external_effect, ... }, plan?: [{id,title,state}] }.",
-          personalizationPrompt,
-          policyPacksPrompt,
-          skillsPrompt,
-        ].filter(Boolean).join("\n\n"),
-      },
-      { role: "user", content: await taskModelInput({ title: task.title, goal: task.goal, plan: task.plan, attachments, selectedModel, events: taskContext(events) }) },
-    ],
-  });
-    const decision = validatedDecision(parseStructuredModelOutput<ModelDecision>(model.content));
+    let model: Awaited<ReturnType<typeof generateWithFallback>> | undefined;
+    let decision: ModelDecision | undefined;
+    let lastAutomaticRouteError: LlmRouteUnavailableError | LlmStructuredOutputError | undefined;
+    for (const selectedModel of routing.candidates) {
+      try {
+        const candidateModel = await generateWithFallback({
+          purpose: "orchestrator",
+          selectedModel,
+          candidateModels: [selectedModel],
+          messages: [
+            {
+              role: "system",
+              content: [
+                "You are Synthia AI's task orchestrator. Choose exactly one next action. Never execute external side effects; use external_effect to request approval. Keep all sandbox files under /workspace. Task input attachments are hydrated as read-only files in /workspace/inputs before a sandbox action; inspect them only through sandbox commands. Use publish_file with a workspace path, a plain filename, and a MIME type to deliver a file. Return only JSON: { narration: string, action: { kind: respond|web_search|run_command|write_file|open_url|capture_screen|publish_file|complete|external_effect, ... }, plan?: [{id,title,state}] }.",
+                personalizationPrompt,
+                policyPacksPrompt,
+                skillsPrompt,
+              ].filter(Boolean).join("\n\n"),
+            },
+            { role: "user", content: await taskModelInput({ title: task.title, goal: task.goal, plan: task.plan, attachments, selectedModel, events: taskContext(events) }) },
+          ],
+        });
+        model = candidateModel;
+        decision = validatedDecision(parseStructuredModelOutput<ModelDecision>(candidateModel.content));
+        break;
+      } catch (error) {
+        if (routing.reason !== "manual" && (error instanceof LlmRouteUnavailableError || error instanceof LlmStructuredOutputError)) {
+          lastAutomaticRouteError = error;
+          continue;
+        }
+        throw error;
+      }
+    }
+    if (!model || !decision) throw lastAutomaticRouteError ?? new LlmRouteUnavailableError();
     await recordUsageForTask({
     userId: task.userId,
     taskId: task.id,

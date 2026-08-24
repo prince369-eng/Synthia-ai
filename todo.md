@@ -3736,3 +3736,11 @@
 - [x] Classify unavailable or rate-limited model-route failures and move the task to `needs_input` without automatic BullMQ retries.
 - [x] Add deterministic regression coverage proving provider-unavailability errors never re-enqueue task cycles.
 - [x] Classify malformed structured model responses as `needs_input` without retries, redact worker exception payloads, and validate the full suite before publication.
+
+## Automatic model routing and switching
+- [x] Audit configured model capabilities, task-type detection, user overrides, and provider fallback order.
+- [x] Select the best configured available text or vision model automatically for planning tasks while preserving an explicit user model choice.
+- [x] Switch safely to another compatible configured planning model when a route is unavailable, rate-limited, or returns an unusable response before any agent action is executed.
+- [x] Present user-facing automatic-routing status without exposing provider credentials or backend implementation details.
+- [x] Add deterministic coverage and run the full validation suite for the verified automatic-routing update.
+- [ ] Extend the separate image, video, and audio generation pipeline with equivalent provider-fallback execution after its existing automatic capability selection has chosen a media route.

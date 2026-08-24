@@ -137,7 +137,7 @@ describe("task composer attachments", () => {
     expect(screen.getByRole("button", { name: "Browse all available apps" })).toBeTruthy();
   });
 
-  it("keeps long configured model catalogs in a bounded scrollable selector with model names and capabilities only", async () => {
+  it("keeps long configured model catalogs in a bounded selector with an Automatic option, model names, and capability labels only", async () => {
     const user = userEvent.setup();
     dashboardState.models = [
       { id: "aihubmix:glm-5.2-free", provider: "aihubmix", model: "glm-5.2-free", label: "Primary", capabilities: ["text", "vision"] },
@@ -148,7 +148,8 @@ describe("task composer attachments", () => {
     await user.click(screen.getByRole("button", { name: "Choose model" }));
     const menu = screen.getByTestId("composer-model-menu");
     expect(menu.getAttribute("data-scrollable")).toBe("true");
-    expect(within(menu).getAllByText("glm-5.2-free")).toHaveLength(2);
+    expect(within(menu).getByText("Automatic")).toBeTruthy();
+    expect(within(menu).getAllByText("glm-5.2-free")).toHaveLength(1);
     expect(within(menu).getByText("agnes-2.0-flash")).toBeTruthy();
     expect(within(menu).getByText("Text · Vision")).toBeTruthy();
     expect(within(menu).getByText("Text · Audio")).toBeTruthy();

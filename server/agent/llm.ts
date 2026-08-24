@@ -238,32 +238,54 @@ export async function generateWithFallback(input: {
   messages: LlmMessage[];
   maxTokens?: number;
   selectedModel?: { provider: LlmProviderName; model: string };
+  /**
+   * When automatic routing supplies explicit candidates, try only these
+   * provider/model pairs in order. This prevents a manual selection from being
+   * silently substituted and keeps every automatic switch allowlisted.
+   */
+  candidateModels?: Array<{ provider: LlmProviderName; model: string }>;
 }) {
   const preferred = (input.selectedModel?.provider ?? (input.purpose === "orchestrator" ? ENV.orchestratorProvider : ENV.subtaskProvider)) as LlmProviderName;
   const preferredModel = input.selectedModel?.model ?? (input.purpose === "orchestrator" ? ENV.orchestratorModel : ENV.subtaskModel);
-  const providerOrder = [preferred, "openrouter", "groq", "gemini", "deepseek", "aihubmix", "agnes"] as LlmProviderName[];
-  const attempted = new Set<LlmProviderName>();
-  const errors: string[] = [];
+  const fallbackProviderOrder = [preferred, "openrouter", "groq", "gemini", "deepseek", "aihubmix", "agnes"] as LlmProviderName[];
+  const explicitCandidates = input.candidateModels?.length
+    ? input.candidateModels
+    : fallbackProviderOrder.map(provider => ({ provider, model: provider === preferred ? preferredModel : undefined }));
+  const attempted = new Set<string>();
+  const errorKinds = new Set<string>();
   let unavailableRoute = false;
-  for (const provider of providerOrder) {
-    if (attempted.has(provider) || !keyForProvider(provider)) continue;
-    attempted.add(provider);
+  for (const candidate of explicitCandidates) {
+    const provider = candidate.provider;
+    const attemptedId = `${provider}:${candidate.model ?? "default"}`;
+    if (attempted.has(attemptedId) || !keyForProvider(provider)) continue;
+    attempted.add(attemptedId);
     try {
       return await generateCompletion({
         provider,
-        model: provider === preferred ? preferredModel || undefined : undefined,
+        model: candidate.model || undefined,
         messages: input.messages,
         maxTokens: input.maxTokens,
       });
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Unknown provider error.";
-      errors.push(message);
-      if (error instanceof LlmProviderError && error.availability) unavailableRoute = true;
-      if (!(error instanceof LlmProviderError) || !error.retryable) continue;
+      const errorKind = error instanceof Error && error.name ? error.name : "unknown_provider_error";
+      errorKinds.add(errorKind);
+      if (error instanceof LlmProviderError) {
+        if (error.availability) unavailableRoute = true;
+        // Automatic routing invokes one allowlisted route at a time. Any
+        // provider-level failure on that route is safe to classify as a route
+        // unavailable for this cycle, allowing the planner to advance only to
+        // the next compatible configured candidate before any agent action.
+        if (input.candidateModels?.length) unavailableRoute = true;
+        if (error.retryable || error.availability || Boolean(input.candidateModels?.length)) continue;
+      }
+      // Default provider routing has historically continued through every
+      // configured provider. Preserve that bounded behavior while automatic
+      // routing remains limited to its explicit allowlisted candidates.
+      continue;
     }
   }
   if (unavailableRoute) throw new LlmRouteUnavailableError();
-  throw new Error(`No configured model provider completed the request. ${errors.join(" | ")}`);
+  throw new Error(`No configured model provider completed the request (${Array.from(errorKinds).join(",") || "no_configured_provider"}).`);
 }
 
 export function parseStructuredModelOutput<T>(content: string): T {

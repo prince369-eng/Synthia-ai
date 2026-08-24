@@ -14,6 +14,7 @@ import { normalizeExternalResourceUrl } from "@shared/externalReference";
 import { applyPromptGuidance, promptGuidanceForGoal } from "@/lib/promptGuidance";
 import { clientErrorMessage } from "@/lib/clientErrorDisplay";
 import { reportComposerFailure } from "@/lib/composerFailureTelemetry";
+import { automaticModelRoutingStatus } from "@/lib/automaticModelStatus";
 
 export function buildTaskAttachmentRefs(attachments: ComposerAttachment[]) {
   return attachments.map(attachment => attachment.sourceType === "library"
@@ -100,8 +101,9 @@ export default function TaskDashboard() {
   const concreteModels = useMemo(() => (availableModels.data?.models ?? []).filter(model => model.model.trim().toLowerCase() !== "automatic"), [availableModels.data?.models]);
   const selectedModel = concreteModels.find(model => model.id === selectedModelId);
   const includesVisualAttachment = attachments.some(attachment => attachment.fileType.startsWith("image/"));
+  const automaticVisionUnavailable = includesVisualAttachment && !selectedModel && !concreteModels.some(model => model.capabilities.includes("vision"));
   const selectedModelSupportsVision = !selectedModel || selectedModel.capabilities.includes("vision");
-  const visualInputBlocked = includesVisualAttachment && !selectedModelSupportsVision;
+  const visualInputBlocked = automaticVisionUnavailable || (includesVisualAttachment && !selectedModelSupportsVision);
   const automaticRoute = useMemo(() => resolveAutomaticTaskRoute({
     goal,
     attachments,
@@ -112,7 +114,14 @@ export default function TaskDashboard() {
     },
     publicMedia: mediaCapabilities.data?.publicMedia,
   }), [attachments, goal, mediaCapabilities.data]);
-  const visibleModelName = selectedModel?.model ?? automaticRoute.model ?? concreteModels[0]?.model ?? "Models";
+  const visibleModelName = selectedModel?.model ?? "Automatic";
+  const automaticModelStatus = useMemo(() => automaticModelRoutingStatus({
+    loading: availableModels.isLoading,
+    manualModelSelected: Boolean(selectedModel),
+    includesVisualAttachment,
+    involvesCode,
+    models: concreteModels,
+  }), [availableModels.isLoading, concreteModels, includesVisualAttachment, involvesCode, selectedModel]);
   const welcome = useMemo(() => workspaceWelcome(user?.name), [user?.name]);
   const promptGuidance = useMemo(() => promptGuidanceForGoal(goal), [goal]);
   const composerApps = useMemo(() => (appCatalog.data ?? []).slice(0, 10), [appCatalog.data]);
@@ -342,7 +351,7 @@ export default function TaskDashboard() {
               </div>
               <div className="relative">
                 <button type="button" className={cn("synthia-composer-toggle synthia-model-trigger", modelMenuOpen && "active")} aria-label="Choose model" aria-expanded={modelMenuOpen} onClick={() => setModelMenuOpen(value => !value)}><Bot size={13} /><span>{visibleModelName}</span></button>
-                {modelMenuOpen ? <div className="synthia-model-menu" data-testid="composer-model-menu" data-scrollable="true"><button type="button" className={cn(!selectedModelId && "active")} onClick={() => { setSelectedModelId(""); setModelMenuOpen(false); }}><b>{visibleModelName}</b><small>Recommended for this task</small></button>{concreteModels.filter(model => model.id !== (automaticRoute.model ? `${automaticRoute.provider}:${automaticRoute.model}` : undefined)).map(model => <button key={model.id} type="button" className={cn(model.id === selectedModelId && "active")} onClick={() => { setSelectedModelId(model.id); setModelMenuOpen(false); }}><b>{model.model}</b><small>{composerModelCapabilityLabel(model)}</small></button>)}{concreteModels.length ? null : <p>Model choices will appear when they are available.</p>}</div> : null}
+                {modelMenuOpen ? <div className="synthia-model-menu" data-testid="composer-model-menu" data-scrollable="true"><button type="button" className={cn(!selectedModelId && "active")} onClick={() => { setSelectedModelId(""); setModelMenuOpen(false); }}><b>Automatic</b><small>{automaticModelStatus}</small></button>{concreteModels.map(model => <button key={model.id} type="button" className={cn(model.id === selectedModelId && "active")} onClick={() => { setSelectedModelId(model.id); setModelMenuOpen(false); }}><b>{model.model}</b><small>{composerModelCapabilityLabel(model)}</small></button>)}{concreteModels.length ? null : <p>Model choices will appear when they are available.</p>}</div> : null}
               </div>
               <button type="button" className="synthia-composer-toggle synthia-live-voice-toggle" aria-label="Start a live voice task" title="Create a task and open Live Voice" onClick={() => startTask(true)} disabled={createTask.isPending || visualInputBlocked}><AudioLines size={14} /><span>Live</span></button>
               <button type="button" className={cn("synthia-composer-toggle synthia-mic-button", voiceState !== "idle" && "active")} aria-label={voiceState === "recording" ? "Stop recording voice instruction" : "Start voice instruction"} title={voiceState === "transcribing" ? "Transcribing voice instruction" : voiceState === "recording" ? "Stop recording" : "Add voice instruction"} onClick={() => void toggleVoiceCapture()} disabled={voiceState === "transcribing"}><Mic size={14} /><span className="sr-only">Voice input</span>{voiceState === "recording" ? <span className="synthia-recording-dot" /> : null}</button>
@@ -350,7 +359,8 @@ export default function TaskDashboard() {
             </div>
           </div>
           {estimate.data ? <p className="synthia-estimate">Estimated: <span>{estimate.data.estimatedCreditsMin}–{estimate.data.estimatedCreditsMax} credits</span></p> : null}
-          {visualInputBlocked ? <p role="alert" className="mt-2 px-1 text-xs text-amber-200">This task includes an image. Select a vision-capable model or return to Automatic routing before starting.</p> : null}
+          <p className="mt-2 px-1 text-xs text-[#91a7a1]" data-testid="automatic-model-status">{automaticModelStatus}</p>
+          {visualInputBlocked ? <p role="alert" className="mt-1 px-1 text-xs text-amber-200">This task includes an image. Select a vision-capable model or return to Automatic routing before starting.</p> : null}
           {liveVoiceHint ? <div role="status" className="synthia-composer-hint"><span>{liveVoiceHint}</span><button type="button" onClick={() => setLiveVoiceHint(null)} aria-label="Dismiss Live Voice guidance">Dismiss</button></div> : null}
           {attachmentError ? <div role="alert" className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 px-1 text-xs text-rose-300"><span>{attachmentError}</span>{voicePermissionBlocked ? <><button type="button" className="font-medium text-cyan-200 underline decoration-cyan-300/50 underline-offset-2 transition-colors hover:text-cyan-100" onClick={() => void toggleVoiceCapture()}>Try microphone again</button><button type="button" className="font-medium text-[#91a7a1] underline decoration-white/20 underline-offset-2 transition-colors hover:text-[#e5f2ef]" aria-label="Dismiss microphone warning" onClick={dismissVoiceWarning}>Dismiss</button></> : null}</div> : null}
           {createTask.isError ? <p role="alert" className="mt-3 text-xs text-rose-300">{clientErrorMessage(createTask.error, "The task request could not be completed. Refresh the page, then try again.")}</p> : null}

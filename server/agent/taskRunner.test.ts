@@ -172,6 +172,26 @@ describe("Synthia task worker recovery", () => {
     expect(llm.generateWithFallback).toHaveBeenCalledWith(expect.objectContaining({ selectedModel: { provider: "aihubmix", model: "coding-glm-5.2-free" } }));
   });
 
+  it("automatically switches to the next compatible configured model when the first planning response is unusable", async () => {
+    llm.generateWithFallback
+      .mockResolvedValueOnce({ provider: "aihubmix", model: "glm-5.2-free", content: "not valid JSON", usage: { inputTokens: 20, outputTokens: 5, totalTokens: 25 } })
+      .mockResolvedValueOnce({ provider: "agnes", model: "agnes-2.0-flash", content: JSON.stringify({ narration: "I prepared a bounded answer.", action: { kind: "respond", content: "Here is the requested answer." } }), usage: { inputTokens: 24, outputTokens: 6, totalTokens: 30 } });
+    const { runTaskCycle } = await import("./taskRunner");
+
+    await runTaskCycle(baseTask.id);
+
+    expect(llm.generateWithFallback).toHaveBeenNthCalledWith(1, expect.objectContaining({
+      selectedModel: { provider: "aihubmix", model: "glm-5.2-free" },
+      candidateModels: [{ provider: "aihubmix", model: "glm-5.2-free" }],
+    }));
+    expect(llm.generateWithFallback).toHaveBeenNthCalledWith(2, expect.objectContaining({
+      selectedModel: { provider: "agnes", model: "agnes-2.0-flash" },
+      candidateModels: [{ provider: "agnes", model: "agnes-2.0-flash" }],
+    }));
+    expect(db.recordUsageForTask).toHaveBeenCalledTimes(1);
+    expect(db.recordUsageForTask).toHaveBeenCalledWith(expect.objectContaining({ creditsDelta: 0.03 }));
+  });
+
   it("creates an approval request before automatic media routing can consume provider quota", async () => {
     db.getTaskById.mockResolvedValue({
       ...baseTask,

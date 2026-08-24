@@ -81,6 +81,44 @@ describe("structured model output parsing", () => {
     })).rejects.toBeInstanceOf(LlmRouteUnavailableError);
   });
 
+  it("switches only through allowlisted automatic candidates after a rate-limited route", async () => {
+    ENV.groqApiKey = "groq-test-key";
+    ENV.openRouterApiKey = "openrouter-test-key";
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify({ error: "rate limited" }), { status: 429 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({
+        id: "automatic-fallback-response",
+        choices: [{ message: { content: "{\"action\":{\"kind\":\"complete\"}}" } }],
+        usage: { prompt_tokens: 10, completion_tokens: 4, total_tokens: 14 },
+      }), { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    const response = await generateWithFallback({
+      purpose: "orchestrator",
+      candidateModels: [
+        { provider: "groq", model: "first-automatic-model" },
+        { provider: "openrouter", model: "second-automatic-model" },
+      ],
+      messages: [{ role: "user", content: "Return a structured agent action." }],
+    });
+
+    expect(response).toMatchObject({ provider: "openrouter", model: "second-automatic-model" });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(JSON.parse(String(fetchMock.mock.calls[0]?.[1]?.body))).toMatchObject({ model: "first-automatic-model" });
+    expect(JSON.parse(String(fetchMock.mock.calls[1]?.[1]?.body))).toMatchObject({ model: "second-automatic-model" });
+  });
+
+  it("converts a failed single automatic candidate into a bounded unavailable-route error", async () => {
+    ENV.groqApiKey = "groq-test-key";
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify({ error: "temporary upstream failure" }), { status: 503 })));
+
+    await expect(generateWithFallback({
+      purpose: "orchestrator",
+      candidateModels: [{ provider: "groq", model: "automatic-model" }],
+      messages: [{ role: "user", content: "Return a structured agent action." }],
+    })).rejects.toBeInstanceOf(LlmRouteUnavailableError);
+  });
+
   it("sends image parts only through a model explicitly configured for vision", async () => {
     ENV.openRouterApiKey = "openrouter-test-key";
     ENV.visionModels = ["openrouter:vision-model"];
