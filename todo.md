@@ -3771,4 +3771,5 @@
 - [x] Build and run a real spreadsheet export/import compatibility suite before assessing a scoped `exceljs → uuid` override.
 - [x] Reconcile the remaining-area audit with the verified dependency-remediation results and residual advisory boundaries.
 - [x] Reconcile the historical security-completeness audit with the verified current dependency-audit results.
+- [x] Scan application source for active unfinished-feature markers and classify form hints, safe unavailable states, and task-bound Office exports correctly.
 - [ ] Monitor ExcelJS for a compatible UUID upgrade; do not force an incompatible override while the verified Synthia export path uses only UUID `v4`.

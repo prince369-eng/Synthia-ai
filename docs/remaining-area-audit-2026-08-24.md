@@ -42,6 +42,10 @@ The production dependency audit now finds three transitive advisories. The fixed
 
 The remaining advisories are inherited through `exceljs` (`uuid`) and `pptxgenjs` (`image-size`). The installed ExcelJS UUID call site uses UUID `v4`, while the reported UUID advisory affects `v3`, `v5`, and `v6` external-buffer operations; Synthia's spreadsheet export does not expose that API shape and now has a real export/import round-trip contract. The image-size advisory has no patched release identified by the audit output. It should not be “fixed” by a blind override: the current PowerPoint export has no image-byte input, and any future image-bearing export must introduce strict server-side type, byte, pixel, and bounded-decoding controls before enabling the parser path.
 
+## Implementation-marker classification
+
+A scoped scan of application source, excluding tests and historical scan artifacts, found no active `TODO`, `FIXME`, `not implemented`, `coming soon`, or `stub` marker that represents an unfinished production feature. The remaining placeholder matches are standard input hints, such as field examples and accessible empty-state copy. The reviewed Office export menu invokes the authenticated task-bound export procedure and explicitly states that it does not start a model run. These are implemented control surfaces, not feature-only placeholders.
+
 ## Recommended sequence
 
 First, retain the fixed `form-data` lockfile resolution and the ExcelJS export/import contract while monitoring for an upstream-compatible UUID upgrade. Second, preserve the current no-image PowerPoint export boundary; if a future feature needs user-provided images, introduce strict type/size checks and an isolated execution boundary before dependency changes or image parsing. Third, conduct a real deployment readiness pass for OAuth redirects, worker supervision, Redis reliability, provider quotas, storage, and the integrations the operator actually intends to enable.
