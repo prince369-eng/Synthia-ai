@@ -3804,4 +3804,5 @@
 - [x] Bound local development diagnostic endpoint request parsing so malformed or oversized collector payloads are rejected before memory-intensive processing.
 - [x] Add and verify a terminal Express error boundary so unexpected route failures return a bounded client-safe response instead of default framework output.
 - [x] Ensure central response-security headers also cover rejected-origin and preflight responses without relaxing CORS policy.
+- [x] Audit the OAuth callback and client state-cookie boundary; preserve nonce binding, host-only secure cookie attributes, and public-HTTPS account-portal validation with deterministic regression coverage.
 - [ ] Monitor ExcelJS for a compatible UUID upgrade; do not force an incompatible override while the verified Synthia export path uses only UUID `v4`.
