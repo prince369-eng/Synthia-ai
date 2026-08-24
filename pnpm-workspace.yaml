@@ -1,6 +1,16 @@
 packages:
   - .
 
+strictDepBuilds: true
+onlyBuiltDependencies:
+  - '@tailwindcss/oxide'
+  - esbuild
+ignoredBuiltDependencies:
+  - '@google/genai'
+  - '@livekit/local-inference'
+  - msgpackr-extract
+  - protobufjs
+
 patchedDependencies:
   wouter@3.7.1: patches/wouter@3.7.1.patch
 

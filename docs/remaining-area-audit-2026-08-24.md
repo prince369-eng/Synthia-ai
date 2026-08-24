@@ -13,7 +13,7 @@ The product is not yet safe to describe as fully production-ready for every adve
 
 | Priority | Area | Current status | Verified boundary | Remaining action |
 |---|---|---|---|---|
-| P0 | Production dependency advisories | **Partially remediated; monitored** | The fixed `form-data` override is applied. The production audit retains one moderate ExcelJS/UUID advisory and two high PptxGenJS/image-size advisories. | Monitor ExcelJS for a compatible UUID upgrade; retain the verified spreadsheet boundary and prohibit untrusted image processing in PowerPoint export until an upstream-safe replacement or isolated guarded path is available. |
+| P0 | Production dependency advisories and install policy | **Partially remediated; contained and monitored** | The fixed `form-data` override is applied. The production audit retains one moderate ExcelJS/UUID advisory and two high PptxGenJS/image-size advisories. Dependency lifecycle execution is now an explicit reviewed policy. | Monitor ExcelJS for a compatible UUID upgrade; retain the verified spreadsheet boundary and prohibit untrusted image processing in PowerPoint export until an upstream-safe replacement or isolated guarded path is available. Review every newly introduced dependency build script before altering the approved or ignored lists. |
 | P0 | Model/provider execution | **Configuration-gated** | Automatic planner fallback, malformed-response pause, transport-failure pause, and quota-safe media routing are implemented. | Maintain valid free-tier or paid provider routes, a running worker, Redis, and explicit usage limits. A failed route pauses safely rather than pretending success. |
 | P0 | Storage and external actions | **Configuration-gated** | Policies, approval states, and service boundaries exist. | Configure authorized storage and connector accounts before enabling write-capable tasks; retain user approval for consequential external actions. |
 | P1 | Authentication | **Implemented, deployment-gated** | Protected procedures and Manus OAuth flow are present. | Confirm production redirect configuration and execute production user acceptance testing before go-live. |
@@ -41,6 +41,14 @@ Image, video, and audio selection persists compatible credential-gated candidate
 The production dependency audit now finds three transitive advisories. The fixed `form-data` override has been applied through the affected lockfile paths, removing that advisory family. The remaining advisory paths are an ExcelJS-to-UUID dependency and two PptxGenJS-to-image-size findings.
 
 The remaining advisories are inherited through `exceljs` (`uuid`) and `pptxgenjs` (`image-size`). The installed ExcelJS UUID call site uses UUID `v4`, while the reported UUID advisory affects `v3`, `v5`, and `v6` external-buffer operations; Synthia's spreadsheet export does not expose that API shape and now has a real export/import round-trip contract. The image-size advisory has no patched release identified by the audit output. It should not be “fixed” by a blind override: the current PowerPoint export has no image-byte input, and any future image-bearing export must introduce strict server-side type, byte, pixel, and bounded-decoding controls before enabling the parser path.
+
+### Package-manager dependency-execution boundary
+
+The repository pins `pnpm@10.4.1`, contains no project `.npmrc` or pnpm hook file, and defines no root `preinstall`, `install`, `postinstall`, or `prepare` script. A static scan of the installed lockfile-resolved manifests found eight install-hook declarations across six package names. The workspace now records a reviewed decision for every package name found by that scan: `@tailwindcss/oxide` and `esbuild` are the narrowly approved build-time dependencies, while `@google/genai`, `@livekit/local-inference`, `msgpackr-extract`, and `protobufjs` are explicitly denied. The latter group is either no-op/diagnostic at install time or optional for the verified local build and test path; it is not permitted to execute merely because it is transitively installed.
+
+`strictDepBuilds: true` makes a future clean install fail rather than silently accepting a newly introduced, unreviewed dependency build script. pnpm 10 documents this setting as a non-zero install exit for unreviewed post-install scripts, and its approval workflow stores approved and unapproved dependencies in the workspace policy. [1] [2] This is intentionally **not** a blanket `ignore-scripts` setting: application lifecycle scripts remain unaffected, and a dependency requiring a new build script must be consciously reviewed, categorized, and validated before its policy entry changes.
+
+The locked graph and policy were validated locally with `pnpm install --frozen-lockfile --ignore-scripts --offline`, so this review neither fetched packages nor executed lifecycle hooks. The complete deterministic suite then passed with 73 test files and 352 assertions, with seven configuration-gated suites and 16 assertions skipped; strict TypeScript and the production build also passed. The retained build advisories remain unchanged: the classic preview script lacks `type="module"`, and two client bundles exceed the default size-warning threshold.
 
 ## Implementation-marker classification
 
@@ -78,6 +86,11 @@ The review found raw transport and provider-detail construction in two configura
 
 ## Recommended sequence
 
-First, retain the fixed `form-data` lockfile resolution and the ExcelJS export/import contract while monitoring for an upstream-compatible UUID upgrade. Second, preserve the current no-image PowerPoint export boundary; if a future feature needs user-provided images, introduce strict type/size checks and an isolated execution boundary before dependency changes or image parsing. Third, conduct a real deployment readiness pass for OAuth redirects, worker supervision, Redis reliability, provider quotas, storage, and the integrations the operator actually intends to enable.
+First, retain the fixed `form-data` lockfile resolution, the reviewed package-manager execution policy, and the ExcelJS export/import contract while monitoring for an upstream-compatible UUID upgrade. Second, preserve the current no-image PowerPoint export boundary; if a future feature needs user-provided images, introduce strict type/size checks and an isolated execution boundary before dependency changes or image parsing. Third, conduct a real deployment readiness pass for OAuth redirects, worker supervision, Redis reliability, provider quotas, storage, and the integrations the operator actually intends to enable.
 
 The Network Lab runner should remain after those application-level controls. It requires a separate Linux guest, operator-owned licensed images, signing keys, and explicit local approval; it is intentionally not an automatic web-service workload.
+
+## References
+
+[1]: https://pnpm.io/10.x/settings#strictdepbuilds "pnpm 10.x Settings — strictDepBuilds"
+[2]: https://pnpm.io/10.x/cli/approve-builds "pnpm 10.x approve-builds"
