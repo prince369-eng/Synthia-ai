@@ -122,7 +122,7 @@ async function createInteraction(input: Record<string, unknown>): Promise<Gemini
     const raw = await response.text();
     if (!response.ok) {
       logger.warn(
-        { event: "gemini_media_provider_error", status: response.status, body: raw.slice(0, 600) },
+        { event: "gemini_media_provider_error", status: response.status },
         "Gemini media generation request failed",
       );
       throw new GeminiMediaError("PROVIDER_ERROR", "Gemini media generation failed. Please retry shortly.");

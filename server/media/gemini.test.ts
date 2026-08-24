@@ -1,5 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+const warnMock = vi.hoisted(() => vi.fn());
+
 vi.mock("../_core/env", () => ({
   ENV: {
     forgeApiUrl: "",
@@ -13,7 +15,7 @@ vi.mock("../_core/env", () => ({
   },
 }));
 
-vi.mock("../security/logger", () => ({ logger: { warn: vi.fn(), error: vi.fn() } }));
+vi.mock("../security/logger", () => ({ logger: { warn: warnMock, error: vi.fn() } }));
 
 import { generateGeminiImage, generateGeminiVideo, GeminiMediaError } from "./gemini";
 
@@ -21,6 +23,7 @@ const originalFetch = globalThis.fetch;
 
 afterEach(() => {
   vi.restoreAllMocks();
+  warnMock.mockReset();
   globalThis.fetch = originalFetch;
 });
 
@@ -71,5 +74,19 @@ describe("Gemini media interactions", () => {
 
     await expect(generateGeminiImage({ prompt: "Generate a workflow illustration." }))
       .rejects.toEqual(expect.objectContaining<Partial<GeminiMediaError>>({ code: "INVALID_RESPONSE" }));
+  });
+
+  it("logs only bounded status metadata for an upstream provider failure", async () => {
+    const upstreamDetail = "provider body that must never enter a structured log";
+    globalThis.fetch = vi.fn().mockResolvedValue(new Response(JSON.stringify({ error: upstreamDetail }), { status: 502 }));
+
+    await expect(generateGeminiImage({ prompt: "Generate a workflow illustration." }))
+      .rejects.toEqual(expect.objectContaining<Partial<GeminiMediaError>>({ code: "PROVIDER_ERROR" }));
+
+    expect(warnMock).toHaveBeenCalledWith(
+      { event: "gemini_media_provider_error", status: 502 },
+      "Gemini media generation request failed",
+    );
+    expect(JSON.stringify(warnMock.mock.calls)).not.toContain(upstreamDetail);
   });
 });

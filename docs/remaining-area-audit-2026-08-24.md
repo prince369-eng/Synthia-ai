@@ -112,6 +112,8 @@ The review found raw transport and provider-detail construction in two configura
 
 The owner-notification adapter follows the same client-facing boundary. Correctable title and content validation stays specific, but missing server-side notification configuration now returns the generic `SERVICE_UNAVAILABLE` response rather than identifying an internal URL or API-key condition. Rejected or transport-failed delivery remains a non-throwing `false` result with bounded structured server logging. Tests mock all transport behavior; no notification was sent.
 
+The Gemini media adapter now follows the same logging boundary: failed upstream responses retain only the event identifier and numeric HTTP status in structured logs, not response-body text. A deterministic mocked-response regression verifies that provider-controlled detail cannot be serialized through the logger call. No media generation request was made during this work.
+
 ## Recommended sequence
 
 First, retain the fixed `form-data` lockfile resolution, the reviewed package-manager execution policy, and the ExcelJS export/import contract while monitoring for an upstream-compatible UUID upgrade. Second, preserve the current no-image PowerPoint export boundary; if a future feature needs user-provided images, introduce strict type/size checks and an isolated execution boundary before dependency changes or image parsing. Third, conduct a real deployment readiness pass for OAuth redirects, worker supervision, Redis reliability, provider quotas, storage, and the integrations the operator actually intends to enable.
