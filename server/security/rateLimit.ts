@@ -15,7 +15,10 @@ function redis() {
   if (!ENV.redisUrl) return undefined;
   if (!client) {
     client = new IORedis(ENV.redisUrl, { maxRetriesPerRequest: 1, tls: ENV.redisTlsEnabled ? {} : undefined });
-    client.on("error", error => logger.error({ event: "rate_limit_redis_error", err: error }, "Rate-limit Redis connection failed"));
+    client.on("error", error => {
+      const errorKind = error instanceof Error && error.name ? error.name : "unknown";
+      logger.error({ event: "rate_limit_redis_error", errorKind }, "Rate-limit Redis connection failed");
+    });
   }
   return client;
 }

@@ -3819,4 +3819,5 @@
 - [x] Remove raw sandbox command stderr and provider-detail messages from agent error paths while preserving stable operation classification.
 - [x] Audit and bound tRPC mutation catch-path error messages so unexpected internal exceptions cannot be returned verbatim to clients.
 - [x] Prevent raw sandbox stderr from escaping attachment-workspace preparation failures in the task worker.
+- [x] Replace raw Redis error-object logging in the rate-limit client with a stable error classification.
 - [ ] Monitor ExcelJS for a compatible UUID upgrade; do not force an incompatible override while the verified Synthia export path uses only UUID `v4`.
