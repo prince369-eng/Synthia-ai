@@ -30,9 +30,24 @@ export class LlmProviderError extends Error {
     message: string,
     readonly provider: LlmProviderName,
     readonly retryable: boolean,
+    readonly availability: "rate_limited" | "route_unavailable" | null = null,
   ) {
     super(message);
     this.name = "LlmProviderError";
+  }
+}
+
+export class LlmRouteUnavailableError extends Error {
+  constructor() {
+    super("No configured model route is currently available.");
+    this.name = "LlmRouteUnavailableError";
+  }
+}
+
+export class LlmStructuredOutputError extends Error {
+  constructor() {
+    super("The model did not return a usable structured planning response.");
+    this.name = "LlmStructuredOutputError";
   }
 }
 
@@ -105,7 +120,13 @@ async function parseJsonResponse(provider: LlmProviderName, response: Response) 
   const body = await response.text();
   if (!response.ok) {
     const retryable = response.status === 429 || response.status >= 500;
-    throw new LlmProviderError(`${provider} returned ${response.status}: ${body.slice(0, 800)}`, provider, retryable);
+    const normalizedBody = body.toLowerCase();
+    const availability = response.status === 429
+      ? "rate_limited"
+      : normalizedBody.includes("no_available_channel") || normalizedBody.includes("cannot be routed")
+        ? "route_unavailable"
+        : null;
+    throw new LlmProviderError(`${provider} returned ${response.status}: ${body.slice(0, 800)}`, provider, retryable, availability);
   }
   try {
     return JSON.parse(body) as Record<string, unknown>;
@@ -223,6 +244,7 @@ export async function generateWithFallback(input: {
   const providerOrder = [preferred, "openrouter", "groq", "gemini", "deepseek", "aihubmix", "agnes"] as LlmProviderName[];
   const attempted = new Set<LlmProviderName>();
   const errors: string[] = [];
+  let unavailableRoute = false;
   for (const provider of providerOrder) {
     if (attempted.has(provider) || !keyForProvider(provider)) continue;
     attempted.add(provider);
@@ -236,9 +258,11 @@ export async function generateWithFallback(input: {
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unknown provider error.";
       errors.push(message);
+      if (error instanceof LlmProviderError && error.availability) unavailableRoute = true;
       if (!(error instanceof LlmProviderError) || !error.retryable) continue;
     }
   }
+  if (unavailableRoute) throw new LlmRouteUnavailableError();
   throw new Error(`No configured model provider completed the request. ${errors.join(" | ")}`);
 }
 
@@ -247,6 +271,6 @@ export function parseStructuredModelOutput<T>(content: string): T {
   try {
     return JSON.parse(fenced.trim()) as T;
   } catch {
-    throw new Error("The model did not return valid JSON.");
+    throw new LlmStructuredOutputError();
   }
 }

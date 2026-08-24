@@ -3727,4 +3727,12 @@
 - [x] Re-enqueue only the approved constrained task after the corrected queue handoff validates successfully.
 
 ## Configured free-tier model availability follow-up
-- [ ] Replace or configure the unavailable automatic text-model route with a currently available user-approved free-tier text model before any task retry.
+- [x] Replace or configure the unavailable automatic text-model route with a currently available user-approved free-tier text model before any task retry.
+- [x] Run one final constrained retry of the existing user-approved task through the verified free-tier route, then stop the worker when it settles.
+- [x] Bind the existing approved task to a catalog-listed OpenRouter free text model while retaining its no-browser, no-code, and no-file permissions.
+- [ ] Select and explicitly approve a different free-tier text route before any further retry; the current selected route produced an unusable structured planning response and the task remains safely stopped in `needs_input`.
+
+## Provider retry-safety correction
+- [x] Classify unavailable or rate-limited model-route failures and move the task to `needs_input` without automatic BullMQ retries.
+- [x] Add deterministic regression coverage proving provider-unavailability errors never re-enqueue task cycles.
+- [x] Classify malformed structured model responses as `needs_input` without retries, redact worker exception payloads, and validate the full suite before publication.

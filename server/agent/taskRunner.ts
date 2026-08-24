@@ -23,7 +23,7 @@ import {
 } from "../db";
 import { ENV } from "../_core/env";
 import { getTaskArtifactUrl, putTaskArtifact } from "./artifactStorage";
-import { generateWithFallback, isConfiguredVisionModel, parseStructuredModelOutput, type LlmContentPart } from "./llm";
+import { generateWithFallback, isConfiguredVisionModel, LlmRouteUnavailableError, LlmStructuredOutputError, parseStructuredModelOutput, type LlmContentPart } from "./llm";
 import { evaluateActionPolicy, isAgentAction, type AgentAction } from "./policy";
 import { enqueueTaskCycle } from "./queue";
 import { sandboxProviderFor, createSandboxProvider, type SandboxDescriptor } from "./sandbox";
@@ -50,10 +50,10 @@ function taskContext(events: Awaited<ReturnType<typeof listTaskEvents>>) {
 }
 
 function validatedDecision(value: unknown): ModelDecision {
-  if (!value || typeof value !== "object") throw new Error("The model returned an invalid action decision.");
+  if (!value || typeof value !== "object") throw new LlmStructuredOutputError();
   const decision = value as Record<string, unknown>;
   if (typeof decision.narration !== "string" || decision.narration.trim().length === 0 || !isAgentAction(decision.action)) {
-    throw new Error("The model decision must include narration and one valid action.");
+    throw new LlmStructuredOutputError();
   }
   return { narration: decision.narration.trim().slice(0, 8_000), action: decision.action, plan: Array.isArray(decision.plan) ? decision.plan as ModelDecision["plan"] : undefined };
 }
@@ -369,6 +369,24 @@ export async function runTaskCycle(taskId: string) {
       await enqueueTaskCycle(task.id, 150);
     }
   } catch (error) {
+    if (error instanceof LlmRouteUnavailableError) {
+      const message = "No configured model route is currently available. Choose an available model or try again later.";
+      logger.warn({ event: "agent_model_route_unavailable", taskId: task.id }, "Task paused because no configured model route is available");
+      await updateTaskForWorker(task.id, { status: "needs_input", currentStepSummary: "Waiting for an available model route.", failedReason: message });
+      await appendTaskEvent(task.id, { type: "error", payload: { code: "model_route_unavailable", message } });
+      const user = await getUserById(task.userId);
+      await notifyTask({ recipient: user?.email, title: task.title, taskId: task.id, kind: "failed", summary: "No configured model route is currently available. Choose an available model or try again later." });
+      return;
+    }
+    if (error instanceof LlmStructuredOutputError) {
+      const message = "The selected model returned an unusable planning response. Choose another model or try again later.";
+      logger.warn({ event: "agent_model_response_unusable", taskId: task.id }, "Task paused because the selected model response could not be used safely");
+      await updateTaskForWorker(task.id, { status: "needs_input", currentStepSummary: "Waiting for a usable planning response.", failedReason: message });
+      await appendTaskEvent(task.id, { type: "error", payload: { code: "model_response_unusable", message } });
+      const user = await getUserById(task.userId);
+      await notifyTask({ recipient: user?.email, title: task.title, taskId: task.id, kind: "failed", summary: message });
+      return;
+    }
     const errorKind = error instanceof Error && error.name ? error.name : "unknown_error";
     const message = "The task worker encountered a temporary issue and will retry according to task policy.";
     logger.error({ event: "agent_cycle_error", taskId: task.id, errorKind }, "Agent task cycle failed");

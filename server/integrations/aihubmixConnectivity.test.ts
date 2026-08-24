@@ -16,6 +16,10 @@ describe.skipIf(!canRun)("AIHubMix live connectivity", () => {
       expect(response.ok).toBe(true);
       const payload = await response.json() as { data?: unknown };
       expect(Array.isArray(payload.data)).toBe(true);
+      const modelIds = (payload.data as Array<{ id?: unknown }>)
+        .map(model => (typeof model.id === "string" ? model.id : ""))
+        .filter(Boolean);
+      expect(modelIds).toContain(ENV.orchestratorModel);
     } finally {
       clearTimeout(timeout);
     }

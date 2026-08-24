@@ -6,12 +6,14 @@ import { persistExhaustedWorkerFailure } from "./workerFailure";
 const worker = createAgentWorker(async job => runTaskCycle(job.data.taskId));
 
 worker.on("failed", async (job, error) => {
-  logger.error({ event: "agent_job_failed", taskId: job?.data.taskId, err: error }, "Agent job failed");
+  const errorKind = error instanceof Error && error.name ? error.name : "unknown_error";
+  logger.error({ event: "agent_job_failed", taskId: job?.data.taskId, errorKind }, "Agent job failed");
   await persistExhaustedWorkerFailure(job, error);
 });
 
 worker.on("error", error => {
-  logger.error({ event: "agent_worker_error", err: error }, "Agent worker error");
+  const errorKind = error instanceof Error && error.name ? error.name : "unknown_error";
+  logger.error({ event: "agent_worker_error", errorKind }, "Agent worker error");
 });
 
 async function stop(signal: string) {

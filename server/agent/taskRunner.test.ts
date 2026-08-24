@@ -246,4 +246,48 @@ describe("Synthia task worker recovery", () => {
     expect(JSON.stringify(db.updateTaskForWorker.mock.calls)).not.toContain(privateFailure);
     expect(JSON.stringify(db.appendTaskEvent.mock.calls)).not.toContain(privateFailure);
   });
+
+  it("pauses a task without re-enqueueing when all configured model routes are unavailable", async () => {
+    const { LlmRouteUnavailableError } = await import("./llm");
+    llm.generateWithFallback.mockRejectedValue(new LlmRouteUnavailableError());
+    db.getUserById.mockResolvedValue({ email: null });
+    const { runTaskCycle } = await import("./taskRunner");
+
+    await expect(runTaskCycle(baseTask.id)).resolves.toBeUndefined();
+
+    expect(db.updateTaskForWorker).toHaveBeenCalledWith("task-1", expect.objectContaining({
+      status: "needs_input",
+      currentStepSummary: "Waiting for an available model route.",
+      failedReason: "No configured model route is currently available. Choose an available model or try again later.",
+    }));
+    expect(db.appendTaskEvent).toHaveBeenCalledWith("task-1", {
+      type: "error",
+      payload: {
+        code: "model_route_unavailable",
+        message: "No configured model route is currently available. Choose an available model or try again later.",
+      },
+    });
+    expect(queue.enqueueTaskCycle).not.toHaveBeenCalled();
+  });
+
+  it("pauses a task without re-enqueueing when a model response is not usable as a structured decision", async () => {
+    const { LlmStructuredOutputError } = await import("./llm");
+    llm.generateWithFallback.mockRejectedValue(new LlmStructuredOutputError());
+    db.getUserById.mockResolvedValue({ email: null });
+    const { runTaskCycle } = await import("./taskRunner");
+
+    await expect(runTaskCycle(baseTask.id)).resolves.toBeUndefined();
+
+    const expectedMessage = "The selected model returned an unusable planning response. Choose another model or try again later.";
+    expect(db.updateTaskForWorker).toHaveBeenCalledWith("task-1", expect.objectContaining({
+      status: "needs_input",
+      currentStepSummary: "Waiting for a usable planning response.",
+      failedReason: expectedMessage,
+    }));
+    expect(db.appendTaskEvent).toHaveBeenCalledWith("task-1", {
+      type: "error",
+      payload: { code: "model_response_unusable", message: expectedMessage },
+    });
+    expect(queue.enqueueTaskCycle).not.toHaveBeenCalled();
+  });
 });

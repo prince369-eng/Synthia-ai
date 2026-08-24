@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { ENV } from "../_core/env";
-import { generateWithFallback, isConfiguredVisionModel, parseStructuredModelOutput } from "./llm";
+import { generateWithFallback, isConfiguredVisionModel, LlmRouteUnavailableError, LlmStructuredOutputError, parseStructuredModelOutput } from "./llm";
 
 const environmentSnapshot = {
   groqApiKey: ENV.groqApiKey,
@@ -38,7 +38,7 @@ describe("structured model output parsing", () => {
   });
 
   it("rejects malformed model content before action validation", () => {
-    expect(() => parseStructuredModelOutput("this is not JSON")).toThrow("valid JSON");
+    expect(() => parseStructuredModelOutput("this is not JSON")).toThrow(LlmStructuredOutputError);
   });
 
   it("honors a selected model then falls back to the next configured provider after a retryable failure", async () => {
@@ -67,6 +67,18 @@ describe("structured model output parsing", () => {
     expect(JSON.parse(String(fetchMock.mock.calls[0]?.[1]?.body))).toMatchObject({ model: "selected-model" });
     expect(fetchMock.mock.calls[1]?.[0]).toBe("https://openrouter.ai/api/v1/chat/completions");
     expect(JSON.parse(String(fetchMock.mock.calls[1]?.[1]?.body))).toMatchObject({ model: "fallback-model" });
+  });
+
+  it("returns a bounded unavailable-route error after configured provider routes are unavailable", async () => {
+    ENV.aihubmixApiKey = "aihubmix-test-key";
+    ENV.orchestratorProvider = "aihubmix";
+    ENV.orchestratorModel = "free-model";
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify({ error: { code: "no_available_channel" } }), { status: 400 })));
+
+    await expect(generateWithFallback({
+      purpose: "orchestrator",
+      messages: [{ role: "user", content: "Return a structured agent action." }],
+    })).rejects.toBeInstanceOf(LlmRouteUnavailableError);
   });
 
   it("sends image parts only through a model explicitly configured for vision", async () => {
