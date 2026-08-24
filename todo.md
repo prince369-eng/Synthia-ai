@@ -3820,4 +3820,5 @@
 - [x] Audit and bound tRPC mutation catch-path error messages so unexpected internal exceptions cannot be returned verbatim to clients.
 - [x] Prevent raw sandbox stderr from escaping attachment-workspace preparation failures in the task worker.
 - [x] Replace raw Redis error-object logging in the rate-limit client with a stable error classification.
+- [x] Replace raw Voice Mode dispatch exceptions with the existing stable session failure message.
 - [ ] Monitor ExcelJS for a compatible UUID upgrade; do not force an incompatible override while the verified Synthia export path uses only UUID `v4`.

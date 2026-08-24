@@ -49,6 +49,8 @@ describe("Voice Mode availability gate", () => {
 
     expect(source).toContain('const failureReason = "Voice Mode could not start. Review availability and try again.";');
     expect(source).not.toContain("const failureReason = error instanceof Error ? error.message");
+    expect(source).toContain("throw new Error(failureReason);");
+    expect(source).not.toContain("throw error;");
   });
 
   it.skipIf(process.env.SYNTHIA_LIVEKIT_CONNECTIVITY_TEST !== "true")("validates configured LiveKit credentials through a read-only room-list authorization request", async () => {

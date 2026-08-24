@@ -124,6 +124,8 @@ The rate-limit Redis client now follows the same observability boundary. Its con
 
 The protected tRPC mutation layer now follows the same client-facing contract. Reviewed Skill drafting, Office export storage, Voice Mode start, and task-control update catch paths log only stable event metadata and return fixed retry, unavailable, or not-found messages; caught exception text is no longer interpolated into a client response. Existing typed `TaskMediaRequestError` handling remains intact because that class already defines its bounded client contract. A source-level regression protects these specific catch paths without invoking Skill creation, Office storage, Voice Mode, media, or any external integration.
 
+The Voice Mode service now enforces that same boundary internally after a LiveKit dispatch failure. It persists the existing fixed session recovery message and rethrows that bounded message instead of the provider exception, so any future caller cannot expose raw transport or provider detail by bypassing the router-level mutation catch. The focused regression asserts the stable rethrow contract; LiveKit connectivity remains configuration-gated and was not exercised.
+
 Task attachment workspace preparation now also discards sandbox command stderr before the error can enter the worker failure path. A failed `/workspace/inputs` directory setup reports a fixed attachment-workspace message; the outer task-cycle handler continues to persist only its existing generic retry guidance and stable error code. The deterministic regression injects sensitive-looking sandbox stderr and verifies that it is absent from durable task updates and event payloads. No sandbox session or artifact storage operation was started.
 
 ## Recommended sequence

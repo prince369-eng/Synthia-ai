@@ -63,9 +63,9 @@ export async function createVoiceModeJoinCredentials(input: {
     });
 
     return { sessionId: session.id, roomName, participantIdentity, url: ENV.livekitUrl, token: await token.toJwt(), expiresInSeconds: 600 };
-  } catch (error) {
+  } catch {
     const failureReason = "Voice Mode could not start. Review availability and try again.";
     await updateVoiceSessionForUser({ sessionId: session.id, taskId: input.taskId, userId: input.userId, action: "failed", failureReason });
-    throw error;
+    throw new Error(failureReason);
   }
 }
