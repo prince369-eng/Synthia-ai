@@ -61,8 +61,12 @@ export type TranscriptionResponse = WhisperResponse; // Return native Whisper AP
 export type TranscriptionError = {
   error: string;
   code: "FILE_TOO_LARGE" | "INVALID_FORMAT" | "TRANSCRIPTION_FAILED" | "UPLOAD_FAILED" | "SERVICE_ERROR";
-  details?: string;
 };
+
+export const transcriptionFailure = (
+  error: TranscriptionError["error"],
+  code: TranscriptionError["code"]
+): TranscriptionError => ({ error, code });
 
 /**
  * Transcribe audio to text using the internal Speech-to-Text service
@@ -76,18 +80,10 @@ export async function transcribeAudio(
   try {
     // Step 1: Validate environment configuration
     if (!ENV.forgeApiUrl) {
-      return {
-        error: "Voice transcription service is not configured",
-        code: "SERVICE_ERROR",
-        details: "BUILT_IN_FORGE_API_URL is not set"
-      };
+      return transcriptionFailure("Voice transcription service is not configured", "SERVICE_ERROR");
     }
     if (!ENV.forgeApiKey) {
-      return {
-        error: "Voice transcription service authentication is missing",
-        code: "SERVICE_ERROR",
-        details: "BUILT_IN_FORGE_API_KEY is not set"
-      };
+      return transcriptionFailure("Voice transcription service authentication is missing", "SERVICE_ERROR");
     }
 
     // Step 2: Download audio from URL
@@ -96,11 +92,7 @@ export async function transcribeAudio(
     try {
       const response = await fetch(options.audioUrl);
       if (!response.ok) {
-        return {
-          error: "Failed to download audio file",
-          code: "INVALID_FORMAT",
-          details: `HTTP ${response.status}: ${response.statusText}`
-        };
+        return transcriptionFailure("Failed to download audio file", "INVALID_FORMAT");
       }
       
       audioBuffer = Buffer.from(await response.arrayBuffer());
@@ -109,18 +101,10 @@ export async function transcribeAudio(
       // Check file size (16MB limit)
       const sizeMB = audioBuffer.length / (1024 * 1024);
       if (sizeMB > 16) {
-        return {
-          error: "Audio file exceeds maximum size limit",
-          code: "FILE_TOO_LARGE",
-          details: `File size is ${sizeMB.toFixed(2)}MB, maximum allowed is 16MB`
-        };
+        return transcriptionFailure("Audio file exceeds maximum size limit", "FILE_TOO_LARGE");
       }
-    } catch (error) {
-      return {
-        error: "Failed to fetch audio file",
-        code: "SERVICE_ERROR",
-        details: error instanceof Error ? error.message : "Unknown error"
-      };
+    } catch {
+      return transcriptionFailure("Failed to fetch audio file", "SERVICE_ERROR");
     }
 
     // Step 3: Create FormData for multipart upload to Whisper API
@@ -162,12 +146,7 @@ export async function transcribeAudio(
     });
 
     if (!response.ok) {
-      const errorText = await response.text().catch(() => "");
-      return {
-        error: "Transcription service request failed",
-        code: "TRANSCRIPTION_FAILED",
-        details: `${response.status} ${response.statusText}${errorText ? `: ${errorText}` : ""}`
-      };
+      return transcriptionFailure("Transcription service request failed", "TRANSCRIPTION_FAILED");
     }
 
     // Step 5: Parse and return the transcription result
@@ -175,22 +154,14 @@ export async function transcribeAudio(
     
     // Validate response structure
     if (!whisperResponse.text || typeof whisperResponse.text !== 'string') {
-      return {
-        error: "Invalid transcription response",
-        code: "SERVICE_ERROR",
-        details: "Transcription service returned an invalid response format"
-      };
+      return transcriptionFailure("Invalid transcription response", "SERVICE_ERROR");
     }
 
     return whisperResponse; // Return native Whisper API response directly
 
-  } catch (error) {
+  } catch {
     // Handle unexpected errors
-    return {
-      error: "Voice transcription failed",
-      code: "SERVICE_ERROR",
-      details: error instanceof Error ? error.message : "An unexpected error occurred"
-    };
+    return transcriptionFailure("Voice transcription failed", "SERVICE_ERROR");
   }
 }
 

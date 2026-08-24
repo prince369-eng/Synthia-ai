@@ -85,36 +85,47 @@ const callForge = async <T>(
       headers,
       body: JSON.stringify(body),
     });
-  } catch (error) {
-    throw new TRPCError({
-      code: "INTERNAL_SERVER_ERROR",
-      message: `Heartbeat ${rpc} network error: ${String(error)}`,
-    });
+  } catch {
+    throw heartbeatTransportError();
   }
 
   if (!response.ok) {
-    const detail = await response.text().catch(() => "");
-    throw mapForgeError(response, detail, rpc);
+    throw mapForgeError(response);
   }
   return (await response.json()) as T;
 };
 
-const mapForgeError = (
-  response: Response,
-  detail: string,
-  rpc: string
-): TRPCError => {
+export const heartbeatTransportError = (): TRPCError =>
+  new TRPCError({
+    code: "INTERNAL_SERVER_ERROR",
+    message: "The scheduled-work service is temporarily unavailable. Try again later.",
+  });
+
+export const mapForgeError = (response: Pick<Response, "status">): TRPCError => {
   const status = response.status;
   let code: TRPCError["code"] = "INTERNAL_SERVER_ERROR";
+  let message = "The scheduled-work service is temporarily unavailable. Try again later.";
   if (status === 401) code = "UNAUTHORIZED";
-  else if (status === 403) code = "FORBIDDEN";
-  else if (status === 404) code = "NOT_FOUND";
-  else if (status === 400 || status === 422) code = "BAD_REQUEST";
-  else if (status === 409) code = "CONFLICT";
-  else if (status === 429) code = "TOO_MANY_REQUESTS";
+  if (status === 401) message = "Scheduled-work service authentication is unavailable.";
+  else if (status === 403) {
+    code = "FORBIDDEN";
+    message = "This scheduled-work operation is not permitted.";
+  } else if (status === 404) {
+    code = "NOT_FOUND";
+    message = "The scheduled-work resource was not found.";
+  } else if (status === 400 || status === 422) {
+    code = "BAD_REQUEST";
+    message = "The scheduled-work request was rejected.";
+  } else if (status === 409) {
+    code = "CONFLICT";
+    message = "The scheduled-work operation conflicted with its current state.";
+  } else if (status === 429) {
+    code = "TOO_MANY_REQUESTS";
+    message = "Scheduled-work rate limit reached. Try again later.";
+  }
   return new TRPCError({
     code,
-    message: `Heartbeat ${rpc} failed (${status})${detail ? `: ${detail}` : ""}`,
+    message,
   });
 };
 

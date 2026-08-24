@@ -3790,4 +3790,7 @@
 - [x] Audit server request-size, parser, and rate-limit boundaries for configuration-independent hardening opportunities.
 - [x] Add and test a bounded JSON response for malformed and oversized request bodies before protected routing begins.
 - [x] Audit authentication and API rate-limit keying for proxy-safe behavior and bounded anonymous-client handling.
+- [x] Audit server error responses for accidental exception, credential, or provider-detail disclosure.
+- [x] Replace raw heartbeat transport error messages with bounded client-safe responses and deterministic regression coverage.
+- [x] Replace raw voice-transcription transport and provider details with bounded client-safe failure metadata.
 - [ ] Monitor ExcelJS for a compatible UUID upgrade; do not force an incompatible override while the verified Synthia export path uses only UUID `v4`.
