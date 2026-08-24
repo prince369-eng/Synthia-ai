@@ -128,6 +128,8 @@ The core image-generation, image-model listing, map-proxy, LLM invocation, and L
 
 The agent LLM router applies the same boundary while retaining its route-safety behavior: it may inspect a failed response locally to identify an unavailable route, but its retained provider error contains only the provider identifier and numeric HTTP status. Retryability and route-availability classification remain unchanged, and explicit automatic candidates still pause safely before any agent action when unavailable.
 
+Agent web-search adapters now follow the same minimization rule. Failed Tavily and Serper responses are classified with provider identity and numeric HTTP status only; malformed response and transport failures become stable unavailable markers. The fallback summary never includes provider-controlled body text or raw transport exception detail.
+
 ## References
 
 [1]: https://pnpm.io/10.x/settings#strictdepbuilds "pnpm 10.x Settings — strictDepBuilds"
