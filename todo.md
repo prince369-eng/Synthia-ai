@@ -3767,5 +3767,6 @@
 - [x] Refresh the production lockfile so the existing safe `form-data` override is consistently applied to configured transitive paths.
 - [x] Re-run dependency audit and full deterministic validation after the lockfile update.
 - [x] Assess the remaining `exceljs` and `pptxgenjs` transitive advisory paths before selecting a compatible upgrade or isolation strategy.
-- [ ] Add server-side image type, byte-size, pixel-count, and decode-time limits before any PPTX image processing path handles untrusted input.
-- [ ] Build and run a spreadsheet export/import compatibility suite before considering a scoped `exceljs → uuid` override.
+- [x] Verify the current text-and-table-only PowerPoint export has no untrusted image-processing path; require server-side image type, byte-size, pixel-count, and decode-time limits before any future image export feature is added.
+- [x] Build and run a real spreadsheet export/import compatibility suite before assessing a scoped `exceljs → uuid` override.
+- [ ] Monitor ExcelJS for a compatible UUID upgrade; do not force an incompatible override while the verified Synthia export path uses only UUID `v4`.
