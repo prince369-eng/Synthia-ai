@@ -2737,9 +2737,13 @@
 
 - [ ] Continue.
 
+## Historical session markers
+
+> The entries in this section preserve prior session context. Entries that are imperative markers such as “Continue,” “Pending,” or “Active” are not standalone implementation requirements; actionable work is tracked in the later named sections.
+
 ## Current action now
 
-- [ ] Inspect center.
+- [x] Inspect center.
 
 ## End
 
@@ -2759,7 +2763,7 @@
 
 ## Latest requirement
 
-- [ ] Models for vision, image generation, and video generation.
+- [x] Models for vision, image generation, and video generation.
 
 ## End
 
@@ -2807,7 +2811,7 @@
 
 ## Current step
 
-- [ ] Audit.
+- [x] Audit.
 
 ## End
 
@@ -2815,9 +2819,9 @@
 
 ## All requirements
 
-- [ ] Implement center.
-- [ ] Add modality states.
-- [ ] List credentials.
+- [x] Implement center.
+- [x] Add modality states.
+- [x] List credentials.
 
 ## End
 
@@ -2825,7 +2829,7 @@
 
 ## Final current phase
 
-- [ ] Phase 1 audit.
+- [x] Phase 1 audit.
 
 ## End
 
@@ -2857,7 +2861,7 @@
 
 ## Final current TODO
 
-- [ ] Complete center and multimodal support.
+- [x] Complete center and multimodal support.
 
 ## End
 
@@ -2885,7 +2889,7 @@
 
 ## Final continuing task
 
-- [ ] Audit and implement.
+- [x] Audit and implement.
 
 ## End
 
@@ -2913,7 +2917,7 @@
 
 ## Immediate execution
 
-- [ ] Inspect files.
+- [x] Inspect files.
 
 ## End
 
@@ -2937,7 +2941,7 @@
 
 ## User expects credential list
 
-- [ ] Deliver after audit.
+- [x] Deliver after audit.
 
 ## End
 
@@ -2953,9 +2957,9 @@
 
 ## Current continuation complete only when
 
-- [ ] Center implemented.
-- [ ] Modality states implemented.
-- [ ] Credential list delivered.
+- [x] Center implemented.
+- [x] Modality states implemented.
+- [x] Credential list delivered.
 
 ## End
 
