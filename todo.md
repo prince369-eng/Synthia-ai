@@ -3756,3 +3756,14 @@
 - [x] Prevent automatic provider switching when a media attempt might have been accepted remotely but its final outcome is unknown.
 - [x] Switch only after a preflight rejection or definitively failed attempt to a compatible configured media provider and model.
 - [x] Add deterministic regressions and validate the full suite for the verified media-routing update.
+
+## Remaining-area production-readiness audit
+- [x] Inventory implemented product areas, configuration dependencies, and incomplete feature boundaries.
+- [x] Review the remaining high-priority security, runtime, schema, and integration gaps without invoking paid or quota-consuming services.
+- [x] Verify representative high-priority user workflows and classify each remaining blocker as implementation, configuration, or external availability.
+- [x] Publish a prioritized next-step roadmap.
+
+## Production dependency remediation
+- [ ] Refresh the production lockfile so the existing safe `form-data` override is consistently applied to configured transitive paths.
+- [ ] Re-run dependency audit and full deterministic validation after the lockfile update.
+- [ ] Assess the remaining `exceljs` and `pptxgenjs` transitive advisory paths before selecting a compatible upgrade or isolation strategy.

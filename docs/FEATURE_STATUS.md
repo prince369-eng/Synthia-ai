@@ -14,7 +14,7 @@ This document is the operational truth source. A feature can be present in the i
 | Image, video, audio, and transcription | Configuration-gated | Input validation and provider-routing boundaries. | Supported model account, key, permitted quota, and explicit request. |
 | Scheduled workflows | Deployment-gated | Scheduling interface and protected workflow model. | Published deployment and deliberate schedule configuration. Preview does not create jobs. |
 | WorkOS alternative sign-in | Readiness-only | Configuration detection and safe disabled state. | Full WorkOS tenant configuration and explicit enablement. |
-| Network Lab Workspace | Implemented control plane | Owner-scoped proposals, topology data, configuration candidates, validation plans, approval states, short-lived manifests, and bounded evidence intake. | Apply reviewed PostgreSQL migrations before relying on persistence. |
+| Network Lab Workspace | Implemented control plane | Owner-scoped proposals, topology data, configuration candidates, validation plans, approval states, short-lived manifests, and bounded evidence intake. The reviewed PostgreSQL schema baseline is applied. | Configure the separate runner prerequisites before relying on local execution. |
 | Linux VirtualBox runner | Planned / not installed | Runner contract and local-safety design only. | Asymmetric signing key, reviewed runner package, Linux host preparation, licensed images, nested virtualization where applicable, and explicit operator confirmation. |
 | Production network access | Intentionally disabled | No production device execution path. | A separate governance, identity, audit, and production-write design; not in current scope. |
 
@@ -24,4 +24,4 @@ The existing Network Lab Workspace is **not** a network emulator and does not st
 
 ## Current limitations requiring action
 
-The network-lab schema migration files exist but remain pending application through the correct PostgreSQL deployment path. The initial private signing key has not been supplied. The runner is not installed on the Linux guest. Therefore a downloaded manifest should be treated as a control-plane artifact, not an executable lab run.
+The Network Lab schema baseline is applied to the configured PostgreSQL runtime. The initial private signing key has not been supplied and the runner is not installed on the Linux guest. Therefore a downloaded manifest should be treated as a control-plane artifact, not an executable lab run.
