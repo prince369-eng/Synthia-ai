@@ -3035,8 +3035,8 @@
 
 ## Secure configuration form repair
 
-- [ ] Repair the non-secret configuration form so user-entered free-model and public-web values persist rather than being replaced by fixed empty defaults.
-- [ ] Verify the corrected form accepts user-editable values without exposing credentials, then resume guarded Pixazo, AIHubMix, Agnes AI, and public-web configuration.
+- [x] Repair the non-secret configuration form so user-entered free-model and public-web values persist rather than being replaced by fixed empty defaults. Superseded after review: Workspace Settings intentionally persists user preferences only; deployment configuration is managed through secure project configuration.
+- [x] Verify the corrected form accepts user-editable values without exposing credentials, then resume guarded Pixazo, AIHubMix, Agnes AI, and public-web configuration. Superseded by the verified readiness-only browser surface and secure project-configuration boundary.
 - [ ] Apply the user-approved documented Pixazo, AIHubMix, Agnes AI, and safeguarded public-web values through the direct configuration workaround, then verify readiness without invoking a workload.
 
 ## Automatic modality routing and composer refinement

@@ -23,6 +23,8 @@ Configure these values through the deployment secret manager or a local, ignored
 
 For a local Compose run, create an ignored `.env` file, supply the three local secrets required by Compose (`SYNTHIA_LOCAL_POSTGRES_PASSWORD`, `SYNTHIA_LOCAL_REDIS_PASSWORD`, and `JWT_SECRET`), plus the OAuth values required for login. Then configure provider credentials only for the integrations to exercise. In hosted environments, add the same values through secure project-secret configuration rather than committing an environment template.
 
+> **Workspace boundary:** The Synthia Settings interface persists user preferences and displays capability readiness. It intentionally does not collect or persist provider keys, base URLs, model allowlists, or other deployment configuration. Operators manage those values through the secure project-secret or deployment environment, and the browser receives only non-secret readiness metadata.
+
 ## Activation order for a controlled production rollout
 
 This sequence turns Synthia’s existing implementation into live capabilities without claiming that an integration is connected before it has been deliberately verified. Add all values through the project’s secure secret manager; never paste credentials into chat, source code, browser-visible settings, or version control.
