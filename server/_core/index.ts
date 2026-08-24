@@ -42,6 +42,9 @@ async function startServer() {
   const allowedOrigins = new Set(corsAllowedOrigins({ publicAppUrl: ENV.publicAppUrl, isProduction: ENV.isProduction }));
   app.disable("x-powered-by");
   app.use((req, res, next) => {
+    for (const [name, value] of Object.entries(responseSecurityHeaders(ENV.isProduction))) {
+      res.setHeader(name, value);
+    }
     const origin = req.headers.origin;
     const isSameOrigin = typeof origin === "string" && isSameOriginRequest(origin, req.get("host"));
     if (origin && !allowedOrigins.has(origin) && !isSameOrigin) {
@@ -58,9 +61,6 @@ async function startServer() {
     if (req.method === "OPTIONS") {
       res.status(204).end();
       return;
-    }
-    for (const [name, value] of Object.entries(responseSecurityHeaders(ENV.isProduction))) {
-      res.setHeader(name, value);
     }
     next();
   });

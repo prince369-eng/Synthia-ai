@@ -19,5 +19,11 @@ describe("document response security header contract", () => {
     expect(productionHeaders["Strict-Transport-Security"]).toBe("max-age=31536000; includeSubDomains");
     expect(source).toContain("responseSecurityHeaders(ENV.isProduction)");
     expect(source).toContain("corsAllowedOrigins({ publicAppUrl: ENV.publicAppUrl, isProduction: ENV.isProduction })");
+    expect(source.indexOf("for (const [name, value] of Object.entries(responseSecurityHeaders(ENV.isProduction)))")).toBeLessThan(
+      source.indexOf("const origin = req.headers.origin;")
+    );
+    expect(source.indexOf("for (const [name, value] of Object.entries(responseSecurityHeaders(ENV.isProduction)))")).toBeLessThan(
+      source.indexOf('if (req.method === "OPTIONS")')
+    );
   });
 });
