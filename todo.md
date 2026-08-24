@@ -3774,4 +3774,5 @@
 - [x] Scan application source for active unfinished-feature markers and classify form hints, safe unavailable states, and task-bound Office exports correctly.
 - [x] Reconcile the environment reference with the implemented provider, connector, and alternative-auth configuration contracts without changing secrets.
 - [x] Reconcile the go-live credential checklist with the implemented automatic media routing, sandbox alternatives, and connected-app readiness contracts.
+- [x] Reconcile the operational feature-status reference with verified automatic routing and durable media safety boundaries.
 - [ ] Monitor ExcelJS for a compatible UUID upgrade; do not force an incompatible override while the verified Synthia export path uses only UUID `v4`.
