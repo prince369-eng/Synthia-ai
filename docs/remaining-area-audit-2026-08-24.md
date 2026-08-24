@@ -122,6 +122,10 @@ First, retain the fixed `form-data` lockfile resolution, the reviewed package-ma
 
 The Network Lab runner should remain after those application-level controls. It requires a separate Linux guest, operator-owned licensed images, signing keys, and explicit local approval; it is intentionally not an automatic web-service workload.
 
+## Core outbound adapter error boundary
+
+The core image-generation, image-model listing, map-proxy, LLM invocation, and LLM model-listing adapters now discard provider response bodies and status text on failed upstream requests. Their thrown failures retain only a stable operation label and numeric HTTP status. This preserves retry and operator classification while preventing provider-controlled body text from becoming a reusable error or logging disclosure path. The contract is covered by deterministic source-boundary regression and was validated without making an upstream request.
+
 ## References
 
 [1]: https://pnpm.io/10.x/settings#strictdepbuilds "pnpm 10.x Settings — strictDepBuilds"

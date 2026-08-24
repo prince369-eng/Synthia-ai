@@ -80,10 +80,7 @@ export async function makeRequest<T = unknown>(
   });
 
   if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(
-      `Google Maps API request failed (${response.status} ${response.statusText}): ${errorText}`
-    );
+    throw new Error(`Google Maps API request failed with HTTP ${response.status}`);
   }
 
   return (await response.json()) as T;
@@ -313,7 +310,6 @@ export type RoadsResult = {
  * Output: Image URL (not JSON) - use directly in <img src={url} />
  * Note: Construct URL manually with getMapsConfig() for auth
  */
-
 
 
 

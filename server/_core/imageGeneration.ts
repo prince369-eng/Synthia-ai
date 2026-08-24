@@ -80,10 +80,7 @@ export async function generateImage(
   });
 
   if (!response.ok) {
-    const detail = await response.text().catch(() => "");
-    throw new Error(
-      `Image generation request failed (${response.status} ${response.statusText})${detail ? `: ${detail}` : ""}`
-    );
+    throw new Error(`Image generation request failed with HTTP ${response.status}`);
   }
 
   const result = (await response.json()) as {
@@ -149,10 +146,7 @@ export async function listImageModels(): Promise<ListImageModelsResponse> {
   });
 
   if (!response.ok) {
-    const detail = await response.text().catch(() => "");
-    throw new Error(
-      `List image models failed (${response.status} ${response.statusText})${detail ? `: ${detail}` : ""}`
-    );
+    throw new Error(`List image models failed with HTTP ${response.status}`);
   }
 
   const result = (await response.json()) as { models?: ImageModelInfo[] };

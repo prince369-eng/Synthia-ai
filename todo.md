@@ -3813,4 +3813,5 @@
 - [x] Audit notification delivery failure handling; preserve payload validation while preventing internal configuration details from reaching regular client paths.
 - [x] Remove raw upstream response text from structured provider logs while retaining bounded failure classification and status observability.
 - [x] Expand structured logger redaction for credential-bearing cookie, token, secret, and request-header fields with serialization regression coverage.
+- [x] Remove raw upstream response bodies from core image, map, and LLM adapter errors while retaining bounded status and failure classification.
 - [ ] Monitor ExcelJS for a compatible UUID upgrade; do not force an incompatible override while the verified Synthia export path uses only UUID `v4`.
