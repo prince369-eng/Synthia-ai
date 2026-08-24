@@ -3781,4 +3781,5 @@
 - [x] Reconcile the environment reference with the implemented provider, connector, and alternative-auth configuration contracts without changing secrets.
 - [x] Reconcile the go-live credential checklist with the implemented automatic media routing, sandbox alternatives, and connected-app readiness contracts.
 - [x] Reconcile the operational feature-status reference with verified automatic routing and durable media safety boundaries.
+- [x] Diagnose why the managed preview service is not returning a preview link despite a running development server, then restore or document the bounded recovery path.
 - [ ] Monitor ExcelJS for a compatible UUID upgrade; do not force an incompatible override while the verified Synthia export path uses only UUID `v4`.

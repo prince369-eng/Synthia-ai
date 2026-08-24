@@ -54,6 +54,10 @@ One explicitly approved text-only validation was created with web search, code e
 
 The managed screenshot endpoint did not expose a preview URL during this review. A temporary local preview was recovered and reached its authenticated workspace loading state; no composer submission, task mutation, provider call, or user action was performed. A complete layout audit remains dependent on the authenticated workspace resolving in the preview environment, so the outstanding visual-refinement tracker items remain open rather than being inferred from source inspection alone.
 
+## Managed preview availability boundary
+
+The local Synthia server restarted cleanly, listens on the expected port, and returns HTTP 200 locally. The managed preview service did not publish a preview URL after restart, and the temporary public proxy returned its own unavailable page despite the healthy local process. This indicates a preview-routing or sandbox gateway availability issue rather than an application startup, type-check, or local HTTP failure. The safe recovery is to restart the managed service and wait for its preview mapping to be reissued; no source change, task submission, provider request, or external agent action is required. If the mapping remains absent, the project can still be checked from the Management UI once its preview service recovers.
+
 ## Recommended sequence
 
 First, retain the fixed `form-data` lockfile resolution and the ExcelJS export/import contract while monitoring for an upstream-compatible UUID upgrade. Second, preserve the current no-image PowerPoint export boundary; if a future feature needs user-provided images, introduce strict type/size checks and an isolated execution boundary before dependency changes or image parsing. Third, conduct a real deployment readiness pass for OAuth redirects, worker supervision, Redis reliability, provider quotas, storage, and the integrations the operator actually intends to enable.
