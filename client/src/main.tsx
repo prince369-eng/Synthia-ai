@@ -8,7 +8,7 @@ import superjson from "superjson";
 import App from "./App";
 import { EXPLICIT_SIGNED_OUT_STORAGE_KEY, startLogin } from "./const";
 import { shouldMountSynthiaWorkspace } from "./lib/bootstrap";
-import { composerTransportProbePayload, type ComposerTransportProbeOutcome } from "./lib/composerTransportProbe";
+import { composerTransportProbePayload, composerTransportProbeStatusLabel, type ComposerTransportProbeOutcome } from "./lib/composerTransportProbe";
 import { isTrpcLikeError } from "./lib/trpcErrorShape";
 import "./index.css";
 
@@ -140,12 +140,31 @@ function reportComposerTransportProbe(outcome: ComposerTransportProbeOutcome, er
   }
 }
 
+function renderComposerTransportProbeStatus(outcome: ComposerTransportProbeOutcome) {
+  try {
+    const statusId = "synthia-transport-probe-status";
+    const existing = document.getElementById(statusId);
+    const status = existing ?? document.createElement("div");
+    status.id = statusId;
+    status.setAttribute("role", "status");
+    status.setAttribute("aria-live", "polite");
+    status.dataset.outcome = outcome;
+    status.textContent = composerTransportProbeStatusLabel(outcome);
+    status.style.cssText = "position:fixed;right:16px;bottom:16px;z-index:2147483647;max-width:min(360px,calc(100vw - 32px));border:1px solid rgba(45,212,191,.42);border-radius:10px;background:#062a2a;color:#ecfeff;padding:10px 12px;font:500 13px/1.4 system-ui,sans-serif;box-shadow:0 12px 28px rgba(0,0,0,.28);";
+    if (!existing) document.body.append(status);
+  } catch {
+    // The diagnostic indicator must never affect workspace bootstrap.
+  }
+}
+
 if (window.__SYNTHIA_TRANSPORT_PROBE__ === true) {
+  renderComposerTransportProbeStatus("started");
   reportComposerTransportProbe("started");
   let settled = false;
   const timeout = window.setTimeout(() => {
     if (settled) return;
     settled = true;
+    renderComposerTransportProbeStatus("timeout");
     reportComposerTransportProbe("timeout");
   }, 5_000);
   void trpcClient.diagnostics.composerTransportProbe.mutate()
@@ -153,12 +172,14 @@ if (window.__SYNTHIA_TRANSPORT_PROBE__ === true) {
       if (settled) return;
       settled = true;
       window.clearTimeout(timeout);
+      renderComposerTransportProbeStatus("success");
       reportComposerTransportProbe("success");
     })
     .catch(error => {
       if (settled) return;
       settled = true;
       window.clearTimeout(timeout);
+      renderComposerTransportProbeStatus("failure");
       reportComposerTransportProbe("failure", error);
     });
 }

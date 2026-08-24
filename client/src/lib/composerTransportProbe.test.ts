@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { composerTransportProbePayload } from "./composerTransportProbe";
+import { composerTransportProbePayload, composerTransportProbeStatusLabel } from "./composerTransportProbe";
 
 describe("composerTransportProbePayload", () => {
   it("reports fixed lifecycle outcomes without task data", () => {
@@ -14,5 +14,12 @@ describe("composerTransportProbePayload", () => {
       trpcCode: "PRECONDITION_FAILED",
     });
     expect(JSON.stringify(composerTransportProbePayload("failure", { message: "private context" }))).not.toContain("private context");
+  });
+
+  it("uses fixed, detail-free labels for browser-visible probe outcomes", () => {
+    expect(composerTransportProbeStatusLabel("started")).toBe("Checking workspace connection…");
+    expect(composerTransportProbeStatusLabel("success")).toBe("Workspace connection check completed.");
+    expect(composerTransportProbeStatusLabel("failure")).toBe("Workspace connection check needs attention.");
+    expect(composerTransportProbeStatusLabel("timeout")).toBe("Workspace connection check is taking longer than expected.");
   });
 });
