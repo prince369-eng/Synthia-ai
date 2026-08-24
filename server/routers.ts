@@ -1686,9 +1686,27 @@ export const appRouter = router({
       if (!["paused", "needs_input"].includes(task.status)) {
         throw new TRPCError({ code: "BAD_REQUEST", message: "Only a paused or input-blocked task may be resumed." });
       }
+      let executionQueued = false;
+      try {
+        executionQueued = await enqueueTaskCycle(task.id);
+      } catch (error) {
+        logger.error({
+          event: "task_resume_queue_failed",
+          userId: ctx.user.id,
+          taskId: task.id,
+          taskCreationStage: "queue_resume",
+          errorKind: error instanceof Error ? error.name : "unknown",
+        }, "Task continuation could not be queued");
+      }
+      if (!executionQueued) {
+        const summary = "Task could not be queued for continuation. Restore the queue service, then resume this task.";
+        await updateTaskForUser(task.id, ctx.user.id, { status: "needs_input", currentStepSummary: summary });
+        await appendTaskEvent(task.id, { type: "error", payload: { category: "queue_unavailable", summary } });
+        return { success: true, executionQueued: false };
+      }
       await updateTaskForUser(task.id, ctx.user.id, { status: "queued", currentStepSummary: "Queued for continuation." });
       await appendTaskEvent(task.id, { type: "status_change", payload: { status: "queued", summary: "Queued for continuation." } });
-      return { success: true, executionQueued: await enqueueTaskCycle(task.id) };
+      return { success: true, executionQueued: true };
     }),
     cancel: protectedProcedure.input(taskIdSchema).mutation(async ({ ctx, input }) => {
       const task = await requireOwnedTask(input.taskId, ctx.user.id);

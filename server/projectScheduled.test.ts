@@ -282,6 +282,36 @@ describe("projects and scheduled router procedures", () => {
     }));
   });
 
+  it("keeps a user-resumed task actionable when continuation queueing fails", async () => {
+    const taskId = "77777777-7777-4777-8777-777777777777";
+    const blockedTask = { id: taskId, userId: applicationUserId, status: "needs_input", title: "Deferred task" };
+    vi.spyOn(db, "getTaskForUser").mockResolvedValue(blockedTask as never);
+    vi.spyOn(db, "updateTaskForUser").mockResolvedValue(blockedTask as never);
+    vi.spyOn(db, "appendTaskEvent").mockResolvedValue({ id: "event-queue-recovery", sequenceNumber: 5 } as never);
+    vi.spyOn(queue, "enqueueTaskCycle").mockRejectedValue(new Error("redis continuation queue unavailable"));
+    const logError = vi.spyOn(logger, "error").mockImplementation(() => undefined as never);
+
+    await expect(appRouter.createCaller(createContext()).tasks.resume({ taskId })).resolves.toEqual({ success: true, executionQueued: false });
+
+    expect(db.updateTaskForUser).toHaveBeenCalledWith(taskId, applicationUserId, expect.objectContaining({ status: "needs_input" }));
+    expect(db.appendTaskEvent).toHaveBeenCalledWith(taskId, expect.objectContaining({
+      type: "error",
+      payload: expect.objectContaining({ category: "queue_unavailable" }),
+    }));
+    expect(db.appendTaskEvent).not.toHaveBeenCalledWith(taskId, expect.objectContaining({
+      type: "status_change",
+      payload: expect.objectContaining({ status: "queued" }),
+    }));
+    expect(logError).toHaveBeenCalledWith(expect.objectContaining({
+      event: "task_resume_queue_failed",
+      userId: applicationUserId,
+      taskId,
+      taskCreationStage: "queue_resume",
+      errorKind: "Error",
+    }), "Task continuation could not be queued");
+    expect(JSON.stringify(logError.mock.calls)).not.toContain("redis continuation queue unavailable");
+  });
+
   it("refuses unconnected app selections before creating a task or queueing work", async () => {
     vi.spyOn(db, "listIntegrationsForUser").mockResolvedValue([] as never);
     const createTask = vi.spyOn(db, "createTaskForUser");

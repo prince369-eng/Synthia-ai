@@ -3710,3 +3710,8 @@
 - [x] Add stage-specific safe error conversion around composer preparation steps that run before persistence.
 - [x] Replace the composer’s generic client fallback with bounded visible transport or tRPC recovery guidance that never exposes error messages or task content.
 - [x] Update the live composer diagnostic record with the confirmed proxy-origin rejection and successful authenticated no-op mutation after the CORS correction.
+
+## Live queue and worker readiness follow-up
+- [x] Inspect the successfully persisted user-approved task and queue/worker readiness without dispatching or resuming task work.
+- [x] Correct only a confirmed queue configuration or recovery-boundary blocker, preserving explicit user control over task execution.
+- [ ] Add deterministic regression coverage and push any verified queue-reliability correction without force-overwriting GitHub history.
