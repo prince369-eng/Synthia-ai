@@ -374,9 +374,9 @@
 
 ## Security verification for media
 
-- [ ] Validate MIME, size, ownership, and storage policy for image/audio/video inputs.
-- [ ] Validate generation output storage, ownership, and artifact retrieval.
-- [ ] Validate generation failure, timeout, rate-limit, and unavailable-provider states.
+- [x] Validate MIME, size, ownership, and storage policy for image/audio/video inputs through deterministic adapter and policy regressions.
+- [x] Validate generation output storage, ownership, and artifact retrieval through deterministic task-artifact and media-attempt regressions.
+- [x] Validate generation failure, timeout, rate-limit, and unavailable-provider states through deterministic provider and worker regressions; live-provider validation remains separately approval- and quota-gated.
 
 ## Deployment prerequisite
 
