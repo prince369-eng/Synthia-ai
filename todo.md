@@ -3805,4 +3805,6 @@
 - [x] Add and verify a terminal Express error boundary so unexpected route failures return a bounded client-safe response instead of default framework output.
 - [x] Ensure central response-security headers also cover rejected-origin and preflight responses without relaxing CORS policy.
 - [x] Audit the OAuth callback and client state-cookie boundary; preserve nonce binding, host-only secure cookie attributes, and public-HTTPS account-portal validation with deterministic regression coverage.
+- [x] Audit the secure-transport and reverse-proxy trust boundary for session cookies; preserve current managed-path behavior pending an explicit deployment topology decision rather than inventing a default trust policy.
+- [ ] Before enabling an external deployment, configure and validate an explicit reverse-proxy trust boundary for forwarded HTTPS headers, session cookies, OAuth callbacks, and task-owned artifact origins.
 - [ ] Monitor ExcelJS for a compatible UUID upgrade; do not force an incompatible override while the verified Synthia export path uses only UUID `v4`.
