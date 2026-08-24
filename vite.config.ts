@@ -5,6 +5,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { defineConfig, type Plugin, type ViteDevServer } from "vite";
 import { vitePluginManusRuntime } from "vite-plugin-manus-runtime";
+import { redactDebugLogEntries } from "./server/_core/debugDiagnostics";
 import { revisionedClassicPreviewScript } from "./shared/previewBundle";
 
 // =============================================================================
@@ -55,9 +56,10 @@ function writeToLogFile(source: LogSource, entries: unknown[]) {
 
   ensureLogDir();
   const logPath = path.join(LOG_DIR, `${source}.log`);
+  const safeEntries = redactDebugLogEntries(source, entries);
 
   // Format entries with timestamps
-  const lines = entries.map((entry) => {
+  const lines = safeEntries.map((entry) => {
     const ts = new Date().toISOString();
     return `[${ts}] ${JSON.stringify(entry)}`;
   });
@@ -127,7 +129,7 @@ function vitePluginManusDebugCollector(): Plugin {
             handlePayload(reqBody);
           } catch (e) {
             res.writeHead(400, { "Content-Type": "application/json" });
-            res.end(JSON.stringify({ success: false, error: String(e) }));
+            res.end(JSON.stringify({ success: false, error: "INVALID_DEBUG_LOG_PAYLOAD" }));
           }
           return;
         }
@@ -143,7 +145,7 @@ function vitePluginManusDebugCollector(): Plugin {
             handlePayload(payload);
           } catch (e) {
             res.writeHead(400, { "Content-Type": "application/json" });
-            res.end(JSON.stringify({ success: false, error: String(e) }));
+            res.end(JSON.stringify({ success: false, error: "INVALID_DEBUG_LOG_PAYLOAD" }));
           }
         });
       });
