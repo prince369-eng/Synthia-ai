@@ -3798,4 +3798,5 @@
 - [x] Audit repository ignore rules and production build-output settings for credential or artifact-containment gaps without reading secret values; keep the development-only classic preview bundle out of production artifacts.
 - [x] Harden repository ignore rules so uncommitted environment-configuration filename variants remain excluded without reading or changing secret values.
 - [x] Eliminate the production build's retained classic preview-script advisory while preserving the development-only cache-busted fallback.
+- [x] Review the remaining client bundle-size advisories and apply a measured, low-risk vendor chunking improvement: application and route entries are below the default warning threshold, while the lazy LiveKit runtime remains intentionally isolated for separate assessment.
 - [ ] Monitor ExcelJS for a compatible UUID upgrade; do not force an incompatible override while the verified Synthia export path uses only UUID `v4`.

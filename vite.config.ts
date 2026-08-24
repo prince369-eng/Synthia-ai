@@ -175,6 +175,16 @@ function vitePluginSynthiaProductionPreviewGuard(): Plugin {
   };
 }
 
+function synthiaManualChunks(id: string) {
+  if (!id.includes("node_modules")) return undefined;
+  if (id.includes("/node_modules/livekit-client/")) return "livekit-runtime";
+  if (id.includes("/node_modules/@radix-ui/") || id.includes("/node_modules/@floating-ui/")) return "radix-ui";
+  if (id.includes("/node_modules/lucide-react/")) return "lucide-icons";
+  if (id.includes("/node_modules/@tanstack/") || id.includes("/node_modules/@trpc/") || id.includes("/node_modules/superjson/")) return "data-client";
+  if (id.includes("/node_modules/react/") || id.includes("/node_modules/react-dom/") || id.includes("/node_modules/scheduler/") || id.includes("/node_modules/wouter/")) return "react-runtime";
+  return undefined;
+}
+
 const plugins = [react(), tailwindcss(), jsxLocPlugin(), vitePluginManusRuntime(), vitePluginManusDebugCollector(), vitePluginSynthiaProductionPreviewGuard()];
 
 export default defineConfig({
@@ -192,6 +202,11 @@ export default defineConfig({
   build: {
     outDir: path.resolve(import.meta.dirname, "dist/public"),
     emptyOutDir: true,
+    rollupOptions: {
+      output: {
+        manualChunks: synthiaManualChunks,
+      },
+    },
   },
   server: {
     host: true,

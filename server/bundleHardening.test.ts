@@ -20,4 +20,16 @@ describe("production client bundle hardening", () => {
     expect(packageManifest).toContain('"build:preview": "pnpm build && esbuild client/src/main.tsx');
     expect(packageManifest).toContain('"dev": "pnpm build:preview && SYNTHIA_STATIC_PREVIEW=true');
   });
+
+  it("keeps measured client vendors in stable chunks rather than inflating application route entries", () => {
+    const viteConfig = readFileSync(new URL("../vite.config.ts", import.meta.url), "utf8");
+
+    expect(viteConfig).toContain("function synthiaManualChunks(id: string)");
+    expect(viteConfig).toContain('return "livekit-runtime";');
+    expect(viteConfig).toContain('return "radix-ui";');
+    expect(viteConfig).toContain('return "lucide-icons";');
+    expect(viteConfig).toContain('return "data-client";');
+    expect(viteConfig).toContain('return "react-runtime";');
+    expect(viteConfig).toContain("manualChunks: synthiaManualChunks");
+  });
 });
