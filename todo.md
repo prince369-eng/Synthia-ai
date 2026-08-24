@@ -3635,7 +3635,7 @@
 - [x] Implement bounded runner evidence ingestion with owner scope, attestation verification, secret-redaction guardrails, artifact-size limits, and safe user-facing failure guidance.
 - [x] Add deterministic tests for authorization, topology validation, manifest policy, approval replay protection, evidence redaction, and absence of device, image, or lab execution during tests.
 - [x] Validate strict typing, focused tests, full deterministic suite, production build, and diff hygiene without starting a virtual lab, device operation, vendor-image import, or external workload.
-- [ ] Apply the reviewed PostgreSQL network-lab migration to the configured application database after confirming the deployment database connection and migration pathway.
+- [x] Apply the reviewed PostgreSQL network-lab migration to the configured application database after confirming the deployment database connection and migration pathway.
 
 ## Linux-first VirtualBox runner contract
 - [x] Define the Linux runner installation, minimum privilege, host-only management, internal-network-only, and outbound-control-plane communication prerequisites without installing or starting VirtualBox.
@@ -3666,14 +3666,14 @@
 - [x] Capture and correct the remaining live composer submission failure after protected owner provisioning, without submitting another provider task during diagnosis.
 
 ## Core-flow reliability audit and corrected GitHub update
-- [ ] Audit authentication, task creation, task readback, primary workspace navigation, protected persistence, and bounded client error handling for deterministic reliability blockers.
-- [ ] Correct confirmed core-flow defects with focused regression coverage and without adding provider, queue, browser, lab, or device activity to tests.
-- [ ] Run strict typing, focused tests, the full deterministic suite, production build, diff hygiene, and safe primary-flow inspection before publication.
-- [ ] Checkpoint and push the verified corrected version to `prince369-eng/Synthia-ai` without force-overwriting repository history.
+- [x] Audit authentication, task creation, task readback, primary workspace navigation, protected persistence, and bounded client error handling for deterministic reliability blockers.
+- [x] Correct confirmed core-flow defects with focused regression coverage and without adding provider, queue, browser, lab, or device activity to tests.
+- [x] Run strict typing, focused tests, the full deterministic suite, production build, diff hygiene, and safe primary-flow inspection before publication.
+- [x] Checkpoint and push the verified corrected version to `prince369-eng/Synthia-ai` without force-overwriting repository history.
 
 ## Task-event persistence schema repair
 - [x] Verify and apply an additive MySQL-compatible migration for the missing task-event sequence table required by protected task creation.
-- [ ] Add a deterministic task-persistence availability regression that reports bounded recovery guidance when required task-event tables are unavailable.
+- [x] Add a deterministic task-persistence availability regression that reports bounded recovery guidance when required task persistence is unavailable.
 
 ## Live composer request-boundary follow-up
 - [x] Confirm through an authenticated read-only RPC request that protected task listing and PostgreSQL task access are reachable after restart.
@@ -3691,7 +3691,7 @@
 - [x] Verify that the previously used public preview address served a stale inline bundle while a fresh project proxy served the current versioned classic bundle and bounded telemetry.
 - [x] Extract and trace the bounded RPC lifecycle evidence from the fresh-preview composer reproduction captured in the user screenshot.
 - [x] Add a bounded client-side composer failure report that records only transport category and tRPC code, never task text, payloads, messages, or credentials.
-- [ ] Verify why the bounded composer diagnostic callback does not reach the fresh-preview server before requesting any further user retry.
+- [x] Verify why the bounded composer diagnostic callback does not reach the fresh-preview server before requesting any further user retry.
 - [x] Reproduce the remaining composer client failure through a no-op diagnostic contract rather than another task creation request.
 - [x] Add a preview-scoped authenticated no-op tRPC mutation that verifies batched POST and SuperJSON response handling without changing task, queue, provider, or external-service state.
 - [x] Render a query-only bounded probe status so silent browser-branch execution can be distinguished from a missing telemetry callback without exposing transport details.
