@@ -93,4 +93,37 @@ describe("mediaReadiness", () => {
     expect(result.audio).toMatchObject({ provider: "pixazo", models: ["tracks"], configured: true, route: "server/media/pixazo.ts" });
     expect(result.audio.reason).toBeUndefined();
   });
+
+  it("ranks the configured primary route before other credential-gated compatible candidates", () => {
+    const result = mediaReadiness({
+      imageProvider: "pixazo",
+      imageModels: ["flux"],
+      pixazoApiKey: "pixazo-test-key",
+      pixazoGenerationEnabled: true,
+      pixazoImageModels: ["flux", "flux-pro"],
+      aihubmixApiKey: "aihubmix-test-key",
+      aihubmixGenerationEnabled: true,
+      aihubmixArtifactAllowedHosts: ["cdn.example.test"],
+      aihubmixImageModels: ["wan-image"],
+    });
+
+    expect(result.image.candidates).toEqual([
+      { provider: "pixazo", model: "flux" },
+      { provider: "pixazo", model: "flux-pro" },
+      { provider: "aihubmix", model: "wan-image" },
+    ]);
+  });
+
+  it("selects an available compatible candidate when the primary route lacks its credential", () => {
+    const result = mediaReadiness({
+      imageProvider: "gemini",
+      imageModels: ["gemini-3.1-flash-image"],
+      pixazoApiKey: "pixazo-test-key",
+      pixazoGenerationEnabled: true,
+      pixazoImageModels: ["flux"],
+    });
+
+    expect(result.image).toMatchObject({ configured: true });
+    expect(result.image.candidates).toEqual([{ provider: "pixazo", model: "flux" }]);
+  });
 });

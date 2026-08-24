@@ -9,8 +9,14 @@ export type MediaProviderEnvironment = {
   videoApiKey?: string;
   pixazoApiKey?: string;
   pixazoGenerationEnabled?: boolean;
+  pixazoImageModels?: string[];
+  pixazoVideoModels?: string[];
+  pixazoAudioModels?: string[];
   aihubmixApiKey?: string;
   aihubmixGenerationEnabled?: boolean;
+  aihubmixImageModels?: string[];
+  aihubmixVideoModels?: string[];
+  aihubmixAudioModels?: string[];
   aihubmixArtifactAllowedHosts?: string[];
   audioProvider?: string;
   audioModels?: string[];
@@ -22,6 +28,7 @@ export type MediaCapability = {
   configured: boolean;
   route: string;
   reason?: string;
+  candidates: Array<{ provider: "gemini" | "pixazo" | "aihubmix"; model: string }>;
 };
 
 function credentialFor(provider: string, environment: MediaProviderEnvironment): string {
@@ -59,13 +66,35 @@ export function mediaReadiness(environment: MediaProviderEnvironment): {
   const audioModels = environment.audioModels ?? [];
   const audioConfigured = Boolean(audioProvider && audioModels.length > 0 && credentialFor(audioProvider, environment));
 
+  const candidatesFor = (kind: "image" | "video" | "audio", primary: { provider: string | null; models: string[]; configured: boolean }) => {
+    const candidates: Array<{ provider: "gemini" | "pixazo" | "aihubmix"; model: string }> = [];
+    const add = (provider: string | null | undefined, models: string[], configured: boolean) => {
+      if (!configured || (provider !== "gemini" && provider !== "pixazo" && provider !== "aihubmix")) return;
+      for (const model of models) {
+        const normalized = model.trim();
+        if (normalized && !candidates.some(candidate => candidate.provider === provider && candidate.model === normalized)) {
+          candidates.push({ provider, model: normalized });
+        }
+      }
+    };
+    add(primary.provider, primary.models, primary.configured);
+    add("pixazo", kind === "image" ? (environment.pixazoImageModels ?? []) : kind === "video" ? (environment.pixazoVideoModels ?? []) : (environment.pixazoAudioModels ?? []), Boolean(environment.pixazoGenerationEnabled && environment.pixazoApiKey));
+    add("aihubmix", kind === "image" ? (environment.aihubmixImageModels ?? []) : kind === "video" ? (environment.aihubmixVideoModels ?? []) : (environment.aihubmixAudioModels ?? []), Boolean(environment.aihubmixGenerationEnabled && environment.aihubmixApiKey && (environment.aihubmixArtifactAllowedHosts?.length ?? 0) > 0));
+    return candidates;
+  };
+
+  const imageCandidates = candidatesFor("image", { provider: imageProvider, models: imageModels, configured: imageConfigured });
+  const videoCandidates = candidatesFor("video", { provider: videoProvider, models: videoModels, configured: videoConfigured });
+  const audioCandidates = candidatesFor("audio", { provider: audioProvider, models: audioModels, configured: audioConfigured });
+
   return {
     image: {
       provider: imageProvider,
       models: imageModels,
-      configured: imageConfigured,
+      configured: imageConfigured || imageCandidates.length > 0,
+      candidates: imageCandidates,
       route: imageProvider === "gemini" ? "server/media/gemini.ts" : imageProvider === "pixazo" ? "server/media/pixazo.ts" : imageProvider === "aihubmix" ? "server/media/aihubmix.ts" : "server/_core/imageGeneration.ts",
-      reason: imageConfigured
+      reason: imageConfigured || imageCandidates.length > 0
         ? undefined
         : imageProvider === "aihubmix"
           ? "Add AIHUBMIX_API_KEY, an allowlisted AIHUBMIX_IMAGE_MODELS value, AIHUBMIX_ARTIFACT_ALLOWED_HOSTS, and SYNTHIA_AIHUBMIX_GENERATION_ENABLED=true before enabling image generation."
@@ -74,9 +103,10 @@ export function mediaReadiness(environment: MediaProviderEnvironment): {
     video: {
       provider: videoProvider,
       models: videoModels,
-      configured: videoConfigured,
+      configured: videoConfigured || videoCandidates.length > 0,
+      candidates: videoCandidates,
       route: videoProvider === "gemini-omni-flash" ? "server/media/gemini.ts" : videoProvider === "pixazo" ? "server/media/pixazo.ts" : videoProvider === "aihubmix" ? "server/media/aihubmix.ts" : "server/media/video.ts",
-      reason: videoConfigured
+      reason: videoConfigured || videoCandidates.length > 0
         ? undefined
         : videoProvider === "aihubmix"
           ? "Add AIHUBMIX_API_KEY, an allowlisted AIHUBMIX_VIDEO_MODELS value, AIHUBMIX_ARTIFACT_ALLOWED_HOSTS, and SYNTHIA_AIHUBMIX_GENERATION_ENABLED=true before enabling video generation."
@@ -85,9 +115,10 @@ export function mediaReadiness(environment: MediaProviderEnvironment): {
     audio: {
       provider: audioProvider,
       models: audioModels,
-      configured: audioConfigured,
+      configured: audioConfigured || audioCandidates.length > 0,
+      candidates: audioCandidates,
       route: audioProvider === "pixazo" ? "server/media/pixazo.ts" : audioProvider === "aihubmix" ? "server/media/aihubmix.ts" : "server/media/audio.ts",
-      reason: audioConfigured
+      reason: audioConfigured || audioCandidates.length > 0
         ? undefined
         : audioProvider === "pixazo"
           ? "Add a real audio provider credential and at least one configured audio model before enabling generation."

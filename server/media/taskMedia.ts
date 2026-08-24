@@ -1,4 +1,11 @@
-import { appendTaskEvent, createDeliverable, listTaskAttachments } from "../db";
+import { createHash } from "node:crypto";
+import {
+  appendTaskEvent,
+  claimMediaGenerationAttempt,
+  completeMediaGenerationAttempt,
+  listTaskAttachments,
+  markMediaGenerationAttemptUnresolved,
+} from "../db";
 import { ENV } from "../_core/env";
 import { storageGetSignedUrl } from "../storage";
 import { getTaskArtifactUrl, putTaskArtifact } from "../agent/artifactStorage";
@@ -16,6 +23,40 @@ export class TaskMediaRequestError extends Error {
     super(message);
     this.name = "TaskMediaRequestError";
   }
+}
+
+export class TaskMediaAttemptUnresolvedError extends Error {
+  constructor(public readonly status: "uncertain" | "preflight_rejected" = "uncertain") {
+    super(status === "uncertain"
+      ? "A prior media request may still have an unresolved remote outcome."
+      : "The selected media route was rejected before generation started.");
+    this.name = "TaskMediaAttemptUnresolvedError";
+  }
+}
+
+function requestFingerprint(input: {
+  kind: TaskMediaKind;
+  prompt: string;
+  aspectRatio?: string;
+  referenceAttachmentId?: string;
+  provider?: TaskMediaProvider;
+  model?: string;
+}) {
+  return createHash("sha256")
+    .update(JSON.stringify({
+      kind: input.kind,
+      prompt: input.prompt,
+      aspectRatio: input.aspectRatio ?? null,
+      referenceAttachmentId: input.referenceAttachmentId ?? null,
+      provider: input.provider ?? null,
+      model: input.model ?? null,
+    }))
+    .digest("hex");
+}
+
+function isSafePreflightFailure(error: unknown) {
+  return (error instanceof GeminiMediaError || error instanceof PixazoMediaError || error instanceof AIHubMixMediaError)
+    && (error.code === "CONFIGURATION_REQUIRED" || error.code === "INVALID_REQUEST");
 }
 
 function extensionFor(kind: TaskMediaKind, mimeType: string) {
@@ -77,8 +118,20 @@ export async function executeTaskMedia(input: {
     if (error instanceof RateLimitError) throw new TaskMediaRequestError("RATE_LIMITED", error.message);
     throw error;
   }
+
   const provider = providerFor(input.kind, input.provider);
   const reference = input.kind === "audio" ? undefined : await imageReferenceForTask(input.taskId, input.referenceAttachmentId);
+  const claim = await claimMediaGenerationAttempt({
+    taskId: input.taskId,
+    userId: input.userId,
+    requestFingerprint: requestFingerprint(input),
+    kind: input.kind,
+    provider,
+    model: input.model,
+  });
+  if (claim.state === "succeeded") return claim.result;
+  if (claim.state === "blocked") throw new TaskMediaAttemptUnresolvedError(claim.status === "preflight_rejected" ? "preflight_rejected" : "uncertain");
+
   await appendTaskEvent(input.taskId, {
     type: "tool_call",
     payload: { tool: `${provider}_media_generation`, provider, kind: input.kind, model: input.model ?? null, referenceAttachmentId: input.referenceAttachmentId ?? null },
@@ -103,19 +156,33 @@ export async function executeTaskMedia(input: {
             : await generateGeminiVideo({ prompt: input.prompt, model: input.model, aspectRatio: input.aspectRatio === "9:16" ? "9:16" : "16:9", reference });
     const filename = `synthia-${generated.kind}-${Date.now()}.${extensionFor(generated.kind, generated.mimeType)}`;
     const artifact = await putTaskArtifact({ taskId: input.taskId, filename, body: generated.bytes, contentType: generated.mimeType });
-    const event = await appendTaskEvent(input.taskId, {
-      type: "tool_result",
-      payload: { tool: `${provider}_media_generation`, kind: generated.kind, provider: generated.provider, model: generated.model, interactionId: generated.interactionId, storageKey: artifact.key },
+    const deliverableId = await completeMediaGenerationAttempt({
+      attemptId: claim.attemptId,
+      taskId: input.taskId,
+      filename,
+      fileType: generated.mimeType,
+      storageKey: artifact.key,
+      storageUrl: artifact.url,
+      provider: generated.provider,
+      model: generated.model,
+      interactionId: generated.interactionId,
     });
-    const deliverableId = await createDeliverable({ taskId: input.taskId, eventId: event.id, filename, fileType: generated.mimeType, storageKey: artifact.key, storageUrl: artifact.url, isFinal: false });
     logger.info({ event: "media_generation_completed", provider, taskId: input.taskId, userId: input.userId, kind: generated.kind, model: generated.model, deliverableId }, "Media generation completed");
     return { deliverableId, filename, fileType: generated.mimeType, provider: generated.provider, model: generated.model };
   } catch (error) {
     const mediaError = error instanceof GeminiMediaError || error instanceof PixazoMediaError || error instanceof AIHubMixMediaError ? error : null;
     const code = mediaError?.code ?? "MEDIA_GENERATION_FAILED";
-    const message = mediaError?.message ?? "Media generation failed.";
+    const status = isSafePreflightFailure(error) ? "preflight_rejected" : "uncertain";
+    const message = status === "preflight_rejected"
+      ? "The selected media route is not ready for this request."
+      : "The media request outcome is awaiting verification and will not be retried automatically.";
+    await markMediaGenerationAttemptUnresolved({
+      attemptId: claim.attemptId,
+      status,
+      failureCode: code,
+    });
     await appendTaskEvent(input.taskId, { type: "error", payload: { code, message } });
     logger.error({ event: "media_generation_failed", provider, taskId: input.taskId, userId: input.userId, kind: input.kind, errorCode: code }, "Media generation failed");
-    throw error;
+    throw new TaskMediaAttemptUnresolvedError(status);
   }
 }

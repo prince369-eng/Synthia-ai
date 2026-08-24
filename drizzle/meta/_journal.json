@@ -148,6 +148,13 @@
       "when": 1787460134695,
       "tag": "0020_true_harrier",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1787546620551,
+      "tag": "0021_grey_katie_power",
+      "breakpoints": true
     }
   ]
 }

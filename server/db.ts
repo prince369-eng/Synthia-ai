@@ -13,6 +13,7 @@ import {
   InsertUser,
   integrations,
   memoryFacts,
+  mediaGenerationAttempts,
   personalityProfiles,
   personalizationMemories,
   projects,
@@ -2479,6 +2480,160 @@ export async function createDeliverable(input: {
   const id = randomUUID();
   await database.insert(deliverables).values({ id, ...input });
   return id;
+}
+
+export type MediaGenerationAttemptKind = "image" | "video" | "audio";
+export type MediaGenerationAttemptStatus = "in_flight" | "succeeded" | "uncertain" | "preflight_rejected";
+
+export type MediaGenerationAttemptClaim =
+  | { state: "started"; attemptId: string }
+  | { state: "succeeded"; result: { deliverableId: string; filename: string; fileType: string; provider: string; model: string | null } }
+  | { state: "blocked"; status: Exclude<MediaGenerationAttemptStatus, "succeeded"> };
+
+type MediaGenerationAttemptInput = {
+  taskId: string;
+  userId: number;
+  requestFingerprint: string;
+  kind: MediaGenerationAttemptKind;
+  provider: string;
+  model?: string;
+};
+
+async function ownedMediaAttempt(
+  database: NonNullable<Awaited<ReturnType<typeof getDb>>>,
+  input: Pick<MediaGenerationAttemptInput, "taskId" | "userId" | "requestFingerprint">,
+) {
+  const [attempt] = await database
+    .select({
+      id: mediaGenerationAttempts.id,
+      status: mediaGenerationAttempts.status,
+      deliverableId: mediaGenerationAttempts.deliverableId,
+      provider: mediaGenerationAttempts.provider,
+      model: mediaGenerationAttempts.model,
+    })
+    .from(mediaGenerationAttempts)
+    .where(and(
+      eq(mediaGenerationAttempts.taskId, input.taskId),
+      eq(mediaGenerationAttempts.userId, input.userId),
+      eq(mediaGenerationAttempts.requestFingerprint, input.requestFingerprint),
+    ))
+    .limit(1);
+  return attempt;
+}
+
+export async function claimMediaGenerationAttempt(input: MediaGenerationAttemptInput): Promise<MediaGenerationAttemptClaim> {
+  const database = databaseRequired(await getDb());
+  const [ownedTask] = await database
+    .select({ id: tasks.id })
+    .from(tasks)
+    .where(and(eq(tasks.id, input.taskId), eq(tasks.userId, input.userId)))
+    .limit(1);
+  if (!ownedTask) throw new Error("Task ownership could not be verified.");
+
+  const attemptId = randomUUID();
+  await database
+    .insert(mediaGenerationAttempts)
+    .values({
+      id: attemptId,
+      taskId: input.taskId,
+      userId: input.userId,
+      requestFingerprint: input.requestFingerprint,
+      kind: input.kind,
+      provider: input.provider,
+      model: input.model ?? null,
+    })
+    .onConflictDoNothing({ target: [mediaGenerationAttempts.taskId, mediaGenerationAttempts.requestFingerprint] });
+
+  const attempt = await ownedMediaAttempt(database, input);
+  if (!attempt) throw new Error("Media generation attempt could not be claimed.");
+  if (attempt.id === attemptId) return { state: "started", attemptId };
+
+  if (attempt.status === "succeeded" && attempt.deliverableId) {
+    const [deliverable] = await database
+      .select({ id: deliverables.id, filename: deliverables.filename, fileType: deliverables.fileType })
+      .from(deliverables)
+      .where(and(eq(deliverables.id, attempt.deliverableId), eq(deliverables.taskId, input.taskId)))
+      .limit(1);
+    if (deliverable) {
+      return {
+        state: "succeeded",
+        result: {
+          deliverableId: deliverable.id,
+          filename: deliverable.filename,
+          fileType: deliverable.fileType,
+          provider: attempt.provider,
+          model: attempt.model,
+        },
+      };
+    }
+  }
+
+  return { state: "blocked", status: attempt.status === "succeeded" ? "uncertain" : attempt.status };
+}
+
+export async function completeMediaGenerationAttempt(input: {
+  attemptId: string;
+  taskId: string;
+  filename: string;
+  fileType: string;
+  storageKey: string;
+  storageUrl: string;
+  provider: string;
+  model: string;
+  interactionId: string | null;
+}) {
+  const database = databaseRequired(await getDb());
+  const result = await database.transaction(async transaction => {
+    const [attempt] = await transaction
+      .select({ id: mediaGenerationAttempts.id, status: mediaGenerationAttempts.status })
+      .from(mediaGenerationAttempts)
+      .where(and(eq(mediaGenerationAttempts.id, input.attemptId), eq(mediaGenerationAttempts.taskId, input.taskId)))
+      .limit(1);
+    if (!attempt || attempt.status !== "in_flight") throw new Error("Media generation attempt is no longer active.");
+
+    const event = await appendTaskEventInTransaction(transaction, input.taskId, {
+      type: "tool_result",
+      payload: {
+        tool: `${input.provider}_media_generation`,
+        provider: input.provider,
+        model: input.model,
+        interactionId: input.interactionId,
+        storageKey: input.storageKey,
+      },
+    });
+    const deliverableId = randomUUID();
+    await transaction.insert(deliverables).values({
+      id: deliverableId,
+      taskId: input.taskId,
+      eventId: event.id,
+      filename: input.filename,
+      fileType: input.fileType,
+      storageKey: input.storageKey,
+      storageUrl: input.storageUrl,
+      isFinal: false,
+    });
+    const [updated] = await transaction
+      .update(mediaGenerationAttempts)
+      .set({ status: "succeeded", deliverableId, failureCode: null, updatedAt: new Date() })
+      .where(and(eq(mediaGenerationAttempts.id, input.attemptId), eq(mediaGenerationAttempts.status, "in_flight")))
+      .returning({ id: mediaGenerationAttempts.id });
+    if (!updated) throw new Error("Media generation attempt completion was superseded.");
+    return { deliverableId, sequenceNumber: event.sequenceNumber };
+  });
+  publishTaskEvent(input.taskId, result.sequenceNumber);
+  return result.deliverableId;
+}
+
+export async function markMediaGenerationAttemptUnresolved(input: {
+  attemptId: string;
+  status: "uncertain" | "preflight_rejected";
+  failureCode: string;
+}) {
+  const database = databaseRequired(await getDb());
+  await database
+    .update(mediaGenerationAttempts)
+    .set({ status: input.status, failureCode: input.failureCode.slice(0, 64), updatedAt: new Date() })
+    .where(and(eq(mediaGenerationAttempts.id, input.attemptId), eq(mediaGenerationAttempts.status, "in_flight")));
 }
 
 export async function createIntegrationForUser(input: {

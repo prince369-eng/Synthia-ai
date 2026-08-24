@@ -3743,4 +3743,16 @@
 - [x] Switch safely to another compatible configured planning model when a route is unavailable, rate-limited, or returns an unusable response before any agent action is executed.
 - [x] Present user-facing automatic-routing status without exposing provider credentials or backend implementation details.
 - [x] Add deterministic coverage and run the full validation suite for the verified automatic-routing update.
-- [ ] Extend the separate image, video, and audio generation pipeline with equivalent provider-fallback execution after its existing automatic capability selection has chosen a media route.
+- [x] Extend the separate image, video, and audio generation pipeline with equivalent provider-fallback execution after its existing automatic capability selection has chosen a media route.
+
+## PostgreSQL migration baseline repair
+- [x] Audit the runtime PostgreSQL migration ledger and missing enum definitions without modifying user task or artifact data.
+- [x] Add a non-destructive migration baseline repair for the existing missing enum definitions.
+- [x] Apply and verify the repaired migration path before adding any media-attempt database table.
+
+## Idempotent automatic media-provider switching
+- [x] Define a durable, user-scoped media-generation request identity and reconciliation states before issuing a provider call.
+- [x] Persist and reuse completed media artifacts for duplicate requests without contacting another provider or consuming additional quota.
+- [x] Prevent automatic provider switching when a media attempt might have been accepted remotely but its final outcome is unknown.
+- [x] Switch only after a preflight rejection or definitively failed attempt to a compatible configured media provider and model.
+- [x] Add deterministic regressions and validate the full suite for the verified media-routing update.

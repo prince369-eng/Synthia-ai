@@ -26,7 +26,12 @@ const queue = { enqueueTaskCycle: vi.fn() };
 const provider = { restore: vi.fn(), execute: vi.fn(), readFile: vi.fn(), writeFile: vi.fn(), openUrl: vi.fn(), screenshot: vi.fn(), checkpoint: vi.fn() };
 const llm = { generateWithFallback: vi.fn() };
 const modelCatalog = { runtimeConfiguredComposerModels: vi.fn() };
-const taskMedia = { executeTaskMedia: vi.fn() };
+class MockTaskMediaAttemptUnresolvedError extends Error {
+  constructor(public readonly status: "uncertain" | "preflight_rejected" = "uncertain") {
+    super("Media generation recovery is required.");
+  }
+}
+const taskMedia = { executeTaskMedia: vi.fn(), TaskMediaAttemptUnresolvedError: MockTaskMediaAttemptUnresolvedError };
 const supadata = { executeSupadataPublicVideoUnderstanding: vi.fn() };
 
 vi.mock("../db", () => db);
@@ -225,6 +230,68 @@ describe("Synthia task worker recovery", () => {
 
     expect(taskMedia.executeTaskMedia).toHaveBeenCalledWith(expect.objectContaining({ taskId: "task-1", userId: 7, kind: "video", provider: "pixazo", model: "ltx", prompt: baseTask.goal }));
     expect(db.createApprovalForTask).not.toHaveBeenCalled();
+  });
+
+  it("switches an automatic media route to the next compatible candidate only after a preflight rejection", async () => {
+    db.getTaskById.mockResolvedValue({
+      ...baseTask,
+      autonomySettings: {
+        ...baseTask.autonomySettings,
+        automaticRoute: {
+          kind: "video",
+          reason: "natural_language_media",
+          requestedKind: "video",
+          provider: "pixazo",
+          model: "ltx",
+          candidates: [
+            { provider: "pixazo", model: "ltx" },
+            { provider: "aihubmix", model: "wan" },
+          ],
+        },
+      },
+    });
+    db.listTaskApprovals.mockResolvedValue([{ toolName: "media.video", status: "approved" }]);
+    taskMedia.executeTaskMedia
+      .mockRejectedValueOnce(new MockTaskMediaAttemptUnresolvedError("preflight_rejected"))
+      .mockResolvedValueOnce({ filename: "synthia-video-1.mp4", fileType: "video/mp4", provider: "aihubmix", model: "wan", deliverableId: "deliverable-1" });
+    const { runTaskCycle } = await import("./taskRunner");
+
+    await expect(runTaskCycle(baseTask.id)).resolves.toBeUndefined();
+
+    expect(taskMedia.executeTaskMedia).toHaveBeenNthCalledWith(1, expect.objectContaining({ provider: "pixazo", model: "ltx" }));
+    expect(taskMedia.executeTaskMedia).toHaveBeenNthCalledWith(2, expect.objectContaining({ provider: "aihubmix", model: "wan" }));
+    expect(db.updateTaskForWorker).toHaveBeenLastCalledWith("task-1", expect.objectContaining({ status: "completed" }));
+    expect(queue.enqueueTaskCycle).not.toHaveBeenCalled();
+  });
+
+  it("pauses an approved automatic media task without re-enqueueing when its prior remote outcome is uncertain", async () => {
+    db.getTaskById.mockResolvedValue({
+      ...baseTask,
+      autonomySettings: {
+        ...baseTask.autonomySettings,
+        automaticRoute: { kind: "video", reason: "natural_language_media", requestedKind: "video", provider: "pixazo", model: "ltx" },
+      },
+    });
+    db.listTaskApprovals.mockResolvedValue([{ toolName: "media.video", status: "approved" }]);
+    taskMedia.executeTaskMedia.mockRejectedValue(new MockTaskMediaAttemptUnresolvedError("uncertain"));
+    db.getUserById.mockResolvedValue({ email: null });
+    const { runTaskCycle } = await import("./taskRunner");
+
+    await expect(runTaskCycle(baseTask.id)).resolves.toBeUndefined();
+
+    expect(db.updateTaskForWorker).toHaveBeenCalledWith("task-1", expect.objectContaining({
+      status: "needs_input",
+      currentStepSummary: "Waiting for a safe media-generation recovery decision.",
+      failedReason: "The media request outcome is awaiting verification. It will not be retried automatically to avoid duplicate generation.",
+    }));
+    expect(db.appendTaskEvent).toHaveBeenCalledWith("task-1", {
+      type: "error",
+      payload: {
+        code: "media_attempt_uncertain",
+        message: "The media request outcome is awaiting verification. It will not be retried automatically to avoid duplicate generation.",
+      },
+    });
+    expect(queue.enqueueTaskCycle).not.toHaveBeenCalled();
   });
 
   it("creates an approval request before automatic public-video analysis can consume provider quota", async () => {

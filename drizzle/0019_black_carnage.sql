@@ -1,3 +1,21 @@
+DO $$ BEGIN
+  CREATE TYPE "network_lab_status" AS ENUM ('draft', 'ready_for_review', 'approved', 'evidence_received', 'validation_passed', 'validation_failed', 'incomplete', 'archived');
+EXCEPTION
+  WHEN duplicate_object THEN null;
+END $$;
+--> statement-breakpoint
+DO $$ BEGIN
+  CREATE TYPE "network_lab_approval_decision" AS ENUM ('pending', 'approved', 'rejected');
+EXCEPTION
+  WHEN duplicate_object THEN null;
+END $$;
+--> statement-breakpoint
+DO $$ BEGIN
+  CREATE TYPE "network_lab_evidence_verdict" AS ENUM ('pass', 'fail', 'inconclusive', 'not_comparable');
+EXCEPTION
+  WHEN duplicate_object THEN null;
+END $$;
+--> statement-breakpoint
 CREATE TABLE "network_lab_approvals" (
 	"id" varchar(36) PRIMARY KEY NOT NULL,
 	"lab_id" varchar(36) NOT NULL,

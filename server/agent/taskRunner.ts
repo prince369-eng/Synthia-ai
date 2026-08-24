@@ -35,7 +35,7 @@ import { personalizationInstruction } from "./personalizationContext";
 import { policyPackPlanningContext } from "./policyPackContext";
 import { resolveAutomaticTaskModel } from "./automaticRouting";
 import { runtimeConfiguredComposerModels } from "./modelCatalog";
-import { executeTaskMedia } from "../media/taskMedia";
+import { executeTaskMedia, TaskMediaAttemptUnresolvedError } from "../media/taskMedia";
 import { executeSupadataPublicVideoUnderstanding } from "../integrations/supadata";
 import { rankSkillsForGoal, skillPlanningContext } from "./skillMatching";
 
@@ -276,14 +276,31 @@ export async function runTaskCycle(taskId: string) {
       if (await requireAutomaticMediaApproval({ taskId: task.id, kind: automaticRoute.kind, provider: automaticRoute.provider, model: automaticRoute.model })) return;
       const label = automaticRoute.kind === "image" ? "image" : automaticRoute.kind === "video" ? "video" : "audio";
       await updateTaskForWorker(task.id, { status: "running", currentStepSummary: `Creating the requested ${label} artifact.` });
-      const generated = await executeTaskMedia({
-        taskId: task.id,
-        userId: task.userId,
-        kind: automaticRoute.kind,
-        prompt: task.goal,
-        provider: automaticRoute.provider,
-        model: automaticRoute.model,
-      });
+      const candidates = automaticRoute.candidates?.length
+        ? automaticRoute.candidates
+        : [{ provider: automaticRoute.provider, model: automaticRoute.model }];
+      let generated: Awaited<ReturnType<typeof executeTaskMedia>> | undefined;
+      let lastPreflightError: TaskMediaAttemptUnresolvedError | undefined;
+      for (const candidate of candidates) {
+        try {
+          generated = await executeTaskMedia({
+            taskId: task.id,
+            userId: task.userId,
+            kind: automaticRoute.kind,
+            prompt: task.goal,
+            provider: candidate.provider,
+            model: candidate.model,
+          });
+          break;
+        } catch (error) {
+          if (error instanceof TaskMediaAttemptUnresolvedError && error.status === "preflight_rejected") {
+            lastPreflightError = error;
+            continue;
+          }
+          throw error;
+        }
+      }
+      if (!generated) throw lastPreflightError ?? new TaskMediaAttemptUnresolvedError("preflight_rejected");
       const summary = `Created ${generated.filename}.`;
       await recordAgentMessage(task.id, summary);
       await updateTaskForWorker(task.id, { status: "completed", currentStepSummary: summary, completedAt: new Date() });
@@ -386,6 +403,17 @@ export async function runTaskCycle(taskId: string) {
       await enqueueTaskCycle(task.id, 150);
     }
   } catch (error) {
+    if (error instanceof TaskMediaAttemptUnresolvedError) {
+      const message = error.status === "preflight_rejected"
+        ? "The selected media route is not ready. Choose another available media model and try again."
+        : "The media request outcome is awaiting verification. It will not be retried automatically to avoid duplicate generation.";
+      logger.warn({ event: "agent_media_attempt_paused", taskId: task.id, status: error.status }, "Task paused for safe media-attempt recovery");
+      await updateTaskForWorker(task.id, { status: "needs_input", currentStepSummary: "Waiting for a safe media-generation recovery decision.", failedReason: message });
+      await appendTaskEvent(task.id, { type: "error", payload: { code: `media_attempt_${error.status}`, message } });
+      const user = await getUserById(task.userId);
+      await notifyTask({ recipient: user?.email, title: task.title, taskId: task.id, kind: "failed", summary: message });
+      return;
+    }
     if (error instanceof LlmRouteUnavailableError) {
       const message = "No configured model route is currently available. Choose an available model or try again later.";
       logger.warn({ event: "agent_model_route_unavailable", taskId: task.id }, "Task paused because no configured model route is available");

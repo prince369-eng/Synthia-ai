@@ -33,6 +33,7 @@ const policyPackStatusEnum = pgEnum("policy_pack_status", ["enabled", "archived"
 const qualityBudgetStatusEnum = pgEnum("quality_budget_status", ["active", "archived"]);
 const qualityReviewDepthEnum = pgEnum("quality_review_depth", ["basic", "standard", "thorough"]);
 const browserChangeSetStatusEnum = pgEnum("browser_change_set_status", ["active", "archived"]);
+const mediaGenerationAttemptStatusEnum = pgEnum("media_generation_attempt_status", ["in_flight", "succeeded", "uncertain", "preflight_rejected"]);
 const sandboxProviderEnum = pgEnum("sandbox_provider", ["docker", "e2b", "hopx"]);
 const sandboxStatusEnum = pgEnum("sandbox_status", ["booting", "active", "checkpointed", "destroyed"]);
 const riskLevelEnum = pgEnum("risk_level", ["low", "medium", "high"]);
@@ -244,6 +245,29 @@ export const deliverables = pgTable("deliverables", {
   isFinal: boolean("is_final").notNull().default(false),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 }, table => [index("deliverables_task_final_created_idx").on(table.taskId, table.isFinal, table.createdAt)]);
+
+/**
+ * A user-scoped idempotency record for a logical media-generation request.
+ * An uncertain remote outcome is deliberately never retried automatically.
+ */
+export const mediaGenerationAttempts = pgTable("media_generation_attempts", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  taskId: varchar("task_id", { length: 36 }).notNull().references(() => tasks.id, { onDelete: "cascade" }),
+  userId: integer("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  requestFingerprint: varchar("request_fingerprint", { length: 128 }).notNull(),
+  kind: varchar("kind", { length: 16 }).notNull(),
+  status: mediaGenerationAttemptStatusEnum("status").notNull().default("in_flight"),
+  provider: varchar("provider", { length: 64 }).notNull(),
+  model: varchar("model", { length: 256 }),
+  attemptCount: integer("attempt_count").notNull().default(1),
+  deliverableId: varchar("deliverable_id", { length: 36 }).references(() => deliverables.id, { onDelete: "set null" }),
+  failureCode: varchar("failure_code", { length: 64 }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+}, table => [
+  uniqueIndex("media_generation_attempts_task_fingerprint_unique").on(table.taskId, table.requestFingerprint),
+  index("media_generation_attempts_user_status_updated_idx").on(table.userId, table.status, table.updatedAt),
+]);
 
 export const taskAttachments = pgTable("task_attachments", {
   id: varchar("id", { length: 36 }).primaryKey(),

@@ -5,6 +5,7 @@ export type AutomaticMediaCapability = {
   configured?: boolean;
   provider?: string | null;
   models?: string[];
+  candidates?: Array<{ provider: "gemini" | "pixazo" | "aihubmix"; model: string }>;
 };
 
 export type AutomaticTaskRoute = {
@@ -13,6 +14,7 @@ export type AutomaticTaskRoute = {
   requestedKind?: AutomaticMediaKind | "public_video";
   provider?: "gemini" | "pixazo" | "aihubmix" | "supadata";
   model?: string;
+  candidates?: Array<{ provider: "gemini" | "pixazo" | "aihubmix"; model: string }>;
   sourceUrl?: string;
 };
 
@@ -63,10 +65,18 @@ export function resolveAutomaticTaskRoute(input: {
   const requestedKind = requestedMediaKind(input.goal);
   if (requestedKind) {
     const capability = input.media[requestedKind];
-    const provider = capability?.provider?.toLowerCase();
-    const model = capability?.models?.[0]?.trim();
+    const candidates = capability?.candidates?.filter(candidate => SUPPORTED_MEDIA_PROVIDERS.has(candidate.provider) && candidate.model.trim()) ?? [];
+    const provider = candidates[0]?.provider ?? capability?.provider?.toLowerCase();
+    const model = candidates[0]?.model ?? capability?.models?.[0]?.trim();
     if (capability?.configured && model && provider && SUPPORTED_MEDIA_PROVIDERS.has(provider)) {
-      return { kind: requestedKind, reason: "natural_language_media", requestedKind, provider: provider as AutomaticTaskRoute["provider"], model };
+      return {
+        kind: requestedKind,
+        reason: "natural_language_media",
+        requestedKind,
+        provider: provider as AutomaticTaskRoute["provider"],
+        model,
+        candidates: candidates.length ? candidates : [{ provider: provider as "gemini" | "pixazo" | "aihubmix", model }],
+      };
     }
     return { kind: "text", reason: "media_unavailable", requestedKind };
   }
