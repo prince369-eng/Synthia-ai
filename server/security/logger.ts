@@ -1,15 +1,28 @@
 import pino from "pino";
 import { ENV } from "../_core/env";
 
-const REDACTED_PATHS = [
+export const REDACTED_PATHS = [
   "apiKey",
+  "api_key",
   "accessToken",
   "refreshToken",
   "encryptedAccessToken",
   "encryptedRefreshToken",
+  "token",
+  "sessionToken",
+  "sessionCookie",
+  "secret",
+  "clientSecret",
   "authorization",
+  "cookie",
   "headers.authorization",
+  "headers.cookie",
+  "headers.x-api-key",
+  "headers.x-goog-api-key",
   "req.headers.authorization",
+  "req.headers.cookie",
+  "req.headers.x-api-key",
+  "req.headers.x-goog-api-key",
   "password",
 ];
 

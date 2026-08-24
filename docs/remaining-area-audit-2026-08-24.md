@@ -114,6 +114,8 @@ The owner-notification adapter follows the same client-facing boundary. Correcta
 
 The Gemini media adapter now follows the same logging boundary: failed upstream responses retain only the event identifier and numeric HTTP status in structured logs, not response-body text. A deterministic mocked-response regression verifies that provider-controlled detail cannot be serialized through the logger call. No media generation request was made during this work.
 
+The shared structured logger now redacts direct and nested credential-bearing fields before serialization, including authorization and cookie headers, API-key headers, tokens, session values, secrets, and passwords. A serialization regression verifies that sensitive test values cannot appear in output while ordinary event metadata remains available. This change is local logger configuration only and does not emit or inspect production log records.
+
 ## Recommended sequence
 
 First, retain the fixed `form-data` lockfile resolution, the reviewed package-manager execution policy, and the ExcelJS export/import contract while monitoring for an upstream-compatible UUID upgrade. Second, preserve the current no-image PowerPoint export boundary; if a future feature needs user-provided images, introduce strict type/size checks and an isolated execution boundary before dependency changes or image parsing. Third, conduct a real deployment readiness pass for OAuth redirects, worker supervision, Redis reliability, provider quotas, storage, and the integrations the operator actually intends to enable.
