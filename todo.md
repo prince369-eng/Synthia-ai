@@ -3695,11 +3695,14 @@
 - [ ] Reproduce the remaining composer client failure through a no-op diagnostic contract rather than another task creation request.
 - [x] Add a preview-scoped authenticated no-op tRPC mutation that verifies batched POST and SuperJSON response handling without changing task, queue, provider, or external-service state.
 - [x] Render a query-only bounded probe status so silent browser-branch execution can be distinguished from a missing telemetry callback without exposing transport details.
+- [x] Expose only the bounded probe outcome and allow-listed tRPC code in preview DOM metadata so the authenticated mutation failure can be classified without response or task data.
+- [x] Expose the existing bounded client failure category in preview probe metadata to distinguish network, decode, client, and structured tRPC outcomes without raw error details.
 - [x] Identify and correct the fresh-preview browser transport condition that classified the composer request as a network failure before tRPC reached the server: duplicate classic-client injection.
 - [x] Remove duplicate classic-preview script injection so static and development preview pages mount exactly one workspace client.
 - [x] Verify the fresh preview completes authenticated workspace loading and task-list rendering after the single-client correction without submitting a task.
 - [ ] Capture and trace the malformed composer response now received after the duplicate-client transport correction.
 - [ ] Correct the confirmed composer API response-contract boundary without resubmitting task work.
+- [ ] Permit only verified same-origin proxied preview requests through the CORS guard so authenticated mutation responses reach the tRPC adapter.
 - [x] Extend bounded client tRPC recognition to every standard protocol error code so malformed responses are classified rather than treated as unknown.
 - [x] Classify safe response-decoding and client-runtime error categories in composer diagnostics without recording raw error messages or response bodies.
 - [x] Correct cross-bundle tRPC error recognition so the composer displays and reports safe structured error codes instead of falling back to a generic message.

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { composerTransportProbePayload, composerTransportProbeStatusLabel } from "./composerTransportProbe";
+import { composerTransportProbeDomMetadata, composerTransportProbePayload, composerTransportProbeStatusLabel } from "./composerTransportProbe";
 
 describe("composerTransportProbePayload", () => {
   it("reports fixed lifecycle outcomes without task data", () => {
@@ -21,5 +21,15 @@ describe("composerTransportProbePayload", () => {
     expect(composerTransportProbeStatusLabel("success")).toBe("Workspace connection check completed.");
     expect(composerTransportProbeStatusLabel("failure")).toBe("Workspace connection check needs attention.");
     expect(composerTransportProbeStatusLabel("timeout")).toBe("Workspace connection check is taking longer than expected.");
+  });
+
+  it("permits only bounded outcome and protocol-code DOM metadata", () => {
+    expect(composerTransportProbeDomMetadata("failure", { name: "TRPCClientError", data: { code: "PRECONDITION_FAILED" }, message: "private context" })).toEqual({
+      outcome: "failure",
+      kind: "trpc",
+      trpcCode: "PRECONDITION_FAILED",
+    });
+    expect(composerTransportProbeDomMetadata("failure", new TypeError("private context"))).toEqual({ outcome: "failure", kind: "network" });
+    expect(JSON.stringify(composerTransportProbeDomMetadata("failure", { message: "private context" }))).not.toContain("private context");
   });
 });

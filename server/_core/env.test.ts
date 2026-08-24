@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { boundedPositiveInteger, configuredProviderDefaults, corsAllowedOrigins, isExplicitlyEnabled, publicApplicationOrigin, publicHostnameAllowlist, safeProviderBaseUrl } from "./env";
+import { boundedPositiveInteger, configuredProviderDefaults, corsAllowedOrigins, isExplicitlyEnabled, isSameOriginRequest, publicApplicationOrigin, publicHostnameAllowlist, safeProviderBaseUrl } from "./env";
 
 describe("configuredProviderDefaults", () => {
   it("uses the user-approved free-tier, vision, Pixazo, and public-facing task defaults when no non-secret override exists", () => {
@@ -99,5 +99,18 @@ describe("configuredProviderDefaults", () => {
       "http://127.0.0.1:3000",
     ]);
     expect(corsAllowedOrigins({ publicAppUrl: "https://localhost", isProduction: true })).toEqual([]);
+  });
+
+  it("permits only a canonical HTTP(S) origin with the exact request host for managed preview CORS", () => {
+    expect(isSameOriginRequest("https://3000-preview.manus.example", "3000-preview.manus.example")).toBe(true);
+    expect(isSameOriginRequest("http://localhost:3000", "localhost:3000")).toBe(true);
+    for (const [origin, host] of [
+      ["https://other.example", "3000-preview.manus.example"],
+      ["https://3000-preview.manus.example/path", "3000-preview.manus.example"],
+      ["https://token@3000-preview.manus.example", "3000-preview.manus.example"],
+      ["ftp://3000-preview.manus.example", "3000-preview.manus.example"],
+      ["not a url", "3000-preview.manus.example"],
+      ["https://3000-preview.manus.example", undefined],
+    ]) expect(isSameOriginRequest(origin, host)).toBe(false);
   });
 });

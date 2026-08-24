@@ -100,6 +100,29 @@ export function corsAllowedOrigins({ publicAppUrl, isProduction }: { publicAppUr
   return [configuredOrigin, ...developmentOrigins].filter((value): value is string => Boolean(value));
 }
 
+/**
+ * Managed previews use short-lived proxied hostnames that cannot be known at build time.
+ * Permit an Origin only when its canonical host exactly matches the request Host; this is
+ * same-origin, not a wildcard CORS exception, and never permits credentials or URL state.
+ */
+export function isSameOriginRequest(origin: string | undefined, requestHost: string | undefined) {
+  if (!origin || !requestHost) return false;
+  try {
+    const url = new URL(origin);
+    if (
+      (url.protocol !== "https:" && url.protocol !== "http:") ||
+      url.username ||
+      url.password ||
+      url.pathname !== "/" ||
+      url.search ||
+      url.hash
+    ) return false;
+    return url.host.toLowerCase() === requestHost.trim().toLowerCase();
+  } catch {
+    return false;
+  }
+}
+
 const APPROVED_FREE_MODELS = [
   "aihubmix:glm-5.2-free",
   "aihubmix:gemini-3.7-flash-free",

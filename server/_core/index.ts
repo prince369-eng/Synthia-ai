@@ -8,7 +8,7 @@ import { registerStorageProxy } from "./storageProxy";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
-import { corsAllowedOrigins, ENV } from "./env";
+import { corsAllowedOrigins, ENV, isSameOriginRequest } from "./env";
 import { registerTaskEventStream } from "../realtime/taskEventStream";
 import { runScheduledWorkflow } from "../scheduledWorkflows";
 import { logger } from "../security/logger";
@@ -39,7 +39,8 @@ async function startServer() {
   app.disable("x-powered-by");
   app.use((req, res, next) => {
     const origin = req.headers.origin;
-    if (origin && !allowedOrigins.has(origin)) {
+    const isSameOrigin = typeof origin === "string" && isSameOriginRequest(origin, req.get("host"));
+    if (origin && !allowedOrigins.has(origin) && !isSameOrigin) {
       res.status(403).json({ error: "Origin is not permitted." });
       return;
     }

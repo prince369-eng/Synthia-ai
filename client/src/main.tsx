@@ -8,7 +8,7 @@ import superjson from "superjson";
 import App from "./App";
 import { EXPLICIT_SIGNED_OUT_STORAGE_KEY, startLogin } from "./const";
 import { shouldMountSynthiaWorkspace } from "./lib/bootstrap";
-import { composerTransportProbePayload, composerTransportProbeStatusLabel, type ComposerTransportProbeOutcome } from "./lib/composerTransportProbe";
+import { composerTransportProbeDomMetadata, composerTransportProbePayload, composerTransportProbeStatusLabel, type ComposerTransportProbeOutcome } from "./lib/composerTransportProbe";
 import { isTrpcLikeError } from "./lib/trpcErrorShape";
 import "./index.css";
 
@@ -140,7 +140,7 @@ function reportComposerTransportProbe(outcome: ComposerTransportProbeOutcome, er
   }
 }
 
-function renderComposerTransportProbeStatus(outcome: ComposerTransportProbeOutcome) {
+function renderComposerTransportProbeStatus(outcome: ComposerTransportProbeOutcome, error?: unknown) {
   try {
     const statusId = "synthia-transport-probe-status";
     const existing = document.getElementById(statusId);
@@ -148,7 +148,18 @@ function renderComposerTransportProbeStatus(outcome: ComposerTransportProbeOutco
     status.id = statusId;
     status.setAttribute("role", "status");
     status.setAttribute("aria-live", "polite");
-    status.dataset.outcome = outcome;
+    const metadata = composerTransportProbeDomMetadata(outcome, error);
+    status.dataset.outcome = metadata.outcome;
+    if (metadata.kind) {
+      status.dataset.kind = metadata.kind;
+    } else {
+      delete status.dataset.kind;
+    }
+    if (metadata.trpcCode) {
+      status.dataset.trpcCode = metadata.trpcCode;
+    } else {
+      delete status.dataset.trpcCode;
+    }
     status.textContent = composerTransportProbeStatusLabel(outcome);
     status.style.cssText = "position:fixed;right:16px;bottom:16px;z-index:2147483647;max-width:min(360px,calc(100vw - 32px));border:1px solid rgba(45,212,191,.42);border-radius:10px;background:#062a2a;color:#ecfeff;padding:10px 12px;font:500 13px/1.4 system-ui,sans-serif;box-shadow:0 12px 28px rgba(0,0,0,.28);";
     if (!existing) document.body.append(status);
@@ -179,7 +190,7 @@ if (window.__SYNTHIA_TRANSPORT_PROBE__ === true) {
       if (settled) return;
       settled = true;
       window.clearTimeout(timeout);
-      renderComposerTransportProbeStatus("failure");
+      renderComposerTransportProbeStatus("failure", error);
       reportComposerTransportProbe("failure", error);
     });
 }
