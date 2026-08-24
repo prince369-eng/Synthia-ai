@@ -92,7 +92,7 @@ Rate-limit buckets are keyed by the authenticated user identifier and a server-d
 
 ## Server error-disclosure boundary
 
-The review found raw transport and provider-detail construction in two configuration-gated capability helpers. Heartbeat transport failures and non-success provider statuses now map to bounded, status-appropriate client messages without endpoint text, response bodies, or raw status detail. Voice-transcription results now return only a stable error message and error code; request, provider, and unexpected exception details are no longer included in the result payload. Deterministic regressions verify these payload contracts. The helpers remain configuration-gated and no Heartbeat or transcription request was started during this work.
+The review found raw transport and provider-detail construction in two configuration-gated capability helpers. Heartbeat transport failures and non-success provider statuses now map to bounded, status-appropriate client messages without endpoint text, response bodies, or raw status detail. Voice-transcription results now return only a stable error message and error code; request, provider, and unexpected exception details are no longer included in the result payload. A terminal Express error boundary now also logs only a stable error classification for unexpected route failures and returns the fixed `INTERNAL_SERVER_ERROR` response instead of default framework exception rendering. Parser-specific malformed and oversized body responses continue to take precedence. Deterministic regressions verify these payload contracts. The helpers remain configuration-gated and no Heartbeat or transcription request was started during this work.
 
 ## Recommended sequence
 

@@ -3802,4 +3802,5 @@
 - [x] Audit and harden development debug-log collection so diagnostics retain event metadata without persisting prompt text, provider bodies, credentials, raw URLs, or exception details.
 - [x] Verify that the development-only browser debug collector is absent from production artifacts while preserving local development diagnostics.
 - [x] Bound local development diagnostic endpoint request parsing so malformed or oversized collector payloads are rejected before memory-intensive processing.
+- [x] Add and verify a terminal Express error boundary so unexpected route failures return a bounded client-safe response instead of default framework output.
 - [ ] Monitor ExcelJS for a compatible UUID upgrade; do not force an incompatible override while the verified Synthia export path uses only UUID `v4`.

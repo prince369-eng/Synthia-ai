@@ -12,6 +12,7 @@ import { serveStatic, setupVite } from "./vite";
 import { corsAllowedOrigins, ENV, isSameOriginRequest } from "./env";
 import { responseSecurityHeaders } from "./httpSecurity";
 import { requestBodyErrorResponse } from "./requestBodyErrors";
+import { unexpectedRequestErrorResponse } from "./unexpectedError";
 import { registerTaskEventStream } from "../realtime/taskEventStream";
 import { runScheduledWorkflow } from "../scheduledWorkflows";
 import { logger } from "../security/logger";
@@ -142,6 +143,15 @@ async function startServer() {
   } else {
     serveStatic(app);
   }
+  app.use((error: unknown, _req: Request, res: Response, next: NextFunction) => {
+    if (res.headersSent) {
+      next(error);
+      return;
+    }
+    const response = unexpectedRequestErrorResponse();
+    logger.error({ event: response.event, errorKind: error instanceof Error ? error.name : "unknown" }, "Unhandled application request error");
+    res.status(response.status).json(response.body);
+  });
 
   const preferredPort = parseInt(process.env.PORT || "3000");
   const port = await findAvailablePort(preferredPort);
