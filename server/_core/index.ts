@@ -1,5 +1,6 @@
 import "dotenv/config";
 import express from "express";
+import type { NextFunction, Request, Response } from "express";
 import { createServer } from "http";
 import net from "net";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
@@ -10,6 +11,7 @@ import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
 import { corsAllowedOrigins, ENV, isSameOriginRequest } from "./env";
 import { responseSecurityHeaders } from "./httpSecurity";
+import { requestBodyErrorResponse } from "./requestBodyErrors";
 import { registerTaskEventStream } from "../realtime/taskEventStream";
 import { runScheduledWorkflow } from "../scheduledWorkflows";
 import { logger } from "../security/logger";
@@ -64,6 +66,15 @@ async function startServer() {
   // Supports the largest supported base64 voice input while bounding memory use.
   app.use(express.json({ limit: "24mb" }));
   app.use(express.urlencoded({ limit: "24mb", extended: true }));
+  app.use((error: unknown, _req: Request, res: Response, next: NextFunction) => {
+    const response = requestBodyErrorResponse(error);
+    if (!response) {
+      next(error);
+      return;
+    }
+    logger.warn({ event: response.event }, "Rejected malformed request body");
+    res.status(response.status).json(response.body);
+  });
   registerStorageProxy(app);
   registerOAuthRoutes(app);
   registerTaskEventStream(app);
