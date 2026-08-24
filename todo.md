@@ -3764,6 +3764,8 @@
 - [x] Publish a prioritized next-step roadmap.
 
 ## Production dependency remediation
-- [ ] Refresh the production lockfile so the existing safe `form-data` override is consistently applied to configured transitive paths.
-- [ ] Re-run dependency audit and full deterministic validation after the lockfile update.
-- [ ] Assess the remaining `exceljs` and `pptxgenjs` transitive advisory paths before selecting a compatible upgrade or isolation strategy.
+- [x] Refresh the production lockfile so the existing safe `form-data` override is consistently applied to configured transitive paths.
+- [x] Re-run dependency audit and full deterministic validation after the lockfile update.
+- [x] Assess the remaining `exceljs` and `pptxgenjs` transitive advisory paths before selecting a compatible upgrade or isolation strategy.
+- [ ] Add server-side image type, byte-size, pixel-count, and decode-time limits before any PPTX image processing path handles untrusted input.
+- [ ] Build and run a spreadsheet export/import compatibility suite before considering a scoped `exceljs → uuid` override.
