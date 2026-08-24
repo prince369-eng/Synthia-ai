@@ -6,6 +6,7 @@ import {
   publicRuntimeConfigScript,
   removeClassicPreviewBundleEntry,
   STATIC_PREVIEW_CACHE_CONTROL,
+  staticPreviewComposerTransportProbeScript,
   staticPreviewRpcDiagnosticScript,
 } from "./vite";
 
@@ -98,5 +99,13 @@ describe("staticPreviewRpcDiagnosticScript", () => {
     expect(script).not.toContain("Authorization");
     expect(script).not.toContain("input.body");
     expect(script).not.toContain("requestBody");
+  });
+});
+
+describe("staticPreviewComposerTransportProbeScript", () => {
+  it("emits only a fixed enable flag for the explicit server-parsed diagnostic URL", () => {
+    expect(staticPreviewComposerTransportProbeScript(true)).toBe('<script>window.__SYNTHIA_TRANSPORT_PROBE__=true;</script>');
+    expect(staticPreviewComposerTransportProbeScript(false)).toBe("");
+    expect(staticPreviewComposerTransportProbeScript(true)).not.toContain("task");
   });
 });

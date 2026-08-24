@@ -3693,6 +3693,7 @@
 - [x] Add a bounded client-side composer failure report that records only transport category and tRPC code, never task text, payloads, messages, or credentials.
 - [ ] Verify why the bounded composer diagnostic callback does not reach the fresh-preview server before requesting any further user retry.
 - [ ] Reproduce the remaining composer client failure through a no-op diagnostic contract rather than another task creation request.
+- [x] Add a preview-scoped authenticated no-op tRPC mutation that verifies batched POST and SuperJSON response handling without changing task, queue, provider, or external-service state.
 - [x] Identify and correct the fresh-preview browser transport condition that classified the composer request as a network failure before tRPC reached the server: duplicate classic-client injection.
 - [x] Remove duplicate classic-preview script injection so static and development preview pages mount exactly one workspace client.
 - [x] Verify the fresh preview completes authenticated workspace loading and task-list rendering after the single-client correction without submitting a task.

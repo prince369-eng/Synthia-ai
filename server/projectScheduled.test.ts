@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach } from "vitest";
 import * as db from "./db";
 import * as rateLimit from "./security/rateLimit";
 import * as queue from "./agent/queue";
@@ -31,6 +32,23 @@ describe("projects and scheduled router procedures", () => {
   beforeEach(() => {
     vi.restoreAllMocks();
     vi.spyOn(rateLimit, "enforceRateLimit").mockResolvedValue(undefined);
+    process.env.SYNTHIA_STATIC_PREVIEW = "true";
+  });
+
+  afterEach(() => {
+    delete process.env.SYNTHIA_STATIC_PREVIEW;
+  });
+
+  it("completes the preview-only protected mutation without any task-side database or queue call", async () => {
+    const createTask = vi.spyOn(db, "createTaskForUser");
+    const appendEvent = vi.spyOn(db, "appendTaskEvent");
+    const enqueue = vi.spyOn(queue, "enqueueTaskCycle");
+
+    await expect(appRouter.createCaller(createContext()).diagnostics.composerTransportProbe()).resolves.toEqual({ ok: true });
+
+    expect(createTask).not.toHaveBeenCalled();
+    expect(appendEvent).not.toHaveBeenCalled();
+    expect(enqueue).not.toHaveBeenCalled();
   });
 
   it("creates projects only for the authenticated owner", async () => {

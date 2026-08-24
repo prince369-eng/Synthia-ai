@@ -8,6 +8,7 @@ import superjson from "superjson";
 import App from "./App";
 import { EXPLICIT_SIGNED_OUT_STORAGE_KEY, startLogin } from "./const";
 import { shouldMountSynthiaWorkspace } from "./lib/bootstrap";
+import { composerTransportProbePayload, type ComposerTransportProbeOutcome } from "./lib/composerTransportProbe";
 import { isTrpcLikeError } from "./lib/trpcErrorShape";
 import "./index.css";
 
@@ -120,7 +121,46 @@ if (!rootElement) {
 declare global {
   interface Window {
     __SYNTHIA_BOOTSTRAPPED__?: boolean;
+    __SYNTHIA_TRANSPORT_PROBE__?: boolean;
   }
+}
+
+function reportComposerTransportProbe(outcome: ComposerTransportProbeOutcome, error?: unknown) {
+  const payload = composerTransportProbePayload(outcome, error);
+  try {
+    void globalThis.fetch("/__synthia__/composer-transport-probe-diagnostic", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+      credentials: "omit",
+      keepalive: true,
+    }).catch(() => undefined);
+  } catch {
+    // The diagnostic must never affect workspace bootstrap.
+  }
+}
+
+if (window.__SYNTHIA_TRANSPORT_PROBE__ === true) {
+  reportComposerTransportProbe("started");
+  let settled = false;
+  const timeout = window.setTimeout(() => {
+    if (settled) return;
+    settled = true;
+    reportComposerTransportProbe("timeout");
+  }, 5_000);
+  void trpcClient.diagnostics.composerTransportProbe.mutate()
+    .then(() => {
+      if (settled) return;
+      settled = true;
+      window.clearTimeout(timeout);
+      reportComposerTransportProbe("success");
+    })
+    .catch(error => {
+      if (settled) return;
+      settled = true;
+      window.clearTimeout(timeout);
+      reportComposerTransportProbe("failure", error);
+    });
 }
 
 try {

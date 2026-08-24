@@ -102,6 +102,20 @@ async function startServer() {
     }
     res.status(204).end();
   });
+  app.post("/__synthia__/composer-transport-probe-diagnostic", (req, res) => {
+    if (process.env.SYNTHIA_STATIC_PREVIEW !== "true") {
+      res.status(404).end();
+      return;
+    }
+    const outcome = req.body?.outcome;
+    const trpcCode = req.body?.trpcCode;
+    const validOutcome = outcome === "started" || outcome === "success" || outcome === "failure" || outcome === "timeout";
+    const validCode = trpcCode === null || ["PARSE_ERROR", "BAD_REQUEST", "INTERNAL_SERVER_ERROR", "UNAUTHORIZED", "FORBIDDEN", "NOT_FOUND", "METHOD_NOT_SUPPORTED", "TIMEOUT", "CONFLICT", "GONE", "PAYLOAD_TOO_LARGE", "UNPROCESSABLE_CONTENT", "TOO_MANY_REQUESTS", "CLIENT_CLOSED_REQUEST", "PRECONDITION_FAILED"].includes(trpcCode);
+    if (validOutcome && validCode) {
+      logger.info({ event: "composer_transport_probe", outcome, trpcCode }, "Composer transport probe diagnostic");
+    }
+    res.status(204).end();
+  });
   app.post("/api/scheduled/workflow", runScheduledWorkflow);
   // tRPC API
   app.use(

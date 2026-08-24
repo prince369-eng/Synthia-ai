@@ -1881,6 +1881,17 @@ export const appRouter = router({
         return { success: true };
       }),
   }),
+  diagnostics: router({
+    // Static-preview-only transport contract. This procedure has no input and
+    // deliberately performs no task, queue, provider, storage, or DB operation.
+    composerTransportProbe: protectedProcedure.mutation(({ ctx: _ctx }) => {
+      if (process.env.SYNTHIA_STATIC_PREVIEW !== "true") {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Not found." });
+      }
+      logger.info({ event: "composer_transport_probe_rpc" }, "Composer transport probe completed");
+      return { ok: true };
+    }),
+  }),
   catalog: router({
     taskStatuses: publicProcedure.query(() => taskStatusSchema.options),
     executionReadiness: protectedProcedure.query(() => ({ queueConfigured: isQueueConfigured() })),
